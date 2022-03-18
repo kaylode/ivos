@@ -5,37 +5,22 @@ mpl.use("Agg")
 from theseus.opt import Opts
 
 import os
-import cv2
+import os.path as osp
+import time
+import numpy as np
+from tqdm import tqdm
 import torch
+from PIL import Image
 from datetime import datetime
 from theseus.opt import Config
-from theseus.semantic.models import MODEL_REGISTRY
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loading import load_state_dict
 from theseus.utilities.loggers import LoggerObserver, StdoutLogger
 from theseus.utilities.cuda import get_devices_info, move_to, get_device
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
-
-from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.semantic.datasets.csv_dataset import CSVDataset
-
-@DATASET_REGISTRY.register()
-class TestCSVDataset(CSVDataset):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def collate_fn(self, batch: List):
-        imgs = torch.stack([s['input'] for s in batch])
-        img_names = [s['img_name'] for s in batch]
-        ori_sizes = [s['ori_size'] for s in batch]
-
-        return {
-            'inputs': imgs,
-            'img_names': img_names,
-            'ori_sizes': ori_sizes
-        }
+from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
+from theseus.semantic.models.stcn.networks.eval_network import STCNEval
 
 class TestPipeline(object):
     def __init__(
@@ -68,9 +53,8 @@ class TestPipeline(object):
         self.dataset = get_instance(
             opt['data']["dataset"],
             registry=DATASET_REGISTRY,
-            transform=self.transform['val'],
+            # transform=self.transform['val'],
         )
-        CLASSNAMES = self.dataset.classnames
 
         self.dataloader = get_instance(
             opt['data']["dataloader"],
@@ -78,20 +62,21 @@ class TestPipeline(object):
             dataset=self.dataset,
         )
 
-        self.model = get_instance(
-          self.opt["model"], 
-          registry=MODEL_REGISTRY, 
-          classnames=CLASSNAMES,
-          num_classes=len(CLASSNAMES))
-          
+        # Load our checkpoint
+        self.prop_model = STCNEval().to(self.device).eval()
 
-        self.model = move_to(self.model, self.device)
+        # Performs input mapping such that stage 0 model can be loaded
+        prop_saved = torch.load(self.weights)['model']
+        for k in list(prop_saved.keys()):
+            if k == 'value_encoder.conv1.weight':
+                if prop_saved[k].shape[1] == 4:
+                    pads = torch.zeros((64,1,7,7), device=prop_saved[k].device)
+                    prop_saved[k] = torch.cat([prop_saved[k], pads], 1)
+        self.prop_model.load_state_dict(prop_saved)
 
-        if self.weights:
-            state_dict = torch.load(self.weights)
-            self.model = load_state_dict(self.model, state_dict, 'model')
-
-    
+        self.top_k = opt['top_k']
+        self.mem_every = opt['mem_every']
+        
     def infocheck(self):
         device_info = get_devices_info(self.device_name)
         self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
@@ -102,40 +87,61 @@ class TestPipeline(object):
     def inference(self):
         self.infocheck()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
+        torch.autograd.set_grad_enabled(False)
+        
+        total_process_time = 0
+        total_frames = 0
 
-        visualizer = Visualizer()
-        self.model.eval()
+        for data in tqdm(self.dataloader):
 
-        saved_mask_dir = os.path.join(self.savedir, 'masks')
-        saved_overlay_dir = os.path.join(self.savedir, 'overlays')
+            with torch.cuda.amp.autocast(enabled=False):
+                rgb = data['rgb'].float().cuda()
+                msk = data['gt'][0].cuda()
+                info = data['info']
+                name = info['name']
+                k = len(info['labels'][0])
 
-        os.makedirs(saved_mask_dir, exist_ok=True)
-        os.makedirs(saved_overlay_dir, exist_ok=True)
+                torch.cuda.synchronize()
+                process_begin = time.time()
 
-        for idx, batch in enumerate(self.dataloader):
-            inputs = batch['inputs']
-            img_names = batch['img_names']
-            ori_sizes = batch['ori_sizes']
+                processor = InferenceCore(
+                    self.prop_model, rgb, k, 
+                    top_k=self.top_k, 
+                    mem_every=self.mem_every)
+                processor.interact(msk[:,0], 0, rgb.shape[1])
 
-            outputs = self.model.get_prediction(batch, self.device)
-            preds = outputs['masks']
+                # Do unpad -> upsample to original size 
+                out_masks = torch.zeros((processor.t, 1, *rgb.shape[-2:]), dtype=torch.float32, device='cuda')
+                for ti in range(processor.t):
+                    prob = processor.prob[:,ti]
 
-            for (input, pred, filename, ori_size) in zip(inputs, preds, img_names, ori_sizes):
-                decode_pred = visualizer.decode_segmap(pred)[:,:,::-1]
-                resized_decode_mask = cv2.resize(decode_pred, tuple(ori_size))
+                    if processor.pad[2]+processor.pad[3] > 0:
+                        prob = prob[:,:,processor.pad[2]:-processor.pad[3],:]
+                    if processor.pad[0]+processor.pad[1] > 0:
+                        prob = prob[:,:,:,processor.pad[0]:-processor.pad[1]]
 
-                # Save mask
-                savepath = os.path.join(saved_mask_dir, filename)
-                cv2.imwrite(savepath, resized_decode_mask)
+                    out_masks[ti] = torch.argmax(prob, dim=0)*255
+                
+                out_masks = (out_masks.detach().cpu().numpy()[:,0]).astype(np.uint8)
 
-                # Save overlay
-                raw_image = visualizer.denormalize(input)   
-                ori_image = cv2.resize(raw_image, tuple(ori_size))
-                overlay = ori_image * 0.7 + resized_decode_mask * 0.3
-                savepath = os.path.join(saved_overlay_dir, filename)
-                cv2.imwrite(savepath, overlay)
+                torch.cuda.synchronize()
+                total_process_time += time.time() - process_begin
+                total_frames += out_masks.shape[0]
 
-                self.logger.text(f"Save image at {savepath}", level=LoggerObserver.INFO)
+                patient_id = osp.basename(name[0]).split('.')[0]
+
+                this_out_path = osp.join(self.savedir, str(patient_id))
+                os.makedirs(this_out_path, exist_ok=True)
+                for f in range(out_masks.shape[0]):
+                    img_E = Image.fromarray(out_masks[f])
+                    img_E.save(os.path.join(this_out_path, '{:05d}.png'.format(f)))
+                
+            del rgb
+            del msk
+            del processor
+
+        self.logger.text(f"Number of processed slices: {total_frames}")
+        self.logger.text(f"Execution time: {total_process_time}s")
         
 
 if __name__ == '__main__':
