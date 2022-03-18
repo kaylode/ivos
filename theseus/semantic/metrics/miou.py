@@ -1,5 +1,9 @@
 from typing import Any, Dict, Optional
+import torch
+from theseus.utilities.cuda import move_to
 from theseus.base.metrics.metric_template import Metric
+
+
 
 def compute_tensor_iu(seg, gt):
     intersection = (seg & gt).float().sum()
@@ -56,6 +60,13 @@ class mIOU(Metric):
         tar_iou_score = self.tar_iou / self.sample_size #mean over number of samples
         sec_iou_score = self.sec_iou / self.sample_size #mean over number of samples
         
+        tar_iou_score = move_to(tar_iou_score, torch.device('cpu'))
+        tar_iou_score = tar_iou_score.item()
+
+        if not isinstance(sec_iou_score, int):
+            sec_iou_score = move_to(sec_iou_score, torch.device('cpu'))
+            sec_iou_score = sec_iou_score.item()
+
         return {
             "iou1" : tar_iou_score,
             "iou2": sec_iou_score,

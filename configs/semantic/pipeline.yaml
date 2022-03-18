@@ -13,10 +13,13 @@ trainer:
     clip_grad:  10.0
     evaluate_interval:  1
     print_interval: 20
-    save_interval: 1000
+    save_interval: 50
 callbacks:
   - name: LoggerCallbacks
     args: null 
+  - name: CheckpointCallbacks
+    args: 
+      best_key: miou
   - name: STCNCallbacks
     args: null
   - name: TensorboardCallbacks
