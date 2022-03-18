@@ -1,6 +1,4 @@
 from typing import List, Dict
-import torch
-
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver
 
@@ -31,9 +29,9 @@ class STCNCallbacks(Callbacks):
 
         if current_epoch!=self.total_epoch and current_epoch>=self.increase_skip_epoch[0]:
             while current_epoch >= self.increase_skip_epoch[0]:
-                cur_skip = skip_values[0]
-                skip_values = skip_values[1:]
-                increase_skip_epoch = increase_skip_epoch[1:]
+                cur_skip = self.skip_values[0]
+                self.skip_values = self.skip_values[1:]
+                self.increase_skip_epoch = self.increase_skip_epoch[1:]
             print('Increasing skip to: ', cur_skip)
             self.renew_loader(cur_skip)
 
@@ -41,4 +39,4 @@ class STCNCallbacks(Callbacks):
         # //5 because we only have annotation for every five frames
         self.params['trainer'].trainloader.dataset.max_jump = max_skip
         self.params['trainer'].valloader.dataset.max_jump = max_skip
-        print('Renewed with skip: ', max_skip)
+        LOGGER.text(f'Renewed with skip: {max_skip}', level=LoggerObserver.INFO)

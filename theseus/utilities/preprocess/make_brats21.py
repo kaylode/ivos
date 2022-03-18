@@ -1,4 +1,3 @@
-%cd main
 import SimpleITK as sitk
 import shutil
 import os
