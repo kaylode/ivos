@@ -18,9 +18,12 @@ class ModelWithLoss(nn.Module):
         self.device = device
 
     def forward(self, batch, metrics=None):
-        outputs = self.model(move_to(batch["inputs"], self.device))
-        loss, loss_dict = self.criterion(outputs, batch, self.device)
-
+        outputs = self.model(batch)
+        
+        loss, loss_dict = self.criterion.compute({
+            **batch, **outputs
+        }, it=0) # temporary, will look into later
+        
         if metrics is not None:
             for metric in metrics:
                 metric.update(outputs, batch)

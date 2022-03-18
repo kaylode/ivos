@@ -17,32 +17,21 @@ trainer:
 callbacks:
   - name: LoggerCallbacks
     args: null 
-  - name: CheckpointCallbacks
-    args:
-      best_key: bl_acc
-  - name: VisualizerCallbacks
+  - name: STCNCallbacks
     args: null
   - name: TensorboardCallbacks
     args: null
 model:
-  name: BaseSegModel
+  name: STCNModel
   args:
-    name: unetplusplus
-    encoder_name: efficientnet-b0
+    num_classes: 4
+    local_rank: 0
+    single_object: false
 loss:
-  name: MultiLoss
-  args:
-    weights: null
-    losses:
-      - name: CELoss
-        args: {}
-      - name: DiceLoss
-        args: {}
+  name: STCNLoss
+  args: null
 metrics:
-- name: PixelAccuracy
-  args:
-    ignore_index: 0
-- name: DiceScore
+- name: mIOU
   args:
     ignore_index: 0
 optimizer:
@@ -64,33 +53,28 @@ scheduler:
 data:
   dataset:
     train:
-      name: CSVDataset
+      name: Brats21Dataset
       args:
-        image_dir: data/images/train
-        mask_dir: data/masks/train
-        csv_path: data/train.csv
-        txt_classnames: configs/semantic/classes.txt
+        volume_dir: /content/brats21-processed/imagesTr",
+        label_dir: /content/brats21-processed/labelsTr",
+        target_shape: 240
+        max_jump: 5 #initial
     val:
-      name: CSVDataset
+      name: Brats21Dataset
       args:
-        image_dir: data/images/val
-        mask_dir: data/masks/val
-        csv_path: data/val.csv
-        txt_classnames: configs/semantic/classes.txt
+        volume_dir: /content/brats21-processed/imagesTr",
+        label_dir: /content/brats21-processed/labelsTr",
+        target_shape: 240
+        max_jump: 5 #initial
   dataloader:
     train:
-      name: DataLoaderWithCollator
+      name: DistributedDataloader
       args:
         batch_size: 32
         drop_last: false
         shuffle: true
-        collate_fn:
-            name: MosaicCollator
-            args:
-              scale_range: [0.3, 0.7]
-              p: 0.3
     val:
-      name: DataLoaderWithCollator
+      name: DistributedDataloader
       args:
         batch_size: 32
         drop_last: false

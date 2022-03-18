@@ -21,6 +21,29 @@ from theseus.utilities.cuda import get_devices_info, move_to, get_device
 
 
 
+def initialize_distribution():
+    """
+    Initial setup
+    """
+
+    import random
+    import numpy as np
+    import torch.distributed as distributed
+
+    # Init distributed environment
+    distributed.init_process_group(backend="nccl")
+    # Set seed to ensure the same initialization
+    torch.manual_seed(14159265)
+    np.random.seed(14159265)
+    random.seed(14159265)
+
+    torch.backends.cudnn.benchmark = True
+
+    local_rank = torch.distributed.get_rank()
+    world_size = torch.distributed.get_world_size()
+    torch.cuda.set_device(local_rank)
+    return local_rank, world_size
+
 class Pipeline(object):
     """docstring for Pipeline."""
 
@@ -31,7 +54,7 @@ class Pipeline(object):
         super(Pipeline, self).__init__()
         self.opt = opt
 
-        
+        local_rank, world_size = initialize_distribution()
         self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(self.savedir, exist_ok=True)
         
