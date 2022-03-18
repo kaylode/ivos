@@ -1,6 +1,5 @@
 from typing import List, Dict
 import torch
-import torch.distributed as distributed
 
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver
@@ -37,9 +36,6 @@ class STCNCallbacks(Callbacks):
                 increase_skip_epoch = increase_skip_epoch[1:]
             print('Increasing skip to: ', cur_skip)
             self.renew_loader(cur_skip)
-
-    def on_finish(self, logs: Dict = None):
-        distributed.destroy_process_group()
 
     def renew_loader(self, current_epoch:int, max_skip: int):
         # //5 because we only have annotation for every five frames

@@ -21,21 +21,16 @@ class STCNModel(nn.Module):
         self, 
         num_classes: int = 3,
         classnames: str = None,
-        local_rank: int = 0,
         single_object: bool = False,
         **kwargs):
         super().__init__()
 
         self.num_classes = num_classes
         self.classnames = classnames
-        self.local_rank = local_rank
         self.single_object = single_object
 
-        self.model = nn.parallel.DistributedDataParallel(
-            STCNTrain(self.single_object).cuda(), 
-            device_ids=[local_rank], 
-            output_device=local_rank, 
-            broadcast_buffers=False)
+        self.model = STCNTrain(self.single_object).cuda()
+            
 
     def forward(self, data: Dict):
         # No need to store the gradient outside training

@@ -83,6 +83,6 @@ class STCNLoss:
             #     losses['hide_iou/sec_i'] += new_total_i
             #     losses['hide_iou/sec_u'] += new_total_u
 
-        loss_dict = {k:v.item() if isinstance(v, torch.Tensor) else k:v for k, v in loss_dict.items() }
+        loss_dict = {k:v.item() for k, v in loss_dict.items() if isinstance(v, torch.Tensor)}
         loss_dict['T'] = total_loss.item()
         return total_loss, loss_dict
