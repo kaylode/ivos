@@ -24,7 +24,6 @@ callbacks:
 model:
   name: STCNModel
   args:
-    num_classes: 4
     local_rank: 0
     single_object: false
 loss:
@@ -55,15 +54,15 @@ data:
     train:
       name: Brats21Dataset
       args:
-        volume_dir: /content/brats21-processed/imagesTr",
-        label_dir: /content/brats21-processed/labelsTr",
+        volume_dir: /content/brats21-processed/imagesTr
+        label_dir: /content/brats21-processed/labelsTr
         target_shape: 240
         max_jump: 5 #initial
     val:
       name: Brats21Dataset
       args:
-        volume_dir: /content/brats21-processed/imagesTr",
-        label_dir: /content/brats21-processed/labelsTr",
+        volume_dir: /content/brats21-processed/imagesTr
+        label_dir: /content/brats21-processed/labelsTr
         target_shape: 240
         max_jump: 5 #initial
   dataloader:
@@ -72,10 +71,10 @@ data:
       args:
         batch_size: 32
         drop_last: false
-        shuffle: true
+        shuffle: false
     val:
       name: DistributedDataloader
       args:
         batch_size: 32
         drop_last: false
-        shuffle: true
+        shuffle: false

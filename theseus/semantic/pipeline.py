@@ -81,13 +81,13 @@ class Pipeline(object):
         self.train_dataset = get_instance_recursively(
             opt['data']["dataset"]['train'],
             registry=DATASET_REGISTRY,
-            transform=self.transform['train'],
+            # transform=self.transform['train'],
         )
 
         self.val_dataset = get_instance_recursively(
             opt['data']["dataset"]['val'],
             registry=DATASET_REGISTRY,
-            transform=self.transform['val'],
+            # transform=self.transform['val'],
         )
 
         CLASSNAMES = self.val_dataset.classnames
@@ -114,7 +114,6 @@ class Pipeline(object):
         criterion = get_instance_recursively(
             self.opt["loss"], 
             registry=LOSS_REGISTRY)
-        criterion = move_to(criterion, self.device)
 
         self.model = ModelWithLoss(model, criterion, self.device)
 

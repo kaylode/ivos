@@ -20,12 +20,14 @@ class STCNModel(nn.Module):
     def __init__(
         self, 
         num_classes: int = 3,
+        classnames: str = None,
         local_rank: int = 0,
         single_object: bool = False,
         **kwargs):
         super().__init__()
 
         self.num_classes = num_classes
+        self.classnames = classnames
         self.local_rank = local_rank
         self.single_object = single_object
 

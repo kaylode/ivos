@@ -45,6 +45,7 @@ class Opts(ArgumentParser):
         super(Opts, self).__init__(
             formatter_class=RawDescriptionHelpFormatter)
         self.add_argument("-c", "--config", help="configuration file to use")
+        self.add_argument("--local_rank", type=int, default=0, help="local rank for distribution")
         self.add_argument(
             "-o", "--opt", nargs='+', help="override configuration options")
 
