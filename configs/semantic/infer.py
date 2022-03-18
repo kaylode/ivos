@@ -10,7 +10,7 @@ import time
 import numpy as np
 from tqdm import tqdm
 import torch
-from PIL import Image
+import nibabel as nib
 from datetime import datetime
 from theseus.opt import Config
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
@@ -99,6 +99,8 @@ class TestPipeline(object):
                 msk = data['gt'][0].cuda()
                 info = data['info']
                 name = info['name']
+                guidemark = info['guidemark']
+                affine = info['affine']
                 k = len(info['labels'][0])
 
                 torch.cuda.synchronize()
@@ -120,22 +122,26 @@ class TestPipeline(object):
                     if processor.pad[0]+processor.pad[1] > 0:
                         prob = prob[:,:,:,processor.pad[0]:-processor.pad[1]]
 
-                    out_masks[ti] = torch.argmax(prob, dim=0)*255
+                    out_masks[ti] = torch.argmax(prob, dim=0)
                 
-                out_masks = (out_masks.detach().cpu().numpy()[:,0]).astype(np.uint8)
-
+                out_masks = (out_masks.detach().cpu().numpy()[:,0]).astype(np.uint8) # (T, H, W)
+             
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
-                patient_id = osp.basename(name[0]).split('.')[0].split('_')[0]
+                first = out_masks[:guidemark, :, :]
+                second = out_masks[guidemark:, :, :]
+                second = np.flip(second, axis=0)
 
-                this_out_path = osp.join(self.savedir, str(patient_id))
-                os.makedirs(this_out_path, exist_ok=True)
-                for f in range(out_masks.shape[0]):
-                    img_E = Image.fromarray(out_masks[f])
-                    img_E.save(os.path.join(this_out_path, '{:05d}.png'.format(f)))
-                
+                out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
+
+                out_masks = out_masks.transpose(1,2,0)
+                ni_img = nib.Nifti1Image(out_masks, affine.squeeze(0).numpy())
+                patient_id = osp.basename(name[0]).split('.')[0].split('_')[0]
+                this_out_path = osp.join(self.savedir, str(patient_id)+'.nii.gz')
+                nib.save(ni_img, this_out_path)
+
             del rgb
             del msk
             del processor
