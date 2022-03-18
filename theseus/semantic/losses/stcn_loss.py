@@ -1,26 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from theseus.semantic.utilities.tensor_util import compute_tensor_iu
 
 from collections import defaultdict
-
-
-def get_iou_hook(values):
-    return 'iou/iou', (values['hide_iou/i']+1)/(values['hide_iou/u']+1)
-
-def get_sec_iou_hook(values):
-    return 'iou/sec_iou', (values['hide_iou/sec_i']+1)/(values['hide_iou/sec_u']+1)
-
-iou_hooks_so = [
-    get_iou_hook,
-]
-
-iou_hooks_mo = [
-    get_iou_hook,
-    get_sec_iou_hook,
-]
-
 
 # https://stackoverflow.com/questions/63735255/how-do-i-compute-bootstrapped-cross-entropy-loss-in-pytorch
 class BootstrappedCE(nn.Module):
@@ -54,12 +36,12 @@ class STCNLoss:
     def compute(self, data, it):
         loss_dict = defaultdict(int)
 
-        b, s, _, _, _ = data['gt'].shape
+        b, num_slices, _, _, _ = data['gt'].shape
         selector = data.get('selector', None)
 
         total_loss = 0
 
-        for i in range(1, s):
+        for i in range(1, num_slices):
             # Have to do it in a for-loop like this since not every entry has the second object
             # Well it's not a lot of iterations anyway
             for j in range(b):
@@ -69,19 +51,9 @@ class STCNLoss:
                     loss, p = self.bce(data['logits_%d'%i][j:j+1,:2], data['cls_gt'][j:j+1,i], it)
 
                 loss_dict['loss_%d'%i] += loss / b
-                loss_dict['p'] += p / b / (s-1)
+                loss_dict['p'] += p / b / (num_slices-1)
 
             total_loss += loss_dict['loss_%d'%i]
-
-            # Hooks for calculating metrics, will come back later
-            # new_total_i, new_total_u = compute_tensor_iu(data['mask_%d'%i]>0.5, data['gt'][:,i]>0.5)
-            # losses['hide_iou/i'] += new_total_i
-            # losses['hide_iou/u'] += new_total_u
-
-            # if selector is not None:
-            #     new_total_i, new_total_u = compute_tensor_iu(data['sec_mask_%d'%i]>0.5, data['sec_gt'][:,i]>0.5)
-            #     losses['hide_iou/sec_i'] += new_total_i
-            #     losses['hide_iou/sec_u'] += new_total_u
 
         loss_dict = {k:v.item() for k, v in loss_dict.items() if isinstance(v, torch.Tensor)}
         loss_dict['T'] = total_loss.item()

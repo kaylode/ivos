@@ -104,4 +104,15 @@ class STCNModel(nn.Module):
 
         return out
 
-        
+    def load_network(self, state_dict):
+        # This method loads only the network weight and should be used to load a pretrained model
+
+        # Maps SO weight (without other_mask) to MO weight (with other_mask)
+        for k in list(state_dict.keys()):
+            if k == 'value_encoder.conv1.weight':
+                if state_dict[k].shape[1] == 4:
+                    pads = torch.zeros((64,1,7,7), device=state_dict[k].device)
+                    nn.init.orthogonal_(pads)
+                    state_dict[k] = torch.cat([state_dict[k], pads], 1)
+
+        self.model.load_state_dict(state_dict)

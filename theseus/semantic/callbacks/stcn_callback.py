@@ -37,10 +37,8 @@ class STCNCallbacks(Callbacks):
             print('Increasing skip to: ', cur_skip)
             self.renew_loader(cur_skip)
 
-    def renew_loader(self, current_epoch:int, max_skip: int):
+    def renew_loader(self, max_skip: int):
         # //5 because we only have annotation for every five frames
-        self.params['trainer'].trainloader.max_jump = max_skip
-        self.params['trainer'].trainloader.sampler.set_epoch(current_epoch)
-        self.params['trainer'].valloader.max_jump = max_skip
-        self.params['trainer'].valloader.sampler.set_epoch(current_epoch)
+        self.params['trainer'].trainloader.dataset.max_jump = max_skip
+        self.params['trainer'].valloader.dataset.max_jump = max_skip
         print('Renewed with skip: ', max_skip)

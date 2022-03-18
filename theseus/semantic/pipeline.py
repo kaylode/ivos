@@ -118,6 +118,9 @@ class Pipeline(object):
             iters = load_state_dict(None, state_dict, 'iters')
             last_epoch = iters//len(self.train_dataloader) - 1
 
+        if self.resume or self.pretrained:
+            self.model.model.load_network(state_dict['model'])
+
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
             **{

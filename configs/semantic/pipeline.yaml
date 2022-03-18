@@ -31,7 +31,7 @@ loss:
 metrics:
 - name: mIOU
   args:
-    ignore_index: 0
+    thresh: 0.5
 optimizer:
   name: AdamW
   args:
