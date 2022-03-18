@@ -16,7 +16,7 @@ from theseus.opt import Config
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loggers import LoggerObserver, StdoutLogger
+from theseus.utilities.loggers import LoggerObserver, FileLogger
 from theseus.utilities.cuda import get_devices_info, move_to, get_device
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
@@ -36,8 +36,8 @@ class TestPipeline(object):
         self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(self.savedir, exist_ok=True)
 
-        stdout_logger = StdoutLogger(__name__, self.savedir, debug=self.debug)
-        self.logger.subscribe(stdout_logger)
+        file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
+        self.logger.subscribe(file_logger)
         self.logger.text(self.opt, level=LoggerObserver.INFO)
 
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
@@ -66,7 +66,7 @@ class TestPipeline(object):
         self.prop_model = STCNEval().to(self.device).eval()
 
         # Performs input mapping such that stage 0 model can be loaded
-        prop_saved = torch.load(self.weights)['model']
+        prop_saved = torch.load(self.weights) #['model']
         for k in list(prop_saved.keys()):
             if k == 'value_encoder.conv1.weight':
                 if prop_saved[k].shape[1] == 4:
@@ -74,8 +74,8 @@ class TestPipeline(object):
                     prop_saved[k] = torch.cat([prop_saved[k], pads], 1)
         self.prop_model.load_state_dict(prop_saved)
 
-        self.top_k = opt['top_k']
-        self.mem_every = opt['mem_every']
+        self.top_k = opt['global']['top_k']
+        self.mem_every = opt['global']['mem_every']
         
     def infocheck(self):
         device_info = get_devices_info(self.device_name)
@@ -128,7 +128,7 @@ class TestPipeline(object):
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
-                patient_id = osp.basename(name[0]).split('.')[0]
+                patient_id = osp.basename(name[0]).split('.')[0].split('_')[0]
 
                 this_out_path = osp.join(self.savedir, str(patient_id))
                 os.makedirs(this_out_path, exist_ok=True)
@@ -140,8 +140,8 @@ class TestPipeline(object):
             del msk
             del processor
 
-        self.logger.text(f"Number of processed slices: {total_frames}")
-        self.logger.text(f"Execution time: {total_process_time}s")
+        self.logger.text(f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO)
+        self.logger.text(f"Execution time: {total_process_time}s", level=LoggerObserver.INFO)
         
 
 if __name__ == '__main__':

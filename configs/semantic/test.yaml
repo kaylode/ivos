@@ -1,9 +1,11 @@
 global:
   debug: True
-  cfg_transform: configs/sample/transform.yaml
+  cfg_transform: configs/semantic/transform.yaml
   save_dir: runs
   device: cuda:0
   weights: null
+  top_k: 20
+  mem_every: 5
 data: 
   dataset:
     name: Brats21Testset
@@ -14,6 +16,6 @@ data:
   dataloader:
     name: DataLoader
     args:
-      batch_size: 64
-      drop_last: True
+      batch_size: 1
+      drop_last: False
       shuffle: True

@@ -5,6 +5,10 @@ import nibabel as nib # common way of importing nibabel
 import torch
 import numpy as np
 
+from theseus.utilities.loggers.observer import LoggerObserver
+
+LOGGER = LoggerObserver.getLogger('main')
+
 def normalize_min_max(data):
     data = (data - np.min(data)) / np.max(data)
     return data
@@ -58,7 +62,7 @@ class Brats21Dataset(torch.utils.data.Dataset):
             })
 
 
-        self.channel_names = ['t1', 't1ce', 't2', 'flair']  
+        self.channel_names = ['t1', 't1ce', 't2'] #'flair' 
         self.classnames = [
             "background",
             "edema",
@@ -66,7 +70,35 @@ class Brats21Dataset(torch.utils.data.Dataset):
             "enhancing"
         ]
 
-        print('%d patient volumes found' % (len(self.fns)))
+        self.compute_stats()
+
+    def compute_stats(self):
+        """
+        Compute statistic for dataset
+        """
+        
+        LOGGER.text("Computing statistic...", level=LoggerObserver.INFO)
+
+        self.stats = []
+        for item in self.fns:
+
+            vol_dict = {
+                'guides': [],
+                'num_labels': []
+            }
+
+            patient_id = item['pid']
+            num_slices = gt_vol.shape[-1]
+            gt_path = osp.join(self.label_dir, item['label'])
+            gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
+            
+            # Search for guide frames, in which all classes are presented
+            max_possible_number_of_classes = len(np.unique(gt_vol))
+            for frame_idx in num_slices:
+                num_classes = len(np.unique(gt_vol[:, :, frame_idx]))
+                if num_classes == max_possible_number_of_classes:
+                    vol_dict['guides'].append(frame_idx)
+            self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
         
@@ -86,12 +118,16 @@ class Brats21Dataset(torch.utils.data.Dataset):
 
         num_slices = stacked_vol.shape[-1]
 
+        # Item stats
+        stat = self.stats[idx]
+
         trials = 0
         while trials < 5:
 
             # Don't want to bias towards beginning/end
             this_max_jump = min(num_slices, self.max_jump)
-            start_idx = np.random.randint(num_slices-this_max_jump+1)
+            guide_idx = np.random.randint(len(stat['guides']))
+            start_idx = stat['guides'][guide_idx]
             f1_idx = start_idx + np.random.randint(this_max_jump+1) + 1
             f1_idx = min(f1_idx, num_slices-this_max_jump, num_slices-1)
 
@@ -182,20 +218,25 @@ class Brats21Testset(Brats21Dataset):
         stacked_vol = np.stack(stacked_channels, axis=0) # (4, H, W, NS)
         stacked_vol = normalize_min_max(stacked_vol)
         images = torch.from_numpy(stacked_vol).permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
+        
+        guide_id = np.random.choice(self.stats['guides'])
+        first = images[guide_id:, :, :, :]
 
-        images = images[50:, :, :, :]
+        guidemark = first.shape[0]
+        second = images[:guide_id+1, :, :, :][::-1, :, :, :]
+        images = torch.cat([first, second], dim=0)        
+
         num_slices = images.shape[0]
-        guide_ids = [0, 10, 30]
 
         gt_path = osp.join(self.label_dir, patient_item['label'])
         masks = []
         
         gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
-        gt_vol = gt_vol[:, :, 50:]
+        gt_vol = gt_vol[:, :, guide_id:]
 
         for f in range(num_slices):
             # Test-set maybe?
-            if f in guide_ids:
+            if f==0 or f == guidemark:
                 masks.append(gt_vol[:,:,f])
             else:
                 masks.append(np.zeros_like(masks[0]))
