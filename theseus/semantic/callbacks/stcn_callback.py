@@ -30,7 +30,7 @@ class STCNCallbacks(Callbacks):
         current_epoch = iters // len(train_dataloader)
 
         if current_epoch!=self.total_epoch and current_epoch>=self.increase_skip_epoch[0]:
-            while current_epoch >= increase_skip_epoch[0]:
+            while current_epoch >= self.increase_skip_epoch[0]:
                 cur_skip = skip_values[0]
                 skip_values = skip_values[1:]
                 increase_skip_epoch = increase_skip_epoch[1:]

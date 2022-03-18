@@ -58,7 +58,7 @@ class Brats21Dataset(torch.utils.data.Dataset):
             })
 
 
-        self.channel_names = ['t1', 't1ce', 't2'] #, 'flair'
+        self.channel_names = ['t1', 't1ce', 't2', 'flair']  
         self.classnames = [
             "background",
             "edema",
