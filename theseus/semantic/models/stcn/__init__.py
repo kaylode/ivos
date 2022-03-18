@@ -30,7 +30,9 @@ class STCNModel(nn.Module):
         self.single_object = single_object
 
         self.model = STCNTrain(self.single_object).cuda()
-            
+    
+    def get_model(self):
+        return self.model
 
     def forward(self, data: Dict):
         # No need to store the gradient outside training
