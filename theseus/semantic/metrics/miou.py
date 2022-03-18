@@ -1,89 +1,63 @@
 from typing import Any, Dict, Optional
-import torch
-import numpy as np
 from theseus.base.metrics.metric_template import Metric
 
+def compute_tensor_iu(seg, gt):
+    intersection = (seg & gt).float().sum()
+    union = (seg | gt).float().sum()
+
+    return intersection, union
+
+def compute_tensor_iou(seg, gt):
+    intersection, union = compute_tensor_iu(seg, gt)
+    iou = (intersection + 1e-6) / (union + 1e-6)
+    
+    return iou 
+
 class mIOU(Metric):
-    """ Mean IOU metric for segmentation
-    num_classes: `int`
-        number of classes 
-    eps: `float`
-        epsilon to avoid zero division
+    """ Mean IOU metric for ivos
     thresh: `float`
         threshold for binary segmentation
     """
     def __init__(self, 
-            num_classes: int, 
             eps: float = 1e-6, 
-            thresh: Optional[float] = None,
-            ignore_index: Optional[int] = None,
+            thresh: Optional[float] = 0.5,
             **kwawrgs):
 
         self.thresh = thresh
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.pred_type = "multi" if self.num_classes > 1 else "binary"
-
-        if self.pred_type == 'binary':
-            assert thresh is not None, "Threshold should be specified for binary segmentation"
-        if self.num_classes == 1:
-            self.num_classes+=1
-
         self.eps = eps
 
         self.reset()
 
-    def update(self, outputs: torch.Tensor, batch: Dict[str, Any]): 
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]): 
         """
         Perform calculation based on prediction and targets
         """
-        # outputs: (batch, num_classes, W, H)
-        # targets: (batch, num_classes, W, H)
+        b, num_slices, _, _, _ = batch['gt'].shape
+        selector = batch.get('selector', None)
 
-        targets = batch['targets']
-        assert len(targets.shape) == 4, "Wrong shape for targets"
-        assert len(outputs.shape) == 4, "Wrong shape for targets"
-        self.sample_size += outputs.shape[0]
-        
-        if self.pred_type == 'binary':
-            predicts = (outputs > self.thresh).float()
-        elif self.pred_type =='multi':
-            predicts = torch.argmax(outputs, dim=1)
+        for i in range(1, num_slices):
+            iou = compute_tensor_iou(
+                outputs['mask_%d'%i]>self.thresh, batch['gt'][:,i]>self.thresh)
+            self.tar_iou += iou
 
-        predicts = predicts.detach().cpu()
-        one_hot_predicts = torch.nn.functional.one_hot(
-              predicts.long(), 
-              num_classes=self.num_classes).permute(0, 3, 1, 2)
-        
-        for cl in range(self.num_classes):
-            cl_pred = one_hot_predicts[:,cl,:,:]
-            cl_target = targets[:,cl,:,:]
-            score = self.binary_compute(cl_pred, cl_target)
-            self.scores_list[cl] += sum(score)
-        
+            if selector is not None:
+                sec_iou = compute_tensor_iou(
+                    outputs['sec_mask_%d'%i]>self.thresh, batch['sec_gt'][:,i]>self.thresh)
+                self.sec_iou += sec_iou
 
-    def binary_compute(self, predict: torch.Tensor, target: torch.Tensor):
-        # outputs: (batch, W, H)
-        # targets: (batch, W, H)
-
-        intersect = torch.sum(target*predict, dim=(-1, -2))
-        A = torch.sum(target, dim=(-1, -2))
-        B = torch.sum(predict, dim=(-1, -2))
-        union = A + B - intersect
-        return intersect / (union + self.eps)
+        self.sample_size += num_slices-1 #exclude first frame
         
     def reset(self):
-        self.scores_list = np.zeros(self.num_classes)
+        self.tar_iou = 0
+        self.sec_iou = 0
         self.sample_size = 0
 
     def value(self):
-        scores_each_class = self.scores_list / self.sample_size #mean over number of samples
-        if self.pred_type == 'binary':
-            scores = scores_each_class[1] # ignore background which is label 0
-        else:
-            if self.ignore_index is not None:
-                scores_each_class[self.ignore_index] = 0
-                scores = sum(scores_each_class) / (self.num_classes - 1)
-            else:
-                scores = sum(scores_each_class) / self.num_classes
-        return {"miou" : scores}
+        tar_iou_score = self.tar_iou / self.sample_size #mean over number of samples
+        sec_iou_score = self.sec_iou / self.sample_size #mean over number of samples
+        
+        return {
+            "iou1" : tar_iou_score,
+            "iou2": sec_iou_score,
+            "miou": (tar_iou_score+sec_iou_score) / 2
+        }
