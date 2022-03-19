@@ -48,6 +48,14 @@ class STCNCallbacks(Callbacks):
         iters = logs['iters']
         logs['batch']['iters'] = iters
 
+    def on_val_batch_start(self, logs:Dict = None):
+        """
+        On validation batch start
+        Save the number of iterations to batch for computing loss 
+        """
+        iters = logs['iters']
+        logs['batch']['iters'] = iters
+
     def renew_loader(self, max_skip: int):
         # //5 because we only have annotation for every five frames
         self.params['trainer'].trainloader.dataset.max_jump = max_skip
