@@ -4,10 +4,16 @@ import os
 import os.path as osp
 import numpy as np
 import argparse
+import random
+
+SEED = 0
+random.seed(SEED)
+np.random.seed(SEED)
 
 parser = argparse.ArgumentParser("Process volume CT")
 parser.add_argument("-i", "--input_dir", type=str, help="Volume directory")
 parser.add_argument("-o", "--out_dir", type=str, help="Output directory")
+parser.add_argument("--ratio", type=float, default=0.9, help="Ratio split")
 
 def copy_BraTS_segmentation_and_convert_labels(in_file, out_file):
     # use this for segmentation only!!!
@@ -55,7 +61,15 @@ def processing(root_dir, out_dir):
 
         copy_BraTS_segmentation_and_convert_labels(seg, osp.join(target_labelsTr, patient_name + "_seg.nii.gz"))
 
+def split_train_val(root_dir, out_dir, ratio=0.9):
+    filenames = [osp.join(root_dir,i) for i in os.listdir(root_dir)]
+    train_filenames = np.random.choice(filenames, size=int(ratio*len(filenames)), replace=False)
+    val_filenames = [i for i in filenames if i not in train_filenames]
+
+
+    processing(train_filenames, osp.join(out_dir, 'train'))
+    processing(val_filenames, osp.join(out_dir, 'val'))
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    processing(args.input_dir, args.out_dir)
+    split_train_val(args.input_dir, args.out_dir, args.ratio)
