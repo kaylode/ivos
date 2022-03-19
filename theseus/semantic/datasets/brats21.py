@@ -119,15 +119,16 @@ class Brats21Dataset(torch.utils.data.Dataset):
         num_slices = stacked_vol.shape[-1]
 
         # Item stats
-        stat = self.stats[idx]
+        # stat = self.stats[idx]
 
         trials = 0
         while trials < 5:
 
             # Don't want to bias towards beginning/end
             this_max_jump = min(num_slices, self.max_jump)
-            guide_idx = np.random.randint(len(stat['guides']))
-            start_idx = stat['guides'][guide_idx]
+            # guide_idx = np.random.randint(len(stat['guides']))
+            # start_idx = stat['guides'][guide_idx]
+            start_idx = np.random.randint(num_slices-this_max_jump+1)
             f1_idx = start_idx + np.random.randint(this_max_jump+1) + 1
             f1_idx = min(f1_idx, num_slices-this_max_jump, num_slices-1)
 
@@ -183,8 +184,8 @@ class Brats21Dataset(torch.utils.data.Dataset):
         cls_gt[sec_masks[:,0] > 0.5] = 2
 
         data = {
-            'rgb': images, # normalized image, torch.Tensor (T, C, H, W) 
-            'gt': tar_masks, # target mask, torch.Tensor (T, 1, H, W) , values 1 at primary class
+            'inputs': images, # normalized image, torch.Tensor (T, C, H, W) 
+            'targets': tar_masks, # target mask, torch.Tensor (T, 1, H, W) , values 1 at primary class
             'cls_gt': cls_gt, # numpy (T, H, W), each pixel present one class
             'sec_gt': sec_masks, # second object mask, torch.Tensor (T, 1, H, W) , values 1 at second class
             'selector': selector, # [1, 1] if has second object, else [1, 0]
@@ -263,8 +264,8 @@ class Brats21Testset(Brats21Dataset):
         masks = masks.unsqueeze(2)
 
         data = {
-            'rgb': images,
-            'gt': masks,
+            'inputs': images,
+            'targets': masks,
             'info': {
                 'name': vol_path,
                 'labels': labels,

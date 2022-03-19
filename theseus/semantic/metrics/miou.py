@@ -36,12 +36,12 @@ class mIOU(Metric):
         """
         Perform calculation based on prediction and targets
         """
-        b, num_slices, _, _, _ = batch['gt'].shape
+        b, num_slices, _, _, _ = batch['targets'].shape
         selector = batch.get('selector', None)
 
         for i in range(1, num_slices):
             iou = compute_tensor_iou(
-                outputs['mask_%d'%i]>self.thresh, batch['gt'][:,i]>self.thresh)
+                outputs['mask_%d'%i]>self.thresh, batch['targets'][:,i]>self.thresh)
             self.tar_iou += iou
 
             if selector is not None:

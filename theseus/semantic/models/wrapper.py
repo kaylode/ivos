@@ -22,7 +22,7 @@ class ModelWithLoss(nn.Module):
         
         loss, loss_dict = self.criterion.compute({
             **batch, **outputs
-        }, it=0) # temporary, will look into later
+        }, it=batch['iters'])
         
         if metrics is not None:
             for metric in metrics:

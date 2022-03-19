@@ -36,7 +36,7 @@ class STCNLoss:
     def compute(self, data, it):
         loss_dict = defaultdict(int)
 
-        b, num_slices, _, _, _ = data['gt'].shape
+        b, num_slices, _, _, _ = data['targets'].shape
         selector = data.get('selector', None)
 
         total_loss = 0

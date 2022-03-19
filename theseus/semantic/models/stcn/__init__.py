@@ -43,8 +43,8 @@ class STCNModel(nn.Module):
                 data[k] = v.cuda(non_blocking=True)
 
         out = {}
-        Fs = data['rgb'].float()
-        Ms = data['gt']
+        Fs = data['inputs'].float()
+        Ms = data['targets']
         
         # key features never change, compute once
         k16, kf16_thin, kf16, kf8, kf4 = self.model('encode_key', Fs)
