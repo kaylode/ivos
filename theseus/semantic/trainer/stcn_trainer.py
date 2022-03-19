@@ -25,8 +25,10 @@ class STCNTrainer(SupervisedTrainer):
         self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
-            self.callbacks.run('on_train_batch_start', {'batch': batch})
-
+            self.callbacks.run('on_train_batch_start', {
+              'batch': batch,
+              'iters': self.iters
+            })
             # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
                 outputs = self.model.training_step(batch)

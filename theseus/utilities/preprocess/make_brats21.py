@@ -34,7 +34,7 @@ def copy_BraTS_segmentation_and_convert_labels(in_file, out_file):
     img_corr.CopyInformation(img)
     sitk.WriteImage(img_corr, out_file)
 
-def processing(root_dir, out_dir):
+def processing(root_dir, filenames, out_dir):
 
     target_imagesTr = osp.join(out_dir, "imagesTr")
     target_labelsTr = osp.join(out_dir, "labelsTr")
@@ -42,8 +42,7 @@ def processing(root_dir, out_dir):
     os.makedirs(target_labelsTr, exist_ok=True)
 
     patient_names = []
-    folder_names = os.listdir(root_dir)
-    for folder_name in folder_names:
+    for folder_name in filenames:
         patdir = osp.join(root_dir, folder_name)
         patient_name = folder_name.split('_')[1]
         patient_names.append(patient_name)
@@ -62,13 +61,13 @@ def processing(root_dir, out_dir):
         copy_BraTS_segmentation_and_convert_labels(seg, osp.join(target_labelsTr, patient_name + "_seg.nii.gz"))
 
 def split_train_val(root_dir, out_dir, ratio=0.9):
-    filenames = [osp.join(root_dir,i) for i in os.listdir(root_dir)]
+    filenames = os.listdir(root_dir)
     train_filenames = np.random.choice(filenames, size=int(ratio*len(filenames)), replace=False)
     val_filenames = [i for i in filenames if i not in train_filenames]
 
 
-    processing(train_filenames, osp.join(out_dir, 'train'))
-    processing(val_filenames, osp.join(out_dir, 'val'))
+    processing(root_dir, train_filenames, osp.join(out_dir, 'train'))
+    processing(root_dir, val_filenames, osp.join(out_dir, 'val'))
 
 if __name__ == '__main__':
     args = parser.parse_args()
