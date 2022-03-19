@@ -95,8 +95,8 @@ class TestPipeline(object):
         for data in tqdm(self.dataloader):
 
             with torch.cuda.amp.autocast(enabled=False):
-                rgb = data['rgb'].float().cuda()
-                msk = data['gt'][0].cuda()
+                rgb = data['inputs'].float().cuda()
+                msk = data['targets'][0].cuda()
                 info = data['info']
                 name = info['name']
                 guidemark = info['guidemark']
