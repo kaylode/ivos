@@ -109,7 +109,10 @@ class SupervisedTrainer(BaseTrainer):
 
         self.callbacks.run('on_val_epoch_start')
         for batch in tqdm(self.valloader):
-            self.callbacks.run('on_val_batch_start', {'batch': batch})
+            self.callbacks.run('on_val_batch_start', {
+                'batch': batch,
+                'iters': self.iters
+            })
 
             # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
