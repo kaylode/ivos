@@ -63,6 +63,7 @@ class Brats21Dataset(torch.utils.data.Dataset):
 
 
         self.channel_names = ['t1', 't1ce', 't2'] #'flair' 
+        self.num_channels = len(self.channel_names)
         self.classnames = [
             "background",
             "edema",
@@ -179,7 +180,7 @@ class Brats21Dataset(torch.utils.data.Dataset):
             sec_masks = np.zeros_like(tar_masks)
             selector = torch.FloatTensor([1, 0])
 
-        cls_gt = np.zeros((3, self.target_shape, self.target_shape), dtype=np.int)
+        cls_gt = np.zeros((self.num_channels, self.target_shape, self.target_shape), dtype=np.int)
         cls_gt[tar_masks[:,0] > 0.5] = 1
         cls_gt[sec_masks[:,0] > 0.5] = 2
 
