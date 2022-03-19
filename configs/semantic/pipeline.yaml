@@ -17,6 +17,8 @@ trainer:
 callbacks:
   - name: LoggerCallbacks
     args: null 
+  - name: VisualizerCallbacks
+    args: null
   - name: CheckpointCallbacks
     args: 
       best_key: miou
