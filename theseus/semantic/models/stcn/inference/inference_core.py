@@ -1,5 +1,6 @@
 import torch
-
+import numpy as np
+from typing import Dict
 from theseus.semantic.models.stcn.inference.inference_memory_bank import MemoryBank
 from theseus.semantic.models.stcn.networks.eval_network import STCNEval
 from theseus.semantic.models.stcn.utilities.aggregate import aggregate
@@ -77,3 +78,29 @@ class InferenceCore:
 
         # Propagate
         self.do_pass(key_k, key_v, frame_idx, end_idx)
+
+    def get_prediction(self, adict:Dict):
+
+        msk = adict['msk']
+        rgb = adict['rgb']
+        frame_idx = adict['frame_idx']
+
+        self.interact(msk[:,0], frame_idx, rgb.shape[1])
+
+        # Do unpad -> upsample to original size 
+        out_masks = torch.zeros((self.t, 1, *rgb.shape[-2:]), dtype=torch.float32, device=self.device)
+        for ti in range(self.t):
+            prob = self.prob[:,ti]
+
+            if self.pad[2]+self.pad[3] > 0:
+                prob = prob[:,:,self.pad[2]:-self.pad[3],:]
+            if self.pad[0]+self.pad[1] > 0:
+                prob = prob[:,:,:,self.pad[0]:-self.pad[1]]
+
+            out_masks[ti] = torch.argmax(prob, dim=0)
+        
+        out_masks = (out_masks.detach().cpu().numpy()[:,0]).astype(np.uint8) # (T, H, W)
+            
+        return {
+            'masks': out_masks
+        }

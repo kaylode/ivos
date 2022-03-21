@@ -110,22 +110,13 @@ class TestPipeline(object):
                     self.prop_model, rgb, k, 
                     top_k=self.top_k, 
                     mem_every=self.mem_every)
-                processor.interact(msk[:,0], 0, rgb.shape[1])
-
-                # Do unpad -> upsample to original size 
-                out_masks = torch.zeros((processor.t, 1, *rgb.shape[-2:]), dtype=torch.float32, device='cuda')
-                for ti in range(processor.t):
-                    prob = processor.prob[:,ti]
-
-                    if processor.pad[2]+processor.pad[3] > 0:
-                        prob = prob[:,:,processor.pad[2]:-processor.pad[3],:]
-                    if processor.pad[0]+processor.pad[1] > 0:
-                        prob = prob[:,:,:,processor.pad[0]:-processor.pad[1]]
-
-                    out_masks[ti] = torch.argmax(prob, dim=0)
                 
-                out_masks = (out_masks.detach().cpu().numpy()[:,0]).astype(np.uint8) # (T, H, W)
-             
+                out_masks = processor.get_prediction({
+                    'rgb': rgb,
+                    'msk': msk,
+                    'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
+                })
+
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
