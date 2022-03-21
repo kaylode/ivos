@@ -58,13 +58,13 @@ class Pipeline(object):
         self.train_dataset = get_instance_recursively(
             opt['data']["dataset"]['train'],
             registry=DATASET_REGISTRY,
-            # transform=self.transform['train'],
+            transform=self.transform['train'],
         )
 
         self.val_dataset = get_instance_recursively(
             opt['data']["dataset"]['val'],
             registry=DATASET_REGISTRY,
-            # transform=self.transform['val'],
+            transform=self.transform['val'],
         )
 
         CLASSNAMES = self.val_dataset.classnames
@@ -109,7 +109,8 @@ class Pipeline(object):
         last_epoch = -1
         if self.pretrained:
             state_dict = torch.load(self.pretrained)
-            self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
+            self.model.model.model = load_state_dict(self.model.model.model, state_dict)
+            self.model.model.load_network(state_dict)
 
         if self.resume:
             state_dict = torch.load(self.resume)
@@ -117,9 +118,8 @@ class Pipeline(object):
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
             iters = load_state_dict(None, state_dict, 'iters')
             last_epoch = iters//len(self.train_dataloader) - 1
-
-        if self.resume or self.pretrained:
             self.model.model.load_network(state_dict['model'])
+
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,

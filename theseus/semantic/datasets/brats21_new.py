@@ -43,10 +43,9 @@ class Brats21Dataset(torch.utils.data.Dataset):
 
 
     """
-    def __init__(self, volume_dir, label_dir, target_shape=240, max_jump=25, transform=None):
+    def __init__(self, volume_dir, label_dir, max_jump=25, transform=None):
         self.volume_dir = volume_dir
         self.label_dir = label_dir
-        self.target_shape = target_shape
         self.max_jump = max_jump
         self.transform = transform
 
@@ -72,36 +71,6 @@ class Brats21Dataset(torch.utils.data.Dataset):
             "enhancing"
         ]
 
-        self.compute_stats()
-
-    def compute_stats(self):
-        """
-        Compute statistic for dataset
-        """
-        
-        LOGGER.text("Computing statistic...", level=LoggerObserver.INFO)
-
-        self.stats = []
-        for item in self.fns:
-
-            vol_dict = {
-                'guides': [],
-                'num_labels': []
-            }
-
-            patient_id = item['pid']
-            gt_path = osp.join(self.label_dir, item['label'])
-            gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
-            num_slices = gt_vol.shape[-1]
-            
-            # Search for guide frames, in which all classes are presented
-            max_possible_number_of_classes = len(np.unique(gt_vol))
-            for frame_idx in range(num_slices):
-                num_classes = len(np.unique(gt_vol[:, :, frame_idx]))
-                if num_classes == max_possible_number_of_classes:
-                    vol_dict['guides'].append(frame_idx)
-            self.stats.append(vol_dict)
-
     def load_item(self, patient_item):
         """
         Load volume with Monai transform
@@ -125,20 +94,15 @@ class Brats21Dataset(torch.utils.data.Dataset):
         
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
-        stacked_vol, gt_vol = self.load_item(patient_item)
-
-        num_slices = stacked_vol.shape[-1]
-
-        # Item stats
-        # stat = self.stats[idx]
+        stacked_vol, gt_vol = self.load_item(patient_item) # torch.Size([C, H, W, T]), torch.Size([1, H, W, T])
+        gt_vol = gt_vol.squeeze(0)
+        _, h, w, num_slices = stacked_vol.shape
 
         trials = 0
         while trials < 5:
 
             # Don't want to bias towards beginning/end
             this_max_jump = min(num_slices, self.max_jump)
-            # guide_idx = np.random.randint(len(stat['guides']))
-            # start_idx = stat['guides'][guide_idx]
             start_idx = np.random.randint(num_slices-this_max_jump+1)
             f1_idx = start_idx + np.random.randint(this_max_jump+1) + 1
             f1_idx = min(f1_idx, num_slices-this_max_jump, num_slices-1)
@@ -155,10 +119,9 @@ class Brats21Dataset(torch.utils.data.Dataset):
             masks = []
             target_object = None
             for f_idx in frames_idx:
-                this_im = stacked_vol[:,:,:,f_idx] #(4, H, W)
+                this_im = stacked_vol[:,:,:,f_idx] #(C, H, W)
                 this_gt = gt_vol[:,:,f_idx] #(H, W)
-                this_im = torch.from_numpy(this_im)
-                this_gt = np.array(this_gt)
+                this_gt = this_gt.numpy()
 
                 images.append(this_im)
                 masks.append(this_gt)
@@ -190,15 +153,15 @@ class Brats21Dataset(torch.utils.data.Dataset):
             sec_masks = np.zeros_like(tar_masks)
             selector = torch.FloatTensor([1, 0])
 
-        cls_gt = np.zeros((self.num_channels, self.target_shape, self.target_shape), dtype=np.int)
+        cls_gt = np.zeros((self.num_channels, h, w), dtype=np.int)
         cls_gt[tar_masks[:,0] > 0.5] = 1
         cls_gt[sec_masks[:,0] > 0.5] = 2
 
         data = {
             'inputs': images, # normalized image, torch.Tensor (T, C, H, W) 
-            'targets': tar_masks, # target mask, torch.Tensor (T, 1, H, W) , values 1 at primary class
+            'targets': tar_masks, # target mask, numpy (T, 1, H, W) , values 1 at primary class
             'cls_gt': cls_gt, # numpy (T, H, W), each pixel present one class
-            'sec_gt': sec_masks, # second object mask, torch.Tensor (T, 1, H, W) , values 1 at second class
+            'sec_gt': sec_masks, # second object mask, numpy (T, 1, H, W) , values 1 at second class
             'selector': selector, # [1, 1] if has second object, else [1, 0]
             'info': {
                 'name': patient_id,
@@ -212,24 +175,44 @@ class Brats21Dataset(torch.utils.data.Dataset):
         return len(self.fns)
 
 class Brats21Testset(Brats21Dataset):
-    def __init__(self, volume_dir, label_dir, target_shape=240):
-        super().__init__(volume_dir, label_dir, target_shape, 0)
+    def __init__(self, volume_dir, label_dir, transform=None):
+        super().__init__(volume_dir, label_dir, 0, transform=transform)
         self.single_object = False
+        self.compute_stats()
 
+    def compute_stats(self):
+        """
+        Compute statistic for dataset
+        """
+        
+        LOGGER.text("Computing statistic...", level=LoggerObserver.INFO)
+
+        self.stats = []
+        for item in self.fns:
+
+            vol_dict = {
+                'guides': [],
+                'num_labels': []
+            }
+
+            patient_id = item['pid']
+            gt_path = osp.join(self.label_dir, item['label'])
+            gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
+            num_slices = gt_vol.shape[-1]
+            
+            # Search for guide frames, in which all classes are presented
+            max_possible_number_of_classes = len(np.unique(gt_vol))
+            for frame_idx in range(num_slices):
+                num_classes = len(np.unique(gt_vol[:, :, frame_idx]))
+                if num_classes == max_possible_number_of_classes:
+                    vol_dict['guides'].append(frame_idx)
+            self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
-        stacked_channels = []
-        for c in self.channel_names:
-            vol_path = osp.join(self.volume_dir, patient_id, patient_item[c])
-            img = nib.load(vol_path)
-            img_data = img.get_fdata()
-            stacked_channels.append(img_data)
-
-        stacked_vol = np.stack(stacked_channels, axis=0) # (4, H, W, NS)
-        stacked_vol = normalize_min_max(stacked_vol)
-        images = torch.from_numpy(stacked_vol).permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
+        stacked_vol, gt_vol = self.load_item(patient_item)
+        images = stacked_vol.permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
         
         stat = self.stats[idx]
         guide_id = np.random.choice(stat['guides'])
@@ -242,12 +225,9 @@ class Brats21Testset(Brats21Dataset):
 
         num_slices = images.shape[0]
 
-        gt_path = osp.join(self.label_dir, patient_item['label'])
         masks = []
         
-        nib_label = nib.load(gt_path)
-        affine = nib_label.affine
-        gt_vol = nib_label.get_fdata()# (H, W, NS)
+        gt_vol = gt_vol.squeeze().numpy()
         gt_vol1 = gt_vol[:, :, guide_id:]
         gt_vol2 = gt_vol[:, :, :guide_id+1]
 
@@ -278,11 +258,11 @@ class Brats21Testset(Brats21Dataset):
             'inputs': images,
             'targets': masks,
             'info': {
-                'name': vol_path,
+                'name': patient_id,
                 'labels': labels,
                 'guide_id': guide_id,
                 'guidemark': guidemark,
-                'affine': affine
+                'affine': (4,4) # from nib.load
             },
         }
 
