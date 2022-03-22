@@ -7,7 +7,7 @@ from theseus.semantic.models.stcn.networks.network import STCNTrain
 from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
 from theseus.semantic.models.stcn.networks.eval_network import STCNEval
 
-class STCNModel(nn.Module):
+class STCNModel():
     """
     Some simple segmentation models with various pretrained backbones
     """
@@ -45,7 +45,7 @@ class STCNModel(nn.Module):
         self.eval_model.to(torch.device('cpu'))
         self.training = True
 
-    def forward(self, data:Dict):
+    def __call__(self, data:Dict):
         if self.training:
             return self.forward_train(data)
         else:
@@ -70,7 +70,7 @@ class STCNModel(nn.Module):
             'rgb': rgb,
             'msk': msk,
             'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
-        })
+        })['masks']
 
         first = out_masks[:guidemark, :, :]
         second = out_masks[guidemark:, :, :]

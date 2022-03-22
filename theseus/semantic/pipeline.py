@@ -109,7 +109,7 @@ class Pipeline(object):
         last_epoch = -1
         if self.pretrained:
             state_dict = torch.load(self.pretrained)
-            self.model.model.model = load_state_dict(self.model.model.model, state_dict)
+            self.model.model.train_model = load_state_dict(self.model.model.train_model, state_dict)
             self.model.model.load_network(state_dict)
 
         if self.resume:
