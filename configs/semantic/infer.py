@@ -115,7 +115,7 @@ class TestPipeline(object):
                     'rgb': rgb,
                     'msk': msk,
                     'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
-                })
+                })['masks']
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
