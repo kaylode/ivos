@@ -86,7 +86,7 @@ class Pipeline(object):
           registry=MODEL_REGISTRY, 
           classnames=CLASSNAMES,
           num_classes=len(CLASSNAMES))
-        model = move_to(model, self.device)
+        # model = move_to(model, self.device)
           
         criterion = get_instance_recursively(
             self.opt["loss"], 

@@ -66,7 +66,7 @@ class TestPipeline(object):
         self.prop_model = STCNEval().to(self.device).eval()
 
         # Performs input mapping such that stage 0 model can be loaded
-        prop_saved = torch.load(self.weights) #['model']
+        prop_saved = torch.load(self.weights)
         for k in list(prop_saved.keys()):
             if k == 'value_encoder.conv1.weight':
                 if prop_saved[k].shape[1] == 4:
@@ -127,7 +127,7 @@ class TestPipeline(object):
 
                 out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
 
-                out_masks = out_masks.transpose(1,2,0)
+                out_masks = out_masks.transpose(1,2,0) # H, W, T
                 ni_img = nib.Nifti1Image(out_masks, affine.squeeze(0).numpy())
                 patient_id = osp.basename(name[0]).split('.')[0].split('_')[0]
                 this_out_path = osp.join(self.savedir, str(patient_id)+'.nii.gz')

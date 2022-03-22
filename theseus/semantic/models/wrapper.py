@@ -34,9 +34,11 @@ class ModelWithLoss(nn.Module):
         }
 
     def training_step(self, batch):
+        self.model.train()
         return self.forward(batch)
 
     def evaluate_step(self, batch, metrics=None):
+        self.model.eval()
         return self.forward(batch, metrics)
 
     def state_dict(self):
