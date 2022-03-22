@@ -66,7 +66,7 @@ class TestPipeline(object):
         self.prop_model = STCNEval().to(self.device).eval()
 
         # Performs input mapping such that stage 0 model can be loaded
-        prop_saved = torch.load(self.weights) #['model']
+        prop_saved = torch.load(self.weights)
         for k in list(prop_saved.keys()):
             if k == 'value_encoder.conv1.weight':
                 if prop_saved[k].shape[1] == 4:
@@ -110,22 +110,13 @@ class TestPipeline(object):
                     self.prop_model, rgb, k, 
                     top_k=self.top_k, 
                     mem_every=self.mem_every)
-                processor.interact(msk[:,0], 0, rgb.shape[1])
-
-                # Do unpad -> upsample to original size 
-                out_masks = torch.zeros((processor.t, 1, *rgb.shape[-2:]), dtype=torch.float32, device='cuda')
-                for ti in range(processor.t):
-                    prob = processor.prob[:,ti]
-
-                    if processor.pad[2]+processor.pad[3] > 0:
-                        prob = prob[:,:,processor.pad[2]:-processor.pad[3],:]
-                    if processor.pad[0]+processor.pad[1] > 0:
-                        prob = prob[:,:,:,processor.pad[0]:-processor.pad[1]]
-
-                    out_masks[ti] = torch.argmax(prob, dim=0)
                 
-                out_masks = (out_masks.detach().cpu().numpy()[:,0]).astype(np.uint8) # (T, H, W)
-             
+                out_masks = processor.get_prediction({
+                    'rgb': rgb,
+                    'msk': msk,
+                    'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
+                })['masks']
+
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
@@ -136,7 +127,7 @@ class TestPipeline(object):
 
                 out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
 
-                out_masks = out_masks.transpose(1,2,0)
+                out_masks = out_masks.transpose(1,2,0) # H, W, T
                 ni_img = nib.Nifti1Image(out_masks, affine.squeeze(0).numpy())
                 patient_id = osp.basename(name[0]).split('.')[0].split('_')[0]
                 this_out_path = osp.join(self.savedir, str(patient_id)+'.nii.gz')
