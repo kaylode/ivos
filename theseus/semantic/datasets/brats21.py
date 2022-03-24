@@ -9,10 +9,6 @@ from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 
-def normalize_min_max(data):
-    data = (data - np.min(data)) / np.max(data)
-    return data
-
 def all_to_onehot(masks, labels):
     if len(masks.shape) == 3:
         Ms = np.zeros((len(labels), masks.shape[0], masks.shape[1], masks.shape[2]), dtype=np.uint8)
