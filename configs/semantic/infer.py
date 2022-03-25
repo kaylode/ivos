@@ -53,7 +53,7 @@ class TestPipeline(object):
         self.dataset = get_instance(
             opt['data']["dataset"],
             registry=DATASET_REGISTRY,
-            # transform=self.transform['val'],
+            transform=self.transform['val'],
         )
 
         self.dataloader = get_instance(
@@ -66,7 +66,7 @@ class TestPipeline(object):
         self.prop_model = STCNEval().to(self.device).eval()
 
         # Performs input mapping such that stage 0 model can be loaded
-        prop_saved = torch.load(self.weights)
+        prop_saved = torch.load(self.weights)['model']
         for k in list(prop_saved.keys()):
             if k == 'value_encoder.conv1.weight':
                 if prop_saved[k].shape[1] == 4:
