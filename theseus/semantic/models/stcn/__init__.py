@@ -1,40 +1,88 @@
 from typing import Dict, Any
 import torch
 import torch.nn as nn
+import numpy as np
 from theseus.utilities.cuda import move_to
 from theseus.semantic.models.stcn.networks.network import STCNTrain
+from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
+from theseus.semantic.models.stcn.networks.eval_network import STCNEval
 
-class STCNModel(nn.Module):
+class STCNModel():
     """
     Some simple segmentation models with various pretrained backbones
-
-    name: `str`
-        model name [unet, deeplabv3, ...]
-    encoder_name : `str` 
-        backbone name [efficientnet, resnet, ...]
-    num_classes: `int` 
-        number of classes
-    aux_params: `Dict` 
-        auxilliary head
     """
     def __init__(
         self, 
         num_classes: int = 3,
         classnames: str = None,
         single_object: bool = False,
+        top_k_eval: int = 20,
+        mem_every_eval: int = 5,
         **kwargs):
         super().__init__()
 
         self.num_classes = num_classes
         self.classnames = classnames
         self.single_object = single_object
+        self.top_k_eval = top_k_eval
+        self.mem_every_eval = mem_every_eval
 
-        self.model = STCNTrain(self.single_object).cuda()
-    
+        self.train_model = STCNTrain(self.single_object)
+        self.eval_model = STCNEval()
+        self.training = False
+        
     def get_model(self):
-        return self.model
+        return self.train_model
 
-    def forward(self, data: Dict):
+    def eval(self):
+        self.train_model.to(torch.device('cpu'))
+        self.eval_model.to(torch.device('cuda'))
+        self.eval_model.load_state_dict(self.train_model.state_dict())
+        self.training = False
+
+    def train(self):
+        self.train_model.to(torch.device('cuda'))
+        self.eval_model.to(torch.device('cpu'))
+        self.training = True
+
+    def __call__(self, data:Dict):
+        if self.training:
+            return self.forward_train(data)
+        else:
+            return self.forward_val(data)
+
+    def forward_val(self, data: Dict):
+        torch.set_grad_enabled(False)
+
+        rgb = data['inputs'].float().cuda()
+        msk = data['targets'][0].cuda()
+        info = data['info']
+        guidemark = info['guidemark']
+        k = len(info['labels'][0])
+
+        self.processor = InferenceCore(
+            self.eval_model, rgb, k, 
+            top_k=self.top_k_eval, 
+            mem_every=self.mem_every_eval
+        )
+
+        out_masks = self.processor.get_prediction({
+            'rgb': rgb,
+            'msk': msk,
+            'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
+        })['masks']
+
+        first = out_masks[:guidemark, :, :]
+        second = out_masks[guidemark:, :, :]
+        second = np.flip(second, axis=0)
+
+        out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
+
+        return {
+            'out': out_masks
+        }
+
+    def forward_train(self, data: Dict):
         # No need to store the gradient outside training
         torch.set_grad_enabled(True)
 
@@ -47,23 +95,23 @@ class STCNModel(nn.Module):
         Ms = data['targets']
         
         # key features never change, compute once
-        k16, kf16_thin, kf16, kf8, kf4 = self.model('encode_key', Fs)
+        k16, kf16_thin, kf16, kf8, kf4 = self.train_model('encode_key', Fs)
 
         if self.single_object:
-            ref_v = self.model('encode_value', Fs[:,0], kf16[:,0], Ms[:,0])
+            ref_v = self.train_model('encode_value', Fs[:,0], kf16[:,0], Ms[:,0])
 
             # Segment frame 1 with frame 0
-            prev_logits, prev_mask = self.model('segment', 
+            prev_logits, prev_mask = self.train_model('segment', 
                     k16[:,:,1], kf16_thin[:,1], kf8[:,1], kf4[:,1], 
                     k16[:,:,0:1], ref_v)
-            prev_v = self.model('encode_value', Fs[:,1], kf16[:,1], prev_mask)
+            prev_v = self.train_model('encode_value', Fs[:,1], kf16[:,1], prev_mask)
 
             values = torch.cat([ref_v, prev_v], 2)
 
             del ref_v
 
             # Segment frame 2 with frame 0 and 1
-            this_logits, this_mask = self.model('segment', 
+            this_logits, this_mask = self.train_model('segment', 
                     k16[:,:,2], kf16_thin[:,2], kf8[:,2], kf4[:,2], 
                     k16[:,:,0:2], values)
 
@@ -75,24 +123,24 @@ class STCNModel(nn.Module):
             sec_Ms = data['sec_gt']
             selector = data['selector']
 
-            ref_v1 = self.model('encode_value', Fs[:,0], kf16[:,0], Ms[:,0], sec_Ms[:,0])
-            ref_v2 = self.model('encode_value', Fs[:,0], kf16[:,0], sec_Ms[:,0], Ms[:,0])
+            ref_v1 = self.train_model('encode_value', Fs[:,0], kf16[:,0], Ms[:,0], sec_Ms[:,0])
+            ref_v2 = self.train_model('encode_value', Fs[:,0], kf16[:,0], sec_Ms[:,0], Ms[:,0])
             ref_v = torch.stack([ref_v1, ref_v2], 1)
 
             # Segment frame 1 with frame 0
-            prev_logits, prev_mask = self.model('segment', 
+            prev_logits, prev_mask = self.train_model('segment', 
                     k16[:,:,1], kf16_thin[:,1], kf8[:,1], kf4[:,1], 
                     k16[:,:,0:1], ref_v, selector)
             
-            prev_v1 = self.model('encode_value', Fs[:,1], kf16[:,1], prev_mask[:,0:1], prev_mask[:,1:2])
-            prev_v2 = self.model('encode_value', Fs[:,1], kf16[:,1], prev_mask[:,1:2], prev_mask[:,0:1])
+            prev_v1 = self.train_model('encode_value', Fs[:,1], kf16[:,1], prev_mask[:,0:1], prev_mask[:,1:2])
+            prev_v2 = self.train_model('encode_value', Fs[:,1], kf16[:,1], prev_mask[:,1:2], prev_mask[:,0:1])
             prev_v = torch.stack([prev_v1, prev_v2], 1)
             values = torch.cat([ref_v, prev_v], 3)
 
             del ref_v
 
             # Segment frame 2 with frame 0 and 1
-            this_logits, this_mask = self.model('segment', 
+            this_logits, this_mask = self.train_model('segment', 
                     k16[:,:,2], kf16_thin[:,2], kf8[:,2], kf4[:,2], 
                     k16[:,:,0:2], values, selector)
 
@@ -117,4 +165,4 @@ class STCNModel(nn.Module):
                     nn.init.orthogonal_(pads)
                     state_dict[k] = torch.cat([state_dict[k], pads], 1)
 
-        self.model.load_state_dict(state_dict)
+        self.train_model.load_state_dict(state_dict)

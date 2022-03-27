@@ -1,26 +1,72 @@
 train:
-  name: AlbCompose
+  name: MonaiCompose
   args:
     transforms:
-      - name: AlbResize
+      - name: MonaiLoadImaged
         args:
-          width: 240
-          height: 240
-      - name: AlbNormalize
+          keys: [image, label]
+      - name: MonaiUnsqueezeOnAxisd
         args:
-          mean: [0.0, 0.0, 0.0]
-          std: [1.0, 1.0, 1.0]
-      - name: AlbToTensorV2
+          keys: [label]
+          axis: 0
+      - name: MonaiCenterSpatialCropd
+        args:
+          keys: [image, label]
+          roi_size: [160,160,160]
+      - name: MonaiRandFlipd
+        args:
+          keys: [image, label]
+          prob: 0.5
+          spatial_axis: 0
+      - name: MonaiRandFlipd
+        args:
+          keys: [image, label]
+          prob: 0.5
+          spatial_axis: 1
+      - name: MonaiRandFlipd
+        args:
+          keys: [image, label]
+          prob: 0.5
+          spatial_axis: 2
+      - name: MonaiNormalizeIntensityd
+        args:
+          keys: image
+          nonzero: True
+          channel_wise: True
+      - name: MonaiRandScaleIntensityd
+        args:
+          keys: image
+          prob: 1
+          factors: 0.1
+      - name: MonaiRandShiftIntensityd
+        args:
+          keys: image
+          prob: 1
+          offsets: 0.1
+      - name: ToTensord
+        args:
+          keys: [image, label]
+
 val:
-  name: AlbCompose
+  name: MonaiCompose
   args:
     transforms:
-      - name: AlbResize
+      - name: MonaiLoadImaged
         args:
-          width: 240
-          height: 240
-      - name: AlbNormalize
+          keys: [image, label]
+      - name: MonaiUnsqueezeOnAxisd
         args:
-          mean: [0.0, 0.0, 0.0]
-          std: [1.0, 1.0, 1.0]
-      - name: AlbToTensorV2
+          keys: [label]
+          axis: 0
+      - name: MonaiCenterSpatialCropd
+        args:
+          keys: [image, label]
+          roi_size: [160,160,160]
+      - name: MonaiNormalizeIntensityd
+        args:
+          keys: image
+          nonzero: True
+          channel_wise: True
+      - name: ToTensord
+        args:
+          keys: [image, label]
