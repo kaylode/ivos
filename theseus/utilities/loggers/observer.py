@@ -1,9 +1,10 @@
+from sre_constants import SUCCESS
 from typing import Callable, Dict, Optional, List
 import logging
 import torch
 import matplotlib as mpl
 from .subscriber import LoggerSubscriber
-from .stdout_logger import StdoutLogger
+from tabulate import tabulate
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
@@ -13,8 +14,13 @@ def get_type(value):
     if isinstance(value, str):
         return LoggerObserver.TEXT
     if isinstance(value, torch.Tensor):
-        return LoggerObserver.EMBED
-    return LoggerObserver.SCALAR
+        if len(value.shape) == 2:
+            return LoggerObserver.EMBED
+    if isinstance(value, int) or isinstance(value, float):
+        return LoggerObserver.SCALAR
+    
+    LoggerObserver.text(f'Fail to log undefined type: {type(value)}', level=LoggerObserver.CRITICAL)
+    raise ValueError()
 
 class LoggerObserver(object):
     """Logger Oberserver Degisn Pattern
@@ -24,13 +30,16 @@ class LoggerObserver(object):
     FIGURE = 'figure'
     TORCH_MODULE = 'torch_module'
     TEXT = 'text'
+    SPECIAL_TEXT = 'special_text'
     EMBED = 'embedding'
+    TABLE = 'table'
 
     WARN = logging.WARN
     ERROR = logging.ERROR
     DEBUG = logging.DEBUG
     INFO = logging.INFO
     CRITICAL = logging.CRITICAL
+    SUCCESS = "SUCCESS"
 
     instances = {}
 
@@ -41,6 +50,8 @@ class LoggerObserver(object):
             return object.__new__(cls, *args, **kwargs)
 
     def __init__(self, name) -> None:
+        from .stdout_logger import StdoutLogger # to circumvent circular import
+
         self.subscriber = []
         self.name = name
 
@@ -103,6 +114,20 @@ class LoggerObserver(object):
                         **kwargs
                     )
 
+                if type == LoggerObserver.SPECIAL_TEXT:
+                    subscriber.log_spec_text(
+                        tag=tag,
+                        value=value,
+                        **kwargs
+                    )
+
+                if type == LoggerObserver.TABLE:
+                    subscriber.log_table(
+                        tag=tag,
+                        value=value,
+                        **kwargs
+                    )
+
     def text(self, value, level):
         self.log([{
             'tag': 'stdout',
@@ -112,3 +137,10 @@ class LoggerObserver(object):
                 'level': level
             }
         }])
+
+    def __repr__(self) -> str:
+        table_headers = ["Subscribers"]
+        table = tabulate(
+            [[type(i).__name__] for i in self.subscriber], headers=table_headers, tablefmt="fancy_grid"
+        )
+        return "Logger subscribers: \n" + table

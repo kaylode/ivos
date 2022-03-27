@@ -23,7 +23,7 @@ def get_devices_info(device_names="0"):
 def get_device(name='cpu') -> torch.device:
     if name.startswith('cuda'):
         if not torch.cuda.is_available():
-            LOGGER.text("CUDA is not available. Using CPU...")
+            LOGGER.text("CUDA is not available. Using CPU...", level=LoggerObserver.WARN)
             name = 'cpu'
     return torch.device(name)
 
@@ -47,7 +47,7 @@ def move_to(obj: Any, device: torch.device):
     elif isinstance(obj, tuple):
         return tuple(move_to(list(obj), device))
     else:
-        raise TypeError("Invalid type for move_to")
+        return obj
 
 def detach(obj: Any):
     """Credit: https://discuss.pytorch.org/t/pytorch-tensor-to-device-for-a-list-of-dict/66283
