@@ -1,34 +1,20 @@
 from typing import Any, Dict, Optional
 import torch
-from theseus.utilities.cuda import move_to
+import numpy as np
 from theseus.base.metrics.metric_template import Metric
-
-
-
-def compute_tensor_iu(seg, gt):
-    intersection = (seg & gt).float().sum()
-    union = (seg | gt).float().sum()
-
-    return intersection, union
-
-def compute_tensor_iou(seg, gt):
-    intersection, union = compute_tensor_iu(seg, gt)
-    iou = (intersection + 1e-6) / (union + 1e-6)
-    
-    return iou 
 
 class mIOU(Metric):
     """ Mean IOU metric for ivos
-    thresh: `float`
-        threshold for binary segmentation
     """
     def __init__(self, 
             eps: float = 1e-6, 
-            thresh: Optional[float] = 0.5,
+            num_classes: int = 4,
+            ignore_index: Optional[int] = None,
             **kwawrgs):
 
-        self.thresh = thresh
         self.eps = eps
+        self.num_classes=num_classes
+        self.ignore_index = ignore_index
 
         self.reset()
 
@@ -36,39 +22,47 @@ class mIOU(Metric):
         """
         Perform calculation based on prediction and targets
         """
-        b, num_slices, _, _, _ = batch['targets'].shape
-        selector = batch.get('selector', None)
+        targets = batch['gt'].long().squeeze(0).permute(2,1,0)
+        preds = torch.from_numpy(outputs['out']).long()
 
-        for i in range(1, num_slices):
-            iou = compute_tensor_iou(
-                outputs['mask_%d'%i]>self.thresh, batch['targets'][:,i]>self.thresh)
-            self.tar_iou += iou
+        one_hot_predicts = torch.nn.functional.one_hot(
+              preds.long(), 
+              num_classes=self.num_classes).permute(0, 3, 1, 2)
 
-            if selector is not None:
-                sec_iou = compute_tensor_iou(
-                    outputs['sec_mask_%d'%i]>self.thresh, batch['sec_gt'][:,i]>self.thresh)
-                self.sec_iou += sec_iou
+        one_hot_targets = torch.nn.functional.one_hot(
+              targets.long(), 
+              num_classes=self.num_classes).permute(0, 3, 1, 2)
 
-        self.sample_size += num_slices-1 #exclude first frame
+        for cl in range(self.num_classes):
+            cl_pred = one_hot_predicts[:,cl,:,:]
+            cl_target = one_hot_targets[:,cl,:,:]
+            score = self.binary_compute(cl_pred, cl_target)
+            self.scores_list[cl] += sum(score)
+
+        self.sample_size += targets.shape[0]
+        
+
+    def binary_compute(self, predict: torch.Tensor, target: torch.Tensor):
+        # outputs: (batch, W, H)
+        # targets: (batch, W, H)
+
+        intersect = torch.sum(target*predict, dim=(-1, -2))
+        A = torch.sum(target, dim=(-1, -2))
+        B = torch.sum(predict, dim=(-1, -2))
+        union = A + B - intersect
+
+        return intersect / (union + self.eps)
         
     def reset(self):
-        self.tar_iou = 0
-        self.sec_iou = 0
+        self.scores_list = np.zeros(self.num_classes)
         self.sample_size = 0
 
     def value(self):
-        tar_iou_score = self.tar_iou / self.sample_size #mean over number of samples
-        sec_iou_score = self.sec_iou / self.sample_size #mean over number of samples
-        
-        tar_iou_score = move_to(tar_iou_score, torch.device('cpu'))
-        tar_iou_score = tar_iou_score.item()
-
-        if not isinstance(sec_iou_score, int):
-            sec_iou_score = move_to(sec_iou_score, torch.device('cpu'))
-            sec_iou_score = sec_iou_score.item()
-
-        return {
-            "iou1" : tar_iou_score,
-            "iou2": sec_iou_score,
-            "miou": (tar_iou_score+sec_iou_score) / 2
-        }
+        scores_each_class = self.scores_list / self.sample_size #mean over number of samples
+   
+        if self.ignore_index is not None:
+            scores_each_class[self.ignore_index] = 0
+            scores = sum(scores_each_class) / (self.num_classes - 1)
+        else:
+            scores = sum(scores_each_class) / self.num_classes
+        return {"miou" : scores}
