@@ -78,19 +78,21 @@ class Brats21Dataset(torch.utils.data.Dataset):
             vol_paths.append(vol_path)
 
         gt_path = osp.join(self.label_dir, patient_item['label'])
+        nib_label = nib.load(gt_path)
+        affine = nib_label.affine
 
         out_dict = self.transform({
             'image': vol_paths,
             'label': [gt_path]
         })
 
-        return out_dict['image'], out_dict['label']
+        return out_dict['image'], out_dict['label'], affine
 
     def __getitem__(self, idx):
         
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
-        stacked_vol, gt_vol = self.load_item(patient_item) # torch.Size([C, H, W, T]), torch.Size([1, H, W, T])
+        stacked_vol, gt_vol, affine = self.load_item(patient_item) # torch.Size([C, H, W, T]), torch.Size([1, H, W, T])
         gt_vol = gt_vol.squeeze(0)
         _, h, w, num_slices = stacked_vol.shape
 
@@ -161,7 +163,8 @@ class Brats21Dataset(torch.utils.data.Dataset):
             'selector': selector, # [1, 1] if has second object, else [1, 0]
             'info': {
                 'name': patient_id,
-                'slice_id': frames_idx
+                'slice_id': frames_idx,
+                'affine': affine
             },
         }
 
@@ -207,7 +210,7 @@ class Brats21Testset(Brats21Dataset):
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
-        stacked_vol, ori_vol = self.load_item(patient_item)
+        stacked_vol, ori_vol, affine = self.load_item(patient_item)
         images = stacked_vol.permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
         
         stat = self.stats[idx]
@@ -259,7 +262,7 @@ class Brats21Testset(Brats21Dataset):
                 'labels': labels,
                 'guide_id': guide_id,
                 'guidemark': guidemark,
-                'affine': (4,4) # from nib.load
+                'affine': affine # from nib.load
             },
         }
 
