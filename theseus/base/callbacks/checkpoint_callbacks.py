@@ -53,7 +53,7 @@ class CheckpointCallbacks(Callbacks):
         Save all information of the current iteration
         """
         weights = {
-            'model': trainer.model.model.get_model().state_dict(),
+            'model': trainer.model.model.state_dict(),
             'optimizer': trainer.optimizer.state_dict(),
             'iters': iters,
             'best_value': self.best_value,
@@ -128,7 +128,7 @@ class CheckpointCallbacks(Callbacks):
             if iters > 0: # Have been training, else in evaluation-only mode or just sanity check
                 LOGGER.text(
                     f"Evaluation improved from {self.best_value} to {metric_dict[self.best_key]}",
-                    level=LoggerObserver.INFO)
+                    level=LoggerObserver.SUCCESS)
                 self.best_value = metric_dict[self.best_key]
                 self.save_checkpoint(self.params['trainer'], iters=iters, outname='best')
 
