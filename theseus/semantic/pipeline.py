@@ -86,13 +86,14 @@ class Pipeline(object):
           registry=MODEL_REGISTRY, 
           classnames=CLASSNAMES,
           num_classes=len(CLASSNAMES))
-        # model = move_to(model, self.device)
           
         criterion = get_instance_recursively(
             self.opt["loss"], 
             registry=LOSS_REGISTRY)
 
         self.model = ModelWithLoss(model, criterion, self.device)
+        self.model = move_to(self.model, self.device)
+        self.model.model.train_model = move_to(self.model.model.train_model, self.device)
 
         self.metrics = get_instance_recursively(
             self.opt['metrics'], 
@@ -114,7 +115,7 @@ class Pipeline(object):
 
         if self.resume:
             state_dict = torch.load(self.resume)
-            self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
+            self.model.model.train_model = load_state_dict(self.model.model.train_model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
             iters = load_state_dict(None, state_dict, 'iters')
             last_epoch = iters//len(self.train_dataloader) - 1

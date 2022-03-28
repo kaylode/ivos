@@ -151,5 +151,59 @@ class VisualizerCallbacks(Callbacks):
         """
         After finish validation
         """
+        LOGGER.text("Visualizing predictions...", level=LoggerObserver.DEBUG)
 
-        return
+        fps = 10
+        last_batch = logs['last_batch']
+        last_outputs = logs['last_outputs']['out']
+        
+        images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        masks = last_batch['gt'].permute(3,0,1,2).numpy() # (B, T, H, W) 
+        guidemark = last_batch['info']['guidemark'] # (B, T, H, W) 
+        iters = logs['iters']
+
+        first = images[:guidemark, :, :, :]
+        second = images[guidemark:, :, :, :]
+        second = np.flip(second, axis=0)
+        image_show = np.concatenate([second, first[1:,:,:,:]], axis=0)
+
+        # iter through timestamp
+        decode_masks = []
+        decode_preds = []
+        for mask, pred in zip(masks, last_outputs):
+            decode_pred = self.visualizer.decode_segmap(pred)
+            decode_mask = self.visualizer.decode_segmap(mask)
+            decode_masks.append(decode_mask)
+            decode_preds.append(decode_pred)
+        decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
+        decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
+
+        LOGGER.log([{
+            'tag': "Validation/visualization/inputs",
+            'value': image_show,
+            'type': LoggerObserver.VIDEO,
+            'kwargs': {
+                'step': iters,
+                'fps': fps
+            }
+        }])
+
+        LOGGER.log([{
+            'tag': "Validation/visualization/ground truth",
+            'value': decode_masks,
+            'type': LoggerObserver.VIDEO,
+            'kwargs': {
+                'step': iters,
+                'fps': fps
+            }
+        }])
+
+        LOGGER.log([{
+            'tag': "Validation/visualization/prediction",
+            'value': decode_preds,
+            'type': LoggerObserver.VIDEO,
+            'kwargs': {
+                'step': iters,
+                'fps': fps
+            }
+        }])

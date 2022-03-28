@@ -53,7 +53,7 @@ class CheckpointCallbacks(Callbacks):
         Save all information of the current iteration
         """
         weights = {
-            'model': trainer.model.model.state_dict(),
+            'model': trainer.model.model.get_model().state_dict(),
             'optimizer': trainer.optimizer.state_dict(),
             'iters': iters,
             'best_value': self.best_value,
