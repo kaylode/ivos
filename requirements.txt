@@ -10,5 +10,8 @@ gdown>=4.4.0
 grad-cam
 tabulate
 segmentation-models-pytorch
+gitpython
+progressbar2
 opencv-python-headless==4.2.0.32 
 monai
+SimpleITK

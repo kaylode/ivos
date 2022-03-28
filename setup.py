@@ -20,7 +20,12 @@ setuptools.setup(
         "grad-cam",
         "tabulate",
         "segmentation-models-pytorch",
-        "opencv-python-headless==4.2.0.32" 
-        
+        "opencv-python-headless==4.2.0.32",
+        "progressbar2",
+        "opencv-python" ,
+        "gitpython",
+        "SimpleITK",
+        "monai",
+        'py-thin-plate-spline @ git+https://git@github.com/cheind/py-thin-plate-spline.git',
     ],
 )
