@@ -199,12 +199,16 @@ class Brats21Testset(Brats21Dataset):
             gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
             num_slices = gt_vol.shape[-1]
             
-            # Search for guide frames, in which all classes are presented
-            max_possible_number_of_classes = len(np.unique(gt_vol))
+            # Search for guide frames, in which most classes are presented
+            max_possible_number_of_classes = 0
             for frame_idx in range(num_slices):
                 num_classes = len(np.unique(gt_vol[:, :, frame_idx]))
                 if num_classes == max_possible_number_of_classes:
                     vol_dict['guides'].append(frame_idx)
+                elif num_classes > max_possible_number_of_classes:
+                    max_possible_number_of_classes = num_classes
+                    vol_dict['guides'] = [frame_idx]
+
             self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
