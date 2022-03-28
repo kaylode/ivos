@@ -26,6 +26,5 @@ setuptools.setup(
         "gitpython",
         "SimpleITK",
         "monai",
-        'py-thin-plate-spline @ git+https://git@github.com/cheind/py-thin-plate-spline.git',
     ],
 )

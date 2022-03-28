@@ -129,6 +129,18 @@ class WandbLogger(LoggerSubscriber):
             'iterations': step
         })
 
+    def log_video(self, tag, value, step, fps, **kwargs):
+        """
+        Write a video to wandb
+        :param value: numpy array (time, channel, height, width)
+        :param fps: int
+        """
+        # axes are 
+        wandb_logger.log({
+            tag: wandb_logger.Video(value, fps=fps),
+            "iterations": step
+        })
+
     def __del__(self):
         wandb_logger.finish()
 
