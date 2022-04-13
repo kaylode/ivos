@@ -57,7 +57,8 @@ class VisualizerCallbacks(Callbacks):
             'value': model.model.get_model(),
             'type': LoggerObserver.TORCH_MODULE,
             'kwargs': {
-                'inputs': images
+                'inputs': images,
+                'log_freq': 100
             }
         }])
 

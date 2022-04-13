@@ -44,6 +44,8 @@ class Brats21Dataset(torch.utils.data.Dataset):
         path to `labelsTr`
     max_jump: `int`
         max number of frames to jump
+    shuffle_channel: `bool`
+        whether to shuffle channels
 
     """
     def __init__(
@@ -74,7 +76,7 @@ class Brats21Dataset(torch.utils.data.Dataset):
 
 
         self.channel_names = ['t1', 't1ce', 't2', 'flair']
-        self.num_channels = len(self.channel_names)
+        self.num_channels = 3 #len(self.channel_names)
         self.classnames = [
             "background",
             "edema",
