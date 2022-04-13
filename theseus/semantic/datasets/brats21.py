@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import random 
 import nibabel as nib # common way of importing nibabel
 
 import torch
@@ -37,13 +38,27 @@ class Brats21Dataset(torch.utils.data.Dataset):
     ├── labelsTr
     │   └── <patient's id>.nii.gz
 
+    volume_dir: `str`
+        path to `imagesTr`
+    label_dir: `str`
+        path to `labelsTr`
+    max_jump: `int`
+        max number of frames to jump
 
     """
-    def __init__(self, volume_dir, label_dir, max_jump=25, transform=None):
+    def __init__(
+        self, 
+        volume_dir: str, 
+        label_dir: str, 
+        max_jump: int=25,
+        shuffle_channel: bool=False,
+        transform=None):
+
         self.volume_dir = volume_dir
         self.label_dir = label_dir
         self.max_jump = max_jump
         self.transform = transform
+        self.shuffle_channel = shuffle_channel
 
         self.patient_ids = os.listdir(self.volume_dir)
         self.fns = []
@@ -58,7 +73,7 @@ class Brats21Dataset(torch.utils.data.Dataset):
             })
 
 
-        self.channel_names = ['t1', 't1ce', 't2'] #'flair' 
+        self.channel_names = ['t1', 't1ce', 't2', 'flair']
         self.num_channels = len(self.channel_names)
         self.classnames = [
             "background",
@@ -67,13 +82,18 @@ class Brats21Dataset(torch.utils.data.Dataset):
             "enhancing"
         ]
 
-    def load_item(self, patient_item):
+    def load_item(self, patient_item, train=False):
         """
         Load volume with Monai transform
         """
         patient_id = patient_item['pid']
         vol_paths = []
-        for c in self.channel_names:
+
+        if train:
+            if self.shuffle_channel:
+                random.shuffle(self.channel_names)
+
+        for c in self.channel_names[:3]:
             vol_path = osp.join(self.volume_dir, patient_id, patient_item[c])
             vol_paths.append(vol_path)
 
@@ -217,10 +237,12 @@ class Brats21Testset(Brats21Dataset):
         stacked_vol, ori_vol, affine = self.load_item(patient_item)
         images = stacked_vol.permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
         
+        # Choose a reference frame
         stat = self.stats[idx]
         guide_id = np.random.choice(stat['guides'])
         first = images[guide_id:, :, :, :]
 
+        # Split in half, flip first half
         guidemark = first.shape[0]
         second = images[:guide_id+1, :, :, :]
         second = torch.flip(second, dims=[0])
@@ -230,6 +252,7 @@ class Brats21Testset(Brats21Dataset):
 
         masks = []
         
+        # Same for ground truth
         gt_vol = ori_vol.squeeze().numpy()
         gt_vol1 = gt_vol[:, :, guide_id:]
         gt_vol2 = gt_vol[:, :, :guide_id+1]
@@ -237,8 +260,8 @@ class Brats21Testset(Brats21Dataset):
         gt_vol2 = np.flip(gt_vol2, axis=-1)
         gt_vol = np.concatenate([gt_vol1, gt_vol2], axis=-1)        
 
+        # Generate reference frame, only contains first annotation mask 
         for f in range(num_slices):
-            # Test-set maybe?
             if f==0 or f == guidemark:
                 masks.append(gt_vol[:,:,f])
             else:
@@ -258,14 +281,14 @@ class Brats21Testset(Brats21Dataset):
         masks = masks.unsqueeze(2)
 
         data = {
-            'inputs': images,
-            'targets': masks,
-            'gt': ori_vol.squeeze().numpy(), # for evaluation
-            'info': {
+            'inputs': images, # (num_slices+1, C, H, W)
+            'targets': masks, # (C, num_slices+1, 1, H, W)
+            'gt': ori_vol.squeeze().numpy(), # for evaluation (1, H, W, num_slices)
+            'info': {  # infos are used for validation and inference
                 'name': patient_id,
                 'labels': labels,
-                'guide_id': guide_id,
-                'guidemark': guidemark,
+                'guide_id': guide_id,       # guide id frame used for reconvert
+                'guidemark': guidemark,     # 
                 'affine': affine # from nib.load
             },
         }
