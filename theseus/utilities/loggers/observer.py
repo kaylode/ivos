@@ -1,10 +1,10 @@
-from sre_constants import SUCCESS
 from typing import Callable, Dict, Optional, List
 import logging
 import torch
 import matplotlib as mpl
 from .subscriber import LoggerSubscriber
 from tabulate import tabulate
+from inspect import getframeinfo, stack
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
@@ -33,7 +33,6 @@ class LoggerObserver(object):
     SPECIAL_TEXT = 'special_text'
     EMBED = 'embedding'
     TABLE = 'table'
-    VIDEO = 'video'
 
     WARN = logging.WARN
     ERROR = logging.ERROR
@@ -129,20 +128,24 @@ class LoggerObserver(object):
                         **kwargs
                     )
 
-                if type == LoggerObserver.VIDEO:
-                    subscriber.log_video(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
-
     def text(self, value, level):
+        """
+        Text logging
+        """
+        caller = getframeinfo(stack()[1][0])
+        function_name = stack()[1][3]
+        filename = '//'.join(caller.filename.split('theseus')[1:])[1:] # split filename based on project name
+        lineno = caller.lineno
+
         self.log([{
             'tag': 'stdout',
             'value': value,
             'type': LoggerObserver.TEXT,
             'kwargs': {
-                'level': level
+                'level': level,
+                'lineno': lineno,
+                'filename': filename,
+                'funcname': function_name
             }
         }])
 

@@ -25,6 +25,3 @@ class LoggerSubscriber:
 
     def log_table(self, **kwargs):
         return
-
-    def log_video(self, **kwargs):
-        return
