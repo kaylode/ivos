@@ -4,25 +4,23 @@ import matplotlib as mpl
 mpl.use("Agg")
 from theseus.opt import Opts
 
-import os
 import os.path as osp
 import time
 import numpy as np
 from tqdm import tqdm
 import torch
 import nibabel as nib
-from datetime import datetime
 from theseus.opt import Config
+from theseus.semantic.models import MODEL_REGISTRY
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loggers import LoggerObserver, FileLogger
-from theseus.utilities.cuda import get_devices_info, move_to, get_device
-from theseus.utilities.getter import (get_instance, get_instance_recursively)
+from theseus.utilities.loggers import LoggerObserver
 from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
 from theseus.semantic.models.stcn.networks.eval_network import STCNEval
+from theseus.base.pipeline import BaseTestPipeline
 
-class TestPipeline(object):
+class TestPipeline(BaseTestPipeline):
     def __init__(
             self,
             opt: Config
@@ -31,36 +29,21 @@ class TestPipeline(object):
         super(TestPipeline, self).__init__()
         self.opt = opt
 
-        self.debug = opt['global']['debug']
-        self.logger = LoggerObserver.getLogger("main") 
-        self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        os.makedirs(self.savedir, exist_ok=True)
+    def init_globals(self):
+        super().init_globals()
+        self.top_k = self.opt['global']['top_k']
+        self.mem_every = self.opt['global']['mem_every']
 
-        file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
-        self.logger.subscribe(file_logger)
-        self.logger.text(self.opt, level=LoggerObserver.INFO)
-
-        self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
-        self.device_name = opt['global']['device']
-        self.device = get_device(self.device_name)
-
-        self.weights = opt['global']['weights']
-
-        self.transform = get_instance_recursively(
-            self.transform_cfg, registry=TRANSFORM_REGISTRY
+    def init_registry(self):
+        self.model_registry = MODEL_REGISTRY
+        self.dataset_registry = DATASET_REGISTRY
+        self.dataloader_registry = DATALOADER_REGISTRY
+        self.transform_registry = TRANSFORM_REGISTRY
+        self.logger.text(
+            "Overidding registry in pipeline...", LoggerObserver.INFO
         )
 
-        self.dataset = get_instance(
-            opt['data']["dataset"],
-            registry=DATASET_REGISTRY,
-            transform=self.transform['val'],
-        )
-
-        self.dataloader = get_instance(
-            opt['data']["dataloader"],
-            registry=DATALOADER_REGISTRY,
-            dataset=self.dataset,
-        )
+    def init_model(self):
 
         # Load our checkpoint
         self.prop_model = STCNEval().to(self.device).eval()
@@ -73,19 +56,10 @@ class TestPipeline(object):
                     pads = torch.zeros((64,1,7,7), device=prop_saved[k].device)
                     prop_saved[k] = torch.cat([prop_saved[k], pads], 1)
         self.prop_model.load_state_dict(prop_saved)
-
-        self.top_k = opt['global']['top_k']
-        self.mem_every = opt['global']['mem_every']
         
-    def infocheck(self):
-        device_info = get_devices_info(self.device_name)
-        self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
-        self.logger.text(f"Number of test sample: {len(self.dataset)}", level=LoggerObserver.INFO)
-        self.logger.text(f"Everything will be saved to {self.savedir}", level=LoggerObserver.INFO)
-
     @torch.no_grad()
     def inference(self):
-        self.infocheck()
+        self.init_pipeline()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
         torch.autograd.set_grad_enabled(False)
         

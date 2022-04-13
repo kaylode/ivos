@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from theseus.utilities.cuda import move_to
+from theseus.utilities.loading import load_state_dict
 from theseus.semantic.models.stcn.networks.network import STCNTrain
 from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
 from theseus.semantic.models.stcn.networks.eval_network import STCNEval
@@ -45,7 +46,7 @@ class STCNModel():
         return self.train_model.state_dict()
 
     def load_state_dict(self, state_dict):
-        return self.train_model.load_state_dict(state_dict)
+        self.train_model = load_state_dict(self.train_model , state_dict)
 
     def get_model(self):
         return self.train_model
@@ -181,4 +182,4 @@ class STCNModel():
                     nn.init.orthogonal_(pads)
                     state_dict[k] = torch.cat([state_dict[k], pads], 1)
 
-        self.train_model.load_state_dict(state_dict)
+        self.train_model = load_state_dict(self.train_model, state_dict)

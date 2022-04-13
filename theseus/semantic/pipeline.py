@@ -2,7 +2,6 @@ from typing import Callable, Dict, Optional
 import torch
 from theseus.opt import Config
 from theseus.utilities.getter import (get_instance)
-from theseus.utilities.loading import load_state_dict
 from theseus.utilities.cuda import get_devices_info
 
 from theseus.opt import Config
@@ -45,20 +44,13 @@ class Pipeline(BasePipeline):
         )
 
     def init_loading(self):
-        self.resume = self.opt['global']['resume']
-        self.pretrained = self.opt['global']['pretrained']
-        self.last_epoch = -1
+        super().init_loading()
         if self.pretrained:
             state_dict = torch.load(self.pretrained, map_location='cpu')
-            self.model.model.train_model = load_state_dict(self.model.model.train_model, state_dict)
-            self.model.model.load_network(state_dict)
+            self.model.model.load_network(state_dict['model'])
 
         if self.resume:
             state_dict = torch.load(self.resume, map_location='cpu')
-            self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
-            self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            iters = load_state_dict(None, state_dict, 'iters')
-            self.last_epoch = iters//len(self.train_dataloader) - 1
             self.model.model.load_network(state_dict['model'])
 
     def init_model(self):

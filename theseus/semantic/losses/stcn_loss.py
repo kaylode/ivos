@@ -29,9 +29,9 @@ class BootstrappedCE(nn.Module):
 
 
 class STCNLoss:
-    def __init__(self):
+    def __init__(self, start_warm=20000, end_warm=70000, top_p=0.15, **kwargs):
         super().__init__()
-        self.bce = BootstrappedCE()
+        self.bce = BootstrappedCE(start_warm=start_warm, end_warm=end_warm, top_p=top_p)
 
     def compute(self, data, it):
         loss_dict = defaultdict(int)
@@ -56,5 +56,5 @@ class STCNLoss:
             total_loss += loss_dict['loss_%d'%i]
 
         loss_dict = {k:v.item() for k, v in loss_dict.items() if isinstance(v, torch.Tensor)}
-        loss_dict['T'] = total_loss.item()
+        loss_dict['ohemCE'] = total_loss.item()
         return total_loss, loss_dict
