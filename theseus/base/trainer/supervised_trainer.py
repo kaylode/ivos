@@ -139,5 +139,6 @@ class SupervisedTrainer(BaseTrainer):
             'metric_dict': metric_dict,
             'iters': self.iters,
             'num_iterations': self.num_iterations,
-            'last_batch': batch
+            'last_batch': batch,
+            'last_outputs': outputs['outputs']
         })
