@@ -159,7 +159,7 @@ class VisualizerCallbacks(Callbacks):
         last_outputs = logs['last_outputs']['out']
         
         images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
-        masks = last_batch['gt'].permute(3,0,1,2).numpy() # (B, T, H, W) 
+        masks = last_batch['gt'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
         guidemark = last_batch['info']['guidemark'] # (B, T, H, W) 
         iters = logs['iters']
 
@@ -173,7 +173,7 @@ class VisualizerCallbacks(Callbacks):
         decode_preds = []
         for mask, pred in zip(masks, last_outputs):
             decode_pred = self.visualizer.decode_segmap(pred)
-            decode_mask = self.visualizer.decode_segmap(mask)
+            decode_mask = self.visualizer.decode_segmap(mask.squeeze())
             decode_masks.append(decode_mask)
             decode_preds.append(decode_pred)
         decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
