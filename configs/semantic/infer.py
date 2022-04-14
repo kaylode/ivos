@@ -26,7 +26,7 @@ class TestPipeline(BaseTestPipeline):
             opt: Config
         ):
 
-        super(TestPipeline, self).__init__()
+        super(TestPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_globals(self):
@@ -44,9 +44,11 @@ class TestPipeline(BaseTestPipeline):
         )
 
     def init_model(self):
-
         # Load our checkpoint
         self.prop_model = STCNEval().to(self.device).eval()
+
+    def init_loading(self):
+        self.weights = self.opt['global']['weights']
 
         # Performs input mapping such that stage 0 model can be loaded
         prop_saved = torch.load(self.weights)['model']
