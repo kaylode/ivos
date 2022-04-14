@@ -46,7 +46,8 @@ class SupervisedTrainer(BaseTrainer):
         self.valloader = valloader
         self.use_cuda = next(self.model.parameters()).is_cuda
 
-        self.step_per_epoch = self.scheduler.step_per_epoch
+        if self.scheduler:
+            self.step_per_epoch = self.scheduler.step_per_epoch
 
         # Flags for shutting down training or validation stages
         self.shutdown_training = False
@@ -83,7 +84,7 @@ class SupervisedTrainer(BaseTrainer):
             
             # Optmizer step
             self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
-            if not self.step_per_epoch:
+            if self.scheduler and not self.step_per_epoch:
                 self.scheduler.step()
             self.optimizer.zero_grad()
 
@@ -104,7 +105,7 @@ class SupervisedTrainer(BaseTrainer):
                 'lr': lr
             })
 
-        if self.step_per_epoch:
+        if self.scheduler and self.step_per_epoch:
             self.scheduler.step()
 
         self.callbacks.run('on_train_epoch_end', {

@@ -8,7 +8,7 @@ from theseus.opt import Config
 from theseus.utilities.getter import (get_instance)
 from theseus.utilities.cuda import get_device
 from theseus.utilities.folder import get_new_folder_name
-from theseus.utilities.loggers import LoggerObserver, FileLogger, ImageWriter
+from theseus.utilities.loggers import LoggerObserver, FileLogger
 from theseus.utilities.tuner.tuner_callbacks import TuningCallbacks
 
 LOGGER = LoggerObserver.getLogger('main')
@@ -79,7 +79,7 @@ class TuningPipeline(Pipeline):
         self.init_metrics()
         self.init_optimizer()
         self.init_loading()
-        self.init_scheduler()
+        # self.init_scheduler()
 
         callbacks = [
             self.callbacks_registry.get("STCNCallbacks")(),
@@ -102,7 +102,7 @@ class TuningPipeline(Pipeline):
         target_params = self.tuner_callbacks.target_params
 
         if self.tune_target_key not in target_params.keys():
-            LOGGER.error(f"Target key '{self.tune_target_key}' not found in returned params. Available keys are {target_params.keys()}", LoggerObserver.WARN)
+            LOGGER.text(f"Target key '{self.tune_target_key}' not found in returned params. Available keys are {target_params.keys()}", LoggerObserver.WARN)
             raise KeyError()
 
         return target_params[self.tune_target_key]
@@ -120,9 +120,16 @@ class TuningPipeline(Pipeline):
         )
 
         study.optimize(self.objective, n_trials=self.num_trials)
-        joblib.dump(study, osp.join(self.savedir, f"{self.study_name}.pkl"))
         self.logger.text(f"Best hyperparameters are: {study.best_params}", level=LoggerObserver.SUCCESS)
 
+        # Save study
+        joblib.dump(study, osp.join(self.savedir, f"{self.study_name}.pkl"))
+        fig = optuna.visualization.plot_optimization_history(study)
+        fig.save(osp.join(self.savedir, "history"))
+        fig = optuna.visualization.plot_slice(study, params=["lr"])
+        fig.save(osp.join(self.savedir, "plot"))
+        fig = optuna.visualization.plot_param_importances(study)
+        fig.save(osp.join(self.savedir, "importances"))
 
 if __name__ == "__main__":
 

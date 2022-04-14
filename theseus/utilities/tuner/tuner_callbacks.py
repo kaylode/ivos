@@ -45,8 +45,7 @@ class TuningCallbacks(Callbacks):
         for key in self.target_params.keys():
             self.target_params[key] = np.mean(self.target_params[key])
 
-        LOGGER.text("Trial {self.trial.number} finished", level=LoggerObserver.INFO)
-        LOGGER.text("Trial {self.trial.number} finished", level=LoggerObserver.INFO)
+        LOGGER.text(f"Trial {self.trial.number} finished", level=LoggerObserver.INFO)
 
     def on_train_batch_end(self, logs:Dict=None):
         """
@@ -59,6 +58,7 @@ class TuningCallbacks(Callbacks):
 
         # Update running loss of batch
         for (key,value) in loss_dict.items():
+            key  = 'train_' + key
             if key in self.target_params.keys():
                 self.target_params[key].append(value)
             else:
@@ -66,14 +66,21 @@ class TuningCallbacks(Callbacks):
 
         # Early stopping
         if self.time_start:
+            LOGGER.text(f"Time passed: {time.time() - self.time_start}", level=LoggerObserver.INFO)
             if time.time() - self.time_start >= self.time_limit:
                 trainer.shutdown_training = True
                 LOGGER.text("Time limit exceeded", level=LoggerObserver.DEBUG)
         
         if self.num_iterations:
+            LOGGER.text(f"Number of iterations passed: {iters}", level=LoggerObserver.INFO)
             if iters > self.num_iterations:
                 trainer.shutdown_training = True
                 LOGGER.text("Iteration limit exceeded", level=LoggerObserver.DEBUG)
+        
+        # Restart the clock for validation
+        if trainer.shutdown_training:
+            self.time_start = time.time()
+
 
     def on_val_batch_end(self, logs:Dict=None):
         """
@@ -86,6 +93,7 @@ class TuningCallbacks(Callbacks):
 
         # Update running loss of batch
         for (key,value) in loss_dict.items():
+            key  = 'val_' + key
             if key in self.target_params.keys():
                 self.target_params[key].append(value)
             else:
@@ -93,13 +101,25 @@ class TuningCallbacks(Callbacks):
 
         # Early stopping
         if self.time_start:
+            LOGGER.text(f"Time passed: {time.time() - self.time_start}", level=LoggerObserver.INFO)
             if time.time() - self.time_start >= self.time_limit:
                 trainer.shutdown_validation = True
                 trainer.shutdown_all = True
                 LOGGER.text("Time limit exceeded", level=LoggerObserver.DEBUG)
         
         if self.num_iterations:
+            LOGGER.text(f"Number of iterations passed: {iters}", level=LoggerObserver.INFO)
             if iters > self.num_iterations:
                 trainer.shutdown_validation = True
                 trainer.shutdown_all = True
                 LOGGER.text("Iteration limit exceeded", level=LoggerObserver.DEBUG)
+
+    def on_val_epoch_end(self, logs:Dict=None):
+        metric_dict = logs['metric_dict']
+        # Update running metric of batch
+        for (key,value) in metric_dict.items():
+            key  = 'val_' + key
+            if key in self.target_params.keys():
+                self.target_params[key].append(value)
+            else:
+                self.target_params[key] = [value]
