@@ -113,7 +113,7 @@ class WandbCallbacks(Callbacks):
         # Init logging model for debug
         self.wandb_logger.log_torch_module(
             tag='models', 
-            value = self.params['trainer'].model.model,
+            value = self.params['trainer'].model.model.get_model(),
             log_freq=10)
 
     def on_finish(self, logs: Dict=None):

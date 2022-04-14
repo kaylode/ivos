@@ -33,6 +33,7 @@ class LoggerObserver(object):
     SPECIAL_TEXT = 'special_text'
     EMBED = 'embedding'
     TABLE = 'table'
+    VIDEO = 'video'
 
     WARN = logging.WARN
     ERROR = logging.ERROR
@@ -123,6 +124,13 @@ class LoggerObserver(object):
 
                 if type == LoggerObserver.TABLE:
                     subscriber.log_table(
+                        tag=tag,
+                        value=value,
+                        **kwargs
+                    )
+
+                if type == LoggerObserver.VIDEO:
+                    subscriber.log_video(
                         tag=tag,
                         value=value,
                         **kwargs
