@@ -180,7 +180,7 @@ class VisualizerCallbacks(Callbacks):
         decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
 
         LOGGER.log([{
-            'tag': "Validation/visualization/inputs",
+            'tag': "Validation/vis_inputs",
             'value': image_show,
             'type': LoggerObserver.VIDEO,
             'kwargs': {
@@ -190,7 +190,7 @@ class VisualizerCallbacks(Callbacks):
         }])
 
         LOGGER.log([{
-            'tag': "Validation/visualization/ground truth",
+            'tag': "Validation/vis_ground truth",
             'value': decode_masks,
             'type': LoggerObserver.VIDEO,
             'kwargs': {
@@ -200,7 +200,7 @@ class VisualizerCallbacks(Callbacks):
         }])
 
         LOGGER.log([{
-            'tag': "Validation/visualization/prediction",
+            'tag': "Validation/vis_prediction",
             'value': decode_preds,
             'type': LoggerObserver.VIDEO,
             'kwargs': {

@@ -1,5 +1,6 @@
 from typing import Dict
 import time
+import optuna
 import numpy as np
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver
@@ -19,13 +20,24 @@ class TuningCallbacks(Callbacks):
     """
     def __init__(
         self, 
+        trial: optuna.trial.Trial,
         num_iterations: int=None, 
         time_limit: int = None) -> None:
 
+        super().__init__()
         self.time_limit = time_limit
         self.num_iterations = num_iterations
+        self.trial = trial
         self.target_params = {}
-        
+    
+    def on_start(self, logs: Dict=None):
+        """
+        Before going to the main loop
+        """
+        LOGGER.text(f'Starting trial {self.trial.number}...', level=LoggerObserver.INFO)
+        LOGGER.text(f"Trial parameters: {self.trial.params}", level=LoggerObserver.INFO)
+        self.time_start = time.time()
+
     def on_finish(self, logs: Dict=None):
         """
         After the main loop
@@ -33,20 +45,17 @@ class TuningCallbacks(Callbacks):
         for key in self.target_params.keys():
             self.target_params[key] = np.mean(self.target_params[key])
 
-        LOGGER.text("Training Completed!", level=LoggerObserver.INFO)
-
-    def on_train_epoch_start(self, logs: Dict=None):
-        """
-        Before going to the training loop
-        """
-        self.time_start = time.time()
+        LOGGER.text("Trial {self.trial.number} finished", level=LoggerObserver.INFO)
+        LOGGER.text("Trial {self.trial.number} finished", level=LoggerObserver.INFO)
 
     def on_train_batch_end(self, logs:Dict=None):
         """
         On training batch (iteration) end
         """
 
+        iters = logs['iters']
         loss_dict = logs['loss_dict']
+        trainer = self.params['trainer']
 
         # Update running loss of batch
         for (key,value) in loss_dict.items():
@@ -57,12 +66,40 @@ class TuningCallbacks(Callbacks):
 
         # Early stopping
         if self.time_start:
-            if time.time() >= self.time_start:
-                raise KeyboardInterrupt("Time limit exceeded")
+            if time.time() - self.time_start >= self.time_limit:
+                trainer.shutdown_training = True
+                LOGGER.text("Time limit exceeded", level=LoggerObserver.DEBUG)
         
         if self.num_iterations:
-            if self.iters > self.num_iterations:
-                raise KeyboardInterrupt("Iteration limit exceeded")
+            if iters > self.num_iterations:
+                trainer.shutdown_training = True
+                LOGGER.text("Iteration limit exceeded", level=LoggerObserver.DEBUG)
 
+    def on_val_batch_end(self, logs:Dict=None):
+        """
+        On validation batch (iteration) end
+        """
 
-    
+        iters = logs['iters']
+        loss_dict = logs['loss_dict']
+        trainer = self.params['trainer']
+
+        # Update running loss of batch
+        for (key,value) in loss_dict.items():
+            if key in self.target_params.keys():
+                self.target_params[key].append(value)
+            else:
+                self.target_params[key] = [value]
+
+        # Early stopping
+        if self.time_start:
+            if time.time() - self.time_start >= self.time_limit:
+                trainer.shutdown_validation = True
+                trainer.shutdown_all = True
+                LOGGER.text("Time limit exceeded", level=LoggerObserver.DEBUG)
+        
+        if self.num_iterations:
+            if iters > self.num_iterations:
+                trainer.shutdown_validation = True
+                trainer.shutdown_all = True
+                LOGGER.text("Iteration limit exceeded", level=LoggerObserver.DEBUG)

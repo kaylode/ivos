@@ -48,6 +48,10 @@ class SupervisedTrainer(BaseTrainer):
 
         self.step_per_epoch = self.scheduler.step_per_epoch
 
+        # Flags for shutting down training or validation stages
+        self.shutdown_training = False
+        self.shutdown_validation = False
+
 
     def training_epoch(self):
         """
@@ -57,6 +61,11 @@ class SupervisedTrainer(BaseTrainer):
         self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
+
+            # Check if shutdown flag has been turned on
+            if self.shutdown_training or self.shutdown_all:
+                break
+
             self.callbacks.run('on_train_batch_start', {
                 'batch': batch,
                 'iters': self.iters,
@@ -113,6 +122,11 @@ class SupervisedTrainer(BaseTrainer):
 
         self.callbacks.run('on_val_epoch_start')
         for batch in tqdm(self.valloader):
+
+            # Check if shutdown flag has been turned on
+            if self.shutdown_validation or self.shutdown_all:
+                break
+
             self.callbacks.run('on_val_batch_start', {
                 'batch': batch,
                 'iters': self.iters,

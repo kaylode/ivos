@@ -5,23 +5,19 @@ import os.path as osp
 from datetime import datetime
 from theseus.opt import Opts
 from theseus.opt import Config
-from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.base.augmentations import TRANSFORM_REGISTRY
-from theseus.base.losses import LOSS_REGISTRY
-from theseus.base.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.base.trainer import TRAINER_REGISTRY
-from theseus.base.metrics import METRIC_REGISTRY
-from theseus.base.models import MODEL_REGISTRY
-from theseus.base.callbacks import CALLBACKS_REGISTRY
 from theseus.utilities.getter import (get_instance)
 from theseus.utilities.cuda import get_device
-from theseus.base.pipeline import BasePipeline
 from theseus.utilities.folder import get_new_folder_name
 from theseus.utilities.loggers import LoggerObserver, FileLogger, ImageWriter
 from theseus.utilities.tuner.tuner_callbacks import TuningCallbacks
 
+LOGGER = LoggerObserver.getLogger('main')
 
-class TuningPipeline(BasePipeline):
+# Change the pipeline that need to tune
+from theseus.semantic.pipeline import Pipeline
+
+
+class TuningPipeline(Pipeline):
     """docstring for TuningPipeline."""
 
     def __init__(
@@ -29,26 +25,10 @@ class TuningPipeline(BasePipeline):
         opt: Config,
         tune_opt: Config
     ):
-        super(TuningPipeline, self).__init__()
+        super(TuningPipeline, self).__init__(opt)
         self.opt = opt
         self.tune_opt = tune_opt
     
-    def init_registry(self):
-        self.model_registry = MODEL_REGISTRY
-        self.dataset_registry = DATASET_REGISTRY
-        self.dataloader_registry = DATALOADER_REGISTRY
-        self.metric_registry = METRIC_REGISTRY
-        self.loss_registry = LOSS_REGISTRY
-        self.optimizer_registry = OPTIM_REGISTRY
-        self.scheduler_registry = SCHEDULER_REGISTRY
-        self.callbacks_registry = CALLBACKS_REGISTRY
-        self.trainer_registry = TRAINER_REGISTRY
-        self.transform_registry = TRANSFORM_REGISTRY
-        self.logger.text(
-            "Overidding registry in pipeline...", LoggerObserver.INFO
-        )
-
-
     def init_globals(self):
         # Main Loggers
         self.logger = LoggerObserver.getLogger("main") 
@@ -102,23 +82,29 @@ class TuningPipeline(BasePipeline):
         self.init_scheduler()
 
         callbacks = [
-            self.callbacks_registry.get("LoggerCallbacks")(),
+            self.callbacks_registry.get("STCNCallbacks")(),
             tuner_callbacks
         ]
         self.init_trainer(callbacks)
 
     def objective(self, trial):
 
+        self.opt["optimizer"]['args']['lr'] = trial.suggest_float('lr', self.lr_range[0], self.lr_range[1], log=True)
+
         self.tuner_callbacks = TuningCallbacks(
+            trial=trial,
             num_iterations=self.num_iteration_per_trials,
             time_limit=self.time_limit_per_trials
         )
-
-        self.opt["optimizer"]['args']['lr'] = trial.suggest_float('lr', self.lr_range[0], self.lr_range[1], log=True)
         self.init_pipeline(self.tuner_callbacks)
         self.trainer.fit()
 
         target_params = self.tuner_callbacks.target_params
+
+        if self.tune_target_key not in target_params.keys():
+            LOGGER.error(f"Target key '{self.tune_target_key}' not found in returned params. Available keys are {target_params.keys()}", LoggerObserver.WARN)
+            raise KeyError()
+
         return target_params[self.tune_target_key]
 
     def tune(self):
@@ -135,8 +121,7 @@ class TuningPipeline(BasePipeline):
 
         study.optimize(self.objective, n_trials=self.num_trials)
         joblib.dump(study, osp.join(self.savedir, f"{self.study_name}.pkl"))
-
-        self.logger.text(study.best_params, level=LoggerObserver.INFO)
+        self.logger.text(f"Best hyperparameters are: {study.best_params}", level=LoggerObserver.SUCCESS)
 
 
 if __name__ == "__main__":
