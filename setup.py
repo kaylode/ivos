@@ -26,5 +26,7 @@ setuptools.setup(
         "gitpython",
         "SimpleITK",
         "monai",
+        "loguru",
+        "wandb"
     ],
 )

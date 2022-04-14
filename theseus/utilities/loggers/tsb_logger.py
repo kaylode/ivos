@@ -1,19 +1,13 @@
-from typing import Union
 import io
 import os
 import glob
 import torch
 import traceback
-import numpy as np
 import pandas as pd
-import PIL
 from PIL import Image
-from PIL.GifImagePlugin import Image as GifImage 
 from torchvision.transforms import ToTensor
 from torch.utils.tensorboard import SummaryWriter
-from tensorboard.compat.proto.summary_pb2 import Summary
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
-
 
 from theseus.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
 LOGGER = LoggerObserver.getLogger('main')

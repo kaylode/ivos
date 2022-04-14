@@ -3,13 +3,16 @@ import torch
 import torch.nn as nn
 import numpy as np
 from theseus.utilities.cuda import move_to
+from theseus.utilities.loading import load_state_dict
 from theseus.semantic.models.stcn.networks.network import STCNTrain
 from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
 from theseus.semantic.models.stcn.networks.eval_network import STCNEval
+from theseus.semantic.models.stcn.utilities.loading import load_pretrained_model
+
 
 class STCNModel():
     """
-    Some simple segmentation models with various pretrained backbones
+    STCN Wrapper
     """
     def __init__(
         self, 
@@ -18,6 +21,7 @@ class STCNModel():
         single_object: bool = False,
         top_k_eval: int = 20,
         mem_every_eval: int = 5,
+        pretrained: bool = False,
         **kwargs):
         super().__init__()
 
@@ -30,7 +34,20 @@ class STCNModel():
         self.train_model = STCNTrain(self.single_object)
         self.eval_model = STCNEval()
         self.training = False
+        self.pretrained = pretrained
+
+        if self.pretrained:
+            pretrained_path = load_pretrained_model('stcn')
+            if pretrained_path:
+                state_dict = torch.load(pretrained_path, map_location='cpu')
+                self.load_network(state_dict)
         
+    def state_dict(self):
+        return self.train_model.state_dict()
+
+    def load_state_dict(self, state_dict):
+        self.train_model = load_state_dict(self.train_model , state_dict)
+
     def get_model(self):
         return self.train_model
 
@@ -165,4 +182,4 @@ class STCNModel():
                     nn.init.orthogonal_(pads)
                     state_dict[k] = torch.cat([state_dict[k], pads], 1)
 
-        self.train_model.load_state_dict(state_dict)
+        self.train_model = load_state_dict(self.train_model, state_dict)
