@@ -63,6 +63,7 @@ class Pipeline(BasePipeline):
         # model = move_to(model, self.device)
         return model
 
+
     def init_model_with_loss(self):
         model = self.init_model()
         criterion = self.init_criterion()
