@@ -1,0 +1,9 @@
+global:
+  study_name: tune-everything
+  pipeline_cfg: null
+  direction: minimize
+  target_key: loss
+  num_iteration_per_trials: null
+  time_limit_per_trials: 1000
+  num_trials: 10
+  lr_range: [0.01, 0.00001]

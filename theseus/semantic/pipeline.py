@@ -1,7 +1,7 @@
 from typing import Callable, Dict, Optional
 import torch
 from theseus.opt import Config
-from theseus.utilities.getter import (get_instance)
+from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.utilities.cuda import get_devices_info
 
 from theseus.opt import Config
@@ -63,6 +63,13 @@ class Pipeline(BasePipeline):
         # model = move_to(model, self.device)
         return model
 
+    def init_metrics(self):
+        CLASSNAMES = self.val_dataset.classnames
+        self.metrics = get_instance_recursively(
+            self.opt['metrics'], 
+            registry=self.metric_registry, 
+            num_classes=len(CLASSNAMES),
+            classnames=CLASSNAMES)
 
     def init_model_with_loss(self):
         model = self.init_model()
