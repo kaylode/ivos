@@ -170,6 +170,7 @@ class BasePipeline(object):
             print_interval=self.opt["trainer"]['args']['print_interval'],
             save_interval=self.opt["trainer"]['args']['save_interval'],
             save_dir=self.savedir,
+            config_dict=self.opt,
             resume=self.resume,
             registry=self.callbacks_registry
         )

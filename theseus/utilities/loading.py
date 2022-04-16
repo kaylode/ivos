@@ -22,7 +22,7 @@ def load_state_dict(instance, state_dict, key=None, strict=True):
     if isinstance(instance, (
         _LRScheduler, ReduceLROnPlateau, 
         torch.nn.Module, torch.optim.Optimizer, 
-        NativeScaler)) or getattr(instance, load_state_dict, None) is not None:
+        NativeScaler)) or getattr(instance, 'load_state_dict', None) is not None:
         try:
             if key is not None:
                 _state_dict = state_dict[key]
