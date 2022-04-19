@@ -81,6 +81,8 @@ class AbdomenCT1KDataset(torch.utils.data.Dataset):
         gt_path = osp.join(self.label_dir, patient_item['label'])
         nib_label = nib.load(gt_path)
         affine = nib_label.affine
+        case_spacing = nib_label.header.get_zooms()
+
 
         out_dict = self.transform({
             'image': [vol_path],
@@ -88,13 +90,13 @@ class AbdomenCT1KDataset(torch.utils.data.Dataset):
         })
 
         stacked_vol = torch.cat([out_dict['image'], out_dict['image'], out_dict['image']], axis=0)
-        return stacked_vol, out_dict['label'], affine
+        return stacked_vol, out_dict['label'], affine, case_spacing
 
     def __getitem__(self, idx):
         
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
-        stacked_vol, gt_vol, affine = self.load_item(patient_item) # torch.Size([C, H, W, T]), torch.Size([1, H, W, T])
+        stacked_vol, gt_vol, affine, case_spacing = self.load_item(patient_item) # torch.Size([C, H, W, T]), torch.Size([1, H, W, T])
         gt_vol = gt_vol.squeeze(0)
         _, h, w, num_slices = stacked_vol.shape
 
@@ -166,7 +168,8 @@ class AbdomenCT1KDataset(torch.utils.data.Dataset):
             'info': {
                 'name': patient_id,
                 'slice_id': frames_idx,
-                'affine': affine
+                'affine': affine,
+                'case_spacing': case_spacing
             },
         }
 
