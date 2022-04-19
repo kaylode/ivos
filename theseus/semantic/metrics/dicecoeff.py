@@ -3,14 +3,16 @@ import torch
 import numpy as np
 from theseus.base.metrics.metric_template import Metric
 
-class mIOU(Metric):
-    """ Mean IOU metric for ivos
+class DiceScore(Metric):
+    """ Dice score metric for segmentation
     """
     def __init__(self, 
-            num_classes: int = 4,
+            num_classes: int, 
+            calc_each_class: bool = False,
             **kwawrgs):
 
-        self.num_classes=num_classes
+        self.calc_each_class = calc_each_class
+        self.num_classes = num_classes
         self.reset()
 
     def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]): 
@@ -49,8 +51,8 @@ class mIOU(Metric):
             intersect = torch.sum(target*predict, dim=(-1, -2))
             A = torch.sum(target, dim=(-1, -2))
             B = torch.sum(predict, dim=(-1, -2))
-            union = A + B - intersect
-            return sum(intersect / union)
+            union = A + B
+            return (2. * intersect)  / union
         
     def reset(self):
         self.scores_list = np.zeros(self.num_classes) 
@@ -59,4 +61,15 @@ class mIOU(Metric):
     def value(self):
         scores_each_class = self.scores_list / self.sample_size #mean over number of samples
         scores = sum(scores_each_class) / (self.num_classes - 1) # subtract background
-        return {"miou" : scores}
+
+        if self.calc_each_class:
+            result_dict = {}
+            result_dict.update({
+                f'dice_{i}': scores_each_class[i]  for i in range(1, self.num_classes)
+            })
+            result_dict.update({
+                'dice-avg': scores
+            })
+            return result_dict
+        else:
+            return {"dice" : scores}
