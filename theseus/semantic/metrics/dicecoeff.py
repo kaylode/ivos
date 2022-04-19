@@ -48,11 +48,11 @@ class DiceScore(Metric):
         elif torch.sum(target)==0 and torch.sum(predict)>0:
             return 0.0
         else:
-            intersect = torch.sum(target*predict, dim=(-1, -2))
-            A = torch.sum(target, dim=(-1, -2))
-            B = torch.sum(predict, dim=(-1, -2))
-            union = A + B
-            return (2. * intersect)  / union
+            volume_sum = target.sum() + predict.sum()
+            if volume_sum == 0:
+              return np.NaN
+            volume_intersect = (target & predict).sum()
+            return 2*volume_intersect / volume_sum
         
     def reset(self):
         self.scores_list = np.zeros(self.num_classes) 
