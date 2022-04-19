@@ -219,7 +219,7 @@ class AbdomenCT1KTestset(AbdomenCT1KDataset):
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
-        stacked_vol, ori_vol, affine = self.load_item(patient_item)
+        stacked_vol, ori_vol, affine, case_spacing = self.load_item(patient_item)
         images = stacked_vol.permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
         
         # Choose a reference frame
@@ -274,7 +274,8 @@ class AbdomenCT1KTestset(AbdomenCT1KDataset):
                 'labels': labels,
                 'guide_id': guide_id,       # guide id frame used for reconvert
                 'guidemark': guidemark,     # 
-                'affine': affine # from nib.load
+                'affine': affine, # from nib.load
+                'case_spacing': case_spacing
             },
         }
 
