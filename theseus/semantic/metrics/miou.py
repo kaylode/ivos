@@ -46,11 +46,11 @@ class mIOU(Metric):
         elif torch.sum(target)==0 and torch.sum(predict)>0:
             return 0.0
         else:
-            intersect = torch.sum(target*predict, dim=(-1, -2))
-            A = torch.sum(target, dim=(-1, -2))
-            B = torch.sum(predict, dim=(-1, -2))
-            union = A + B - intersect
-            return sum(intersect / union)
+            volume_sum = target.sum() + predict.sum()
+            if volume_sum == 0:
+                return np.NaN
+            volume_intersect = (target & predict).sum()
+            return volume_intersect / (volume_sum - volume_intersect)
         
     def reset(self):
         self.scores_list = np.zeros(self.num_classes) 

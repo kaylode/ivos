@@ -50,7 +50,7 @@ class DiceScore(Metric):
         else:
             volume_sum = target.sum() + predict.sum()
             if volume_sum == 0:
-              return np.NaN
+                return np.NaN
             volume_intersect = (target & predict).sum()
             return 2*volume_intersect / volume_sum
         
