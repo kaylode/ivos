@@ -68,6 +68,7 @@ class STCNModel():
         else:
             return self.forward_val(data)
 
+    @torch.no_grad()
     def forward_val(self, data: Dict):
         torch.set_grad_enabled(False)
 
@@ -94,6 +95,10 @@ class STCNModel():
         second = np.flip(second, axis=0)
 
         out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
+
+        del rgb
+        del msk
+        del self.processor
 
         return {
             'out': out_masks
