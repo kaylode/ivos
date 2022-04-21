@@ -37,6 +37,7 @@ class ModelWithLoss():
             }, it=batch['iters'])
         
             return {
+                'outputs': outputs,
                 'loss': loss,
                 'loss_dict': loss_dict
             }

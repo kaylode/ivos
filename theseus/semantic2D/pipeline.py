@@ -8,7 +8,7 @@ from theseus.opt import Config
 from theseus.base.pipeline import BasePipeline
 from theseus.semantic2D.models.wrapper import ModelWithLoss
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.semantic2D.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic2D.losses import LOSS_REGISTRY
 from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from theseus.semantic2D.trainer import TRAINER_REGISTRY
