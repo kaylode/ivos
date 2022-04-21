@@ -5,6 +5,7 @@ import nibabel as nib # common way of importing nibabel
 
 import torch
 import numpy as np
+import pandas as pd
 
 from theseus.utilities.loggers.observer import LoggerObserver
 
@@ -43,22 +44,24 @@ class AbdomenCT1KDataset(torch.utils.data.Dataset):
     """
     def __init__(
         self, 
-        volume_dir: str, 
-        label_dir: str, 
+        root_dir: str,
+        csv_path: str,
         max_jump: int=25,
         transform=None):
 
-        self.volume_dir = volume_dir
-        self.label_dir = label_dir
+        self.root_dir = root_dir
+        self.csv_path = csv_path
         self.max_jump = max_jump
         self.transform = transform
+        self.load_data()
 
-        self.volume_names = sorted(os.listdir(self.volume_dir))
+    def load_data(self):
+        df = pd.read_csv(self.csv_path)
         self.fns = []
-        for volume_name in self.volume_names:
+        for _, row in df.iterrows():
             # train_0047_0000.nii.gz
+            volume_name, mask_name = row
             pid = volume_name.split('_')[1] 
-            mask_name = '_'.join(volume_name.split('_')[:2]) + '.nii.gz'
             self.fns.append({
                 'pid': pid,
                 'vol': volume_name,
@@ -73,12 +76,14 @@ class AbdomenCT1KDataset(torch.utils.data.Dataset):
             "pancreas"
         ]
 
+
+
     def load_item(self, patient_item, train=False):
         """
         Load volume with Monai transform
         """
-        vol_path = osp.join(self.volume_dir, patient_item['vol'])
-        gt_path = osp.join(self.label_dir, patient_item['label'])
+        vol_path = osp.join(self.root_dir, patient_item['vol'])
+        gt_path = osp.join(self.root_dir, patient_item['label'])
         nib_label = nib.load(gt_path)
         affine = nib_label.affine
         case_spacing = nib_label.header.get_zooms()
@@ -179,8 +184,8 @@ class AbdomenCT1KDataset(torch.utils.data.Dataset):
         return len(self.fns)
 
 class AbdomenCT1KTestset(AbdomenCT1KDataset):
-    def __init__(self, volume_dir, label_dir, transform=None):
-        super().__init__(volume_dir, label_dir, 0, transform=transform)
+    def __init__(self, root_dir, csv_path, transform=None):
+        super().__init__(root_dir, csv_path, 0, transform=transform)
         self.single_object = False
         self.compute_stats()
 
@@ -200,7 +205,7 @@ class AbdomenCT1KTestset(AbdomenCT1KDataset):
             }
 
             patient_id = item['pid']
-            gt_path = osp.join(self.label_dir, item['label'])
+            gt_path = osp.join(self.root_dir, item['label'])
             gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
             num_slices = gt_vol.shape[-1]
             
