@@ -11,13 +11,13 @@ from tqdm import tqdm
 import torch
 import nibabel as nib
 from theseus.opt import Config
-from theseus.semantic.models import MODEL_REGISTRY
-from theseus.semantic.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.semantic2D.models import MODEL_REGISTRY
+from theseus.semantic2D.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from theseus.utilities.loggers import LoggerObserver
-from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
-from theseus.semantic.models.stcn.networks.eval_network import STCNEval
+from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
+from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
 from theseus.base.pipeline import BaseTestPipeline
 
 class TestPipeline(BaseTestPipeline):

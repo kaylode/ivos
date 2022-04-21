@@ -1,0 +1,26 @@
+train:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbResize
+        args:
+          width: 320
+          height: 320
+      - name: AlbHorizontalFlip
+        args:
+      # - name: AlbRandomRotate90
+      #   args:
+      # - name: AlbShiftScaleRotate
+      #   args:
+      #     border_mode: 0
+      #     value: 0
+      - name: AlbToTensorV2
+val:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbResize
+        args:
+          width: 320
+          height: 320
+      - name: AlbToTensorV2
