@@ -9,7 +9,7 @@ train:
         args:
           keys: [label]
           axis: 0
-      - name: ToTensord
+      - name: MonaiToTensord
         args:
           keys: [image, label]
 
@@ -24,6 +24,6 @@ val:
         args:
           keys: [label]
           axis: 0
-      - name: ToTensord
+      - name: MonaiToTensord
         args:
           keys: [image, label]
