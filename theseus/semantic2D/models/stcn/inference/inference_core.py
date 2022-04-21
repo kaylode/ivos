@@ -1,10 +1,10 @@
 import torch
 import numpy as np
 from typing import Dict
-from theseus.semantic.models.stcn.inference.inference_memory_bank import MemoryBank
-from theseus.semantic.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic.models.stcn.utilities.aggregate import aggregate
-from theseus.semantic.models.stcn.utilities.tensor_util import pad_divide_by
+from theseus.semantic2D.models.stcn.inference.inference_memory_bank import MemoryBank
+from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
+from theseus.semantic2D.models.stcn.utilities.aggregate import aggregate
+from theseus.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by
 
 
 class InferenceCore:

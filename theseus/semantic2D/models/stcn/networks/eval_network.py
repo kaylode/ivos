@@ -11,11 +11,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from theseus.semantic.models.stcn.backbone.modules import (
+from theseus.semantic2D.models.stcn.backbone.modules import (
     KeyEncoder, ValueEncoder, KeyProjection
 )
 
-from theseus.semantic.models.stcn.networks.network import Decoder
+from theseus.semantic2D.models.stcn.networks.network import Decoder
 
 
 class STCNEval(nn.Module):

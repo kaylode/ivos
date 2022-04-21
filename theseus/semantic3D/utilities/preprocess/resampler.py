@@ -1,3 +1,7 @@
+"""
+Copied from https://github.com/Shanghai-Aitrox-Technology/EfficientSegmentation
+"""
+
 import numpy as np
 import SimpleITK as sitk
 from scipy.ndimage.interpolation import zoom

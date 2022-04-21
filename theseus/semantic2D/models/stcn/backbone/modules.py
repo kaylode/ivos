@@ -7,8 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 
-from theseus.semantic.models.stcn.backbone import mod_resnet
-from theseus.semantic.models.stcn.backbone import cbam
+from theseus.semantic2D.models.stcn.backbone import mod_resnet
+from theseus.semantic2D.models.stcn.backbone import cbam
 
 
 class ResBlock(nn.Module):

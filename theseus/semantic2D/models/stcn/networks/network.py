@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from theseus.semantic.models.stcn.backbone.modules import (
+from theseus.semantic2D.models.stcn.backbone.modules import (
     ResBlock, UpsampleBlock, KeyEncoder, ValueEncoder,
     ValueEncoderSO, KeyProjection
 )

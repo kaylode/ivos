@@ -4,10 +4,10 @@ import torch.nn as nn
 import numpy as np
 from theseus.utilities.cuda import move_to
 from theseus.utilities.loading import load_state_dict
-from theseus.semantic.models.stcn.networks.network import STCNTrain
-from theseus.semantic.models.stcn.inference.inference_core import InferenceCore
-from theseus.semantic.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic.models.stcn.utilities.loading import load_pretrained_model
+from theseus.semantic2D.models.stcn.networks.network import STCNTrain
+from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
+from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
+from theseus.semantic2D.models.stcn.utilities.loading import load_pretrained_model
 
 
 class STCNModel():
