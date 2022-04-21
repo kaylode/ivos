@@ -9,12 +9,13 @@ def load_ct_info(file_path):
         origin = sitk_image.GetOrigin() # original used list(reversed(, dont know why
         spacing = sitk_image.GetSpacing()  # original used list(reversed(, dont know why
         direction = sitk_image.GetDirection()
-        direction = [direction[8], direction[4], direction[0]]
+        subdirection = [direction[8], direction[4], direction[0]]
         res = {"sitk_image": sitk_image,
                "npy_image": sitk.GetArrayFromImage(sitk_image),
                "origin": origin,
                "spacing": spacing,
-               "direction": direction}
+               "direction": direction,
+               "subdirection": subdirection}
     return res
 
 def change_axes_of_image(npy_image, orientation):

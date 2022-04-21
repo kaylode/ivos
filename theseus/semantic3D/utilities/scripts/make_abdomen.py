@@ -48,10 +48,11 @@ def convert_2_npy(vol_path, gt_path, target_size=(160,160,160), normalize=True):
 
     raw_spacing = image_dict['spacing']
     image_direction = image_dict['direction']
+    subdirection = image_dict['subdirection']
     origin = image_dict['origin']
 
-    image_dict['npy_image'] = change_axes_of_image(image_dict['npy_image'], image_direction)
-    image_dict['npy_image'] = change_axes_of_image(image_dict['npy_image'], image_direction)
+    image_dict['npy_image'] = change_axes_of_image(image_dict['npy_image'], subdirection)
+    mask_dict['npy_image'] = change_axes_of_image(mask_dict['npy_image'], subdirection)
 
     npy_image, zoom_factor = ScipyResample.resample_to_size(image_dict['npy_image'], target_size)
     npy_mask, _ = ScipyResample.resample_mask_to_size(
@@ -121,8 +122,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_image_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
+            direction=image_dict['direction'],
             sitk_type=sitk.sitkFloat32
-            # direction=image_dict['direction']
         )
 
         save_ct_from_npy(
@@ -130,8 +131,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_gt_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
+            direction=image_dict['direction'],
             sitk_type=sitk.sitkUInt8
-            # direction=image_dict['direction']
         )
 
     print("Processing val files")
@@ -152,8 +153,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_image_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
+            direction=image_dict['direction'],
             sitk_type=sitk.sitkFloat32
-            # direction=image_dict['direction']
         )
 
         save_ct_from_npy(
@@ -161,8 +162,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_gt_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
+            direction=image_dict['direction'],
             sitk_type=sitk.sitkUInt8
-            # direction=image_dict['direction']
         )
     
     pd.DataFrame(df_dict['train']).to_csv(osp.join(out_dir, 'train.csv'), index=False)
