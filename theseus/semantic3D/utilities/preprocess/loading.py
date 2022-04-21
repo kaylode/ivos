@@ -1,13 +1,13 @@
 import SimpleITK as sitk
-
+import numpy as np
 
 def load_ct_info(file_path):
     sitk_image = sitk.ReadImage(file_path)
     if sitk_image is None:
         res = {}
     else:
-        origin = list(reversed(sitk_image.GetOrigin()))
-        spacing = list(reversed(sitk_image.GetSpacing()))
+        origin = sitk_image.GetOrigin() # original used list(reversed(, dont know why
+        spacing = sitk_image.GetSpacing()  # original used list(reversed(, dont know why
         direction = sitk_image.GetDirection()
         direction = [direction[8], direction[4], direction[0]]
         res = {"sitk_image": sitk_image,
@@ -16,6 +16,16 @@ def load_ct_info(file_path):
                "spacing": spacing,
                "direction": direction}
     return res
+
+def change_axes_of_image(npy_image, orientation):
+    '''default orientation=[1, -1, -1]'''
+    if orientation[0] < 0:
+        npy_image = np.flip(npy_image, axis=0)
+    if orientation[1] > 0:
+        npy_image = np.flip(npy_image, axis=1)
+    if orientation[2] > 0:
+        npy_image = np.flip(npy_image, axis=2)
+    return npy_image
 
 def save_ct_from_sitk(sitk_image, save_path, sitk_type=None, use_compression=False):
     if sitk_type is not None:

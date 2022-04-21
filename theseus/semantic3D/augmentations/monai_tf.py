@@ -99,7 +99,7 @@ class PercentileClip(MapTransform):
         for key in self.keys:
             top = np.percentile(d[key], self.max_pct)
             bottom = np.percentile(d[key], self.min_pct)
-            d[key] = np.clip(d[key],top,bottom)
+            d[key] = np.clip(d[key],bottom, top)
 
         return d
 

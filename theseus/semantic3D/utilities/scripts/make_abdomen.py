@@ -6,6 +6,7 @@ import argparse
 import random
 import numpy as np
 import SimpleITK as sitk
+from tqdm import tqdm
 import pandas as pd
 from theseus.semantic3D.augmentations.monai_tf import (
     PercentileClip,
@@ -13,7 +14,7 @@ from theseus.semantic3D.augmentations.monai_tf import (
     Compose
 )
 from theseus.semantic3D.utilities.preprocess.resampler import ItkResample, ScipyResample
-from theseus.semantic3D.utilities.preprocess.loading import save_ct_from_npy, load_ct_info
+from theseus.semantic3D.utilities.preprocess.loading import save_ct_from_npy, load_ct_info, change_axes_of_image
 
 SEED = 0
 random.seed(SEED)
@@ -38,12 +39,20 @@ NUM_LABELS = 5
 TARGET_SIZE = (160,160,160)
 TRANSFORM = Compose([
     PercentileClip(keys=['image'],min_pct=2, max_pct=98),
-    NormalizeIntensityd(keys=['image', 'label'])
+    NormalizeIntensityd(keys=['image'])
 ])
 
 def convert_2_npy(vol_path, gt_path, target_size=(160,160,160), normalize=True):
     image_dict = load_ct_info(vol_path)
     mask_dict = load_ct_info(gt_path)
+
+    raw_spacing = image_dict['spacing']
+    image_direction = image_dict['direction']
+    origin = image_dict['origin']
+
+    image_dict['npy_image'] = change_axes_of_image(image_dict['npy_image'], image_direction)
+    image_dict['npy_image'] = change_axes_of_image(image_dict['npy_image'], image_direction)
+
     npy_image, zoom_factor = ScipyResample.resample_to_size(image_dict['npy_image'], target_size)
     npy_mask, _ = ScipyResample.resample_mask_to_size(
         mask_dict['npy_image'], target_size, num_label=NUM_LABELS
@@ -55,10 +64,6 @@ def convert_2_npy(vol_path, gt_path, target_size=(160,160,160), normalize=True):
             'label': npy_mask
         })
         npy_image, npy_mask = out_dict['image'], out_dict['label']
-
-    raw_spacing = image_dict['spacing']
-    image_direction = image_dict['direction']
-    origin = image_dict['origin']
 
     return {
         'image': npy_image,
@@ -99,11 +104,12 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         }
     }
 
-    for train_filename, train_maskname in zip(train_filenames, train_masknames):
+    print("Processing train files")
+    for train_filename, train_maskname in tqdm(zip(train_filenames, train_masknames)):
         image_path = osp.join(root_dir, 'TrainImage', train_filename)
         gt_path = osp.join(root_dir, 'TrainMask', train_maskname)
         image_dict = convert_2_npy(image_path, gt_path, target_size=TARGET_SIZE, normalize=True)
-
+        
         dest_image_path = osp.join(target_imagesTr, train_filename)
         dest_gt_path = osp.join(target_labelsTr, train_maskname)
 
@@ -115,7 +121,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_image_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
-            direction=image_dict['direction']
+            sitk_type=sitk.sitkFloat32
+            # direction=image_dict['direction']
         )
 
         save_ct_from_npy(
@@ -123,10 +130,12 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_gt_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
-            direction=image_dict['direction']
+            sitk_type=sitk.sitkUInt8
+            # direction=image_dict['direction']
         )
 
-    for val_filename, val_maskname in zip(val_filenames, val_masknames):
+    print("Processing val files")
+    for val_filename, val_maskname in tqdm(zip(val_filenames, val_masknames)):
         image_path = osp.join(root_dir, 'TrainImage', val_filename)
         gt_path = osp.join(root_dir, 'TrainMask', val_maskname)
 
@@ -143,7 +152,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_image_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
-            direction=image_dict['direction']
+            sitk_type=sitk.sitkFloat32
+            # direction=image_dict['direction']
         )
 
         save_ct_from_npy(
@@ -151,7 +161,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             save_path=dest_gt_path,
             origin=image_dict['origin'],
             spacing=image_dict['spacing'],
-            direction=image_dict['direction']
+            sitk_type=sitk.sitkUInt8
+            # direction=image_dict['direction']
         )
     
     pd.DataFrame(df_dict['train']).to_csv(osp.join(out_dir, 'train.csv'), index=False)
