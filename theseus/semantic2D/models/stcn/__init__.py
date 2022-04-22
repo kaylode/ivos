@@ -72,7 +72,7 @@ class STCNModel():
         torch.set_grad_enabled(False)
 
         rgb = data['inputs'].float().cuda()
-        msk = data['targets'][0].cuda()
+        msk = data['gt'][0].cuda()
         info = data['info']
         guidemark = info['guidemark']
         k = len(info['labels'][0])

@@ -2,7 +2,7 @@ import os.path as osp
 import nibabel as nib # common way of importing nibabel
 import torch
 import numpy as np
-from theseus.semantic2D.datasets.abdomenct1k import AbdomenCT1KBaseCSVDataset
+from theseus.semantic2D.datasets.abdomenct1k import AbdomenCT1KBaseCSVDataset, all_to_onehot
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
@@ -198,12 +198,45 @@ class AbdomenCT1KValDataset(AbdomenCT1KBaseCSVDataset):
         second = images[:guide_id+1, :, :, :]
         second = torch.flip(second, dims=[0])
         images = torch.cat([first, second], dim=0)        
+        num_slices = images.shape[0]
+
+        masks = []
+        
+        # Same for ground truth
+        gt_vol = ori_vol.squeeze().numpy()
+        gt_vol1 = gt_vol[:, :, guide_id:]
+        gt_vol2 = gt_vol[:, :, :guide_id+1]
+
+        gt_vol2 = np.flip(gt_vol2, axis=-1)
+        gt_vol = np.concatenate([gt_vol1, gt_vol2], axis=-1)        
+
+        # Generate reference frame, only contains first annotation mask 
+        for f in range(num_slices):
+            if f==0 or f == guidemark:
+                masks.append(gt_vol[:,:,f])
+            else:
+                masks.append(np.zeros_like(masks[0]))
+        
+        masks = np.stack(masks, 0)
+
+        if self.single_object:
+            labels = [1]
+            masks = (masks > 0.5).astype(np.uint8)
+            masks = torch.from_numpy(all_to_onehot(masks, labels)).float()
+        else:
+            labels = np.unique(masks)
+            labels = labels[labels!=0]
+            masks = torch.from_numpy(all_to_onehot(masks, labels)).float()
+
+        masks = masks.unsqueeze(2)
 
         data = {
             'inputs': images, # (num_slices+1, C, H, W)
-            'targets': ori_vol.squeeze().numpy(), # for evaluation (1, H, W, num_slices)
+            'targets': masks, # (C, num_slices+1, 1, H, W)
+            'gt': ori_vol.squeeze().numpy(), # for evaluation (1, H, W, num_slices)
             'info': {  # infos are used for validation and inference
                 'name': patient_id,
+                'labels': labels,
                 'guide_id': guide_id,       # guide id frame used for reconvert
                 'guidemark': guidemark,     # 
                 'affine': affine, # from nib.load

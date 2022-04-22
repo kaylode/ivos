@@ -86,6 +86,9 @@ class AbdomenCT1KBaseDataset(torch.utils.data.Dataset):
 
         return out_dict
 
+    def __len__(self):
+        return len(self.fns)
+
 class AbdomenCT1KBaseCSVDataset(AbdomenCT1KBaseDataset):
     """
     Load in csv
