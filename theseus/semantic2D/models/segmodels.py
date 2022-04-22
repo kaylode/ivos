@@ -22,7 +22,7 @@ class BaseSegModel(nn.Module):
     """
     def __init__(
         self, 
-        name: str, 
+        model_name: str, 
         encoder_name : str = "resnet34", 
         num_classes: int = 1000,
         aux_params: Dict = None,
@@ -32,7 +32,7 @@ class BaseSegModel(nn.Module):
 
         self.num_classes = num_classes
         self.model = smp.create_model(
-            arch = name,
+            arch = model_name,
             encoder_name = encoder_name,
             in_channels = in_channels,
             encoder_weights = "imagenet",

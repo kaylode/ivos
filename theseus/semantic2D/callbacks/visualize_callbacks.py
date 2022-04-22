@@ -167,6 +167,15 @@ class VisualizerCallbacks(Callbacks):
         second = images[guidemark:, :, :, :]
         second = np.flip(second, axis=0)
         image_show = np.concatenate([second, first[1:,:,:,:]], axis=0)
+        
+        # iter through timestamp
+        vis_inputs = []
+        for image in image_show:
+            image = image.transpose(1,2,0)
+            image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
+            image = (image*255).astype(int)
+            vis_inputs.append(image)
+        vis_inputs = np.stack(vis_inputs, axis=0).transpose(0,3,1,2)
 
         # iter through timestamp
         decode_masks = []
@@ -181,7 +190,7 @@ class VisualizerCallbacks(Callbacks):
 
         LOGGER.log([{
             'tag': "Validation/vis_inputs",
-            'value': image_show,
+            'value': vis_inputs,
             'type': LoggerObserver.VIDEO,
             'kwargs': {
                 'step': iters,
