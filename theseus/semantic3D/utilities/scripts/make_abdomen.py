@@ -38,7 +38,7 @@ abdomenct1k
 NUM_LABELS = 5
 TARGET_SIZE = (160,160,160)
 TRANSFORM = Compose([
-    PercentileClip(keys=['image'],min_pct=2, max_pct=98),
+    # PercentileClip(keys=['image'],min_pct=2, max_pct=98),
     NormalizeIntensityd(keys=['image'])
 ])
 
