@@ -96,7 +96,7 @@ class STCNModel():
         out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
 
         return {
-            'out': out_masks
+            'outputs': out_masks
         }
 
     def forward_train(self, data: Dict):

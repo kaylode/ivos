@@ -17,8 +17,8 @@ class mIOU(Metric):
         """
         Perform calculation based on prediction and targets
         """
-        targets = batch['gt'].long().squeeze(0).permute(2,1,0)
-        preds = torch.from_numpy(outputs['out']).long()
+        targets = batch['targets'].long().squeeze(0).permute(2,1,0)
+        preds = torch.from_numpy(outputs['outputs']).long()
 
         one_hot_predicts = torch.nn.functional.one_hot(
               preds.long(), 

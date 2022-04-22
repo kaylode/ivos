@@ -103,38 +103,6 @@ class VisualizerCallbacks(Callbacks):
             }
         }])
 
-        # Validation
-        images = val_batch["inputs"]
-        masks = val_batch['targets'].squeeze()
-
-        batch = []
-        for idx, (inputs, mask) in enumerate(zip(images, masks)): # iter through batch
-            # iter through timestamp
-            for t_input, t_mask in zip(inputs, mask):
-                img_show = self.visualizer.denormalize(t_input, mean=[0,0,0], std=[1,1,1])
-                decode_mask = self.visualizer.decode_segmap(t_mask.numpy())
-                img_show = TFF.to_tensor(img_show)
-                decode_mask = TFF.to_tensor(decode_mask/255.0)
-                img_show = torch.cat([img_show, decode_mask], dim=-1)
-                batch.append(img_show)
-        grid_img = self.visualizer.make_grid(batch)
-
-        fig = plt.figure(figsize=(16,8))
-        plt.axis('off')
-        plt.imshow(grid_img)
-        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large', ncol=(len(classnames)//10)+1)
-        plt.tight_layout(pad=0)
-
-        LOGGER.log([{
-            'tag': "Sanitycheck/batch/val",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': iters
-            }
-        }])
-
         plt.cla()   # Clear axis
         plt.clf()   # Clear figure
         plt.close()
@@ -159,7 +127,7 @@ class VisualizerCallbacks(Callbacks):
         last_outputs = logs['last_outputs']['out']
         
         images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
-        masks = last_batch['gt'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
+        masks = last_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
         guidemark = last_batch['info']['guidemark'] # (B, T, H, W) 
         iters = logs['iters']
 

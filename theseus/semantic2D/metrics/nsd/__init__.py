@@ -28,8 +28,8 @@ class NormalizedSurfaceDistance(Metric):
         # outputs: (batch, num_classes, W, H)
         # targets: (batch, num_classes, W, H)
 
-        targets = batch['gt'].long().squeeze(0).permute(2,1,0).numpy()
-        preds = outputs['out'].astype(int)
+        targets = batch['targets'].long().squeeze(0).permute(2,1,0).numpy()
+        preds = outputs['outputs'].astype(int)
         spacing = batch['info']['case_spacing']
         self.compute(targets, preds, spacing)
         self.sample_size += 1

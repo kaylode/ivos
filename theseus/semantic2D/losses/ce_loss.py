@@ -13,7 +13,8 @@ class CELoss(nn.Module):
             self.weight = torch.FloatTensor(self.weight)
         self.ignore_index = ignore_index
 
-    def forward(self, pred, batch, device):
+    def forward(self, outputs, batch, device):
+        pred = outputs["outputs"]
         target = move_to(batch["targets"], device)
 
         if self.weight is not None:
@@ -37,7 +38,8 @@ class SmoothCELoss(nn.Module):
         self.reduction = reduction
         self.alpha = alpha
 
-    def forward(self, pred, batch, device):
+    def forward(self, outputs, batch, device):
+        pred = outputs["outputs"]
         targets = move_to(batch["targets"], device)
         
         batch_size, num_classes = pred.shape[:2]
@@ -73,7 +75,8 @@ class OhemCELoss(nn.Module):
         self.thresh = -torch.log(torch.tensor(thresh, dtype=torch.float))
         self.criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=ignore_label, reduction='none')
 
-    def forward(self, pred: torch.Tensor, batch: Dict, device: torch.device) -> torch.Tensor:
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device) -> torch.Tensor:
+        pred = outputs["outputs"]
         labels = move_to(batch["targets"], device)
         labels = torch.argmax(labels, dim=1) 
 

@@ -15,7 +15,8 @@ class DiceLoss(nn.Module):
         super(DiceLoss, self).__init__()
         self.eps = eps
 
-    def forward(self, predict: torch.Tensor, batch: Dict, device: torch.device):
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device):
+        predict = outputs['outputs']
         targets = move_to(batch["targets"], device)
         prediction = F.softmax(predict, dim=1)  
 
