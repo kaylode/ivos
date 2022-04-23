@@ -124,7 +124,7 @@ class VisualizerCallbacks(Callbacks):
 
         fps = 10
         last_batch = logs['last_batch']
-        last_outputs = logs['last_outputs']['out']
+        last_outputs = logs['last_outputs']['outputs']
         
         images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         masks = last_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 

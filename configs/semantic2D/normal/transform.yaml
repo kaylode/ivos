@@ -1,26 +1,29 @@
 train:
-  name: AlbCompose
+  name: MonaiCompose
   args:
     transforms:
-      - name: AlbResize
+      - name: MonaiLoadImaged
         args:
-          width: 320
-          height: 320
-      - name: AlbHorizontalFlip
+          keys: [image, label]
+      - name: MonaiUnsqueezeOnAxisd
         args:
-      # - name: AlbRandomRotate90
-      #   args:
-      # - name: AlbShiftScaleRotate
-      #   args:
-      #     border_mode: 0
-      #     value: 0
-      - name: AlbToTensorV2
+          keys: [label]
+          axis: 0
+      - name: MonaiToTensord
+        args:
+          keys: [image, label]
+
 val:
-  name: AlbCompose
+  name: MonaiCompose
   args:
     transforms:
-      - name: AlbResize
+      - name: MonaiLoadImaged
         args:
-          width: 320
-          height: 320
-      - name: AlbToTensorV2
+          keys: [image, label]
+      - name: MonaiUnsqueezeOnAxisd
+        args:
+          keys: [label]
+          axis: 0
+      - name: MonaiToTensord
+        args:
+          keys: [image, label]

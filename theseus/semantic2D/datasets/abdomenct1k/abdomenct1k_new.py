@@ -232,8 +232,8 @@ class AbdomenCT1KValDataset(AbdomenCT1KBaseCSVDataset):
 
         data = {
             'inputs': images, # (num_slices+1, C, H, W)
-            'targets': masks, # (C, num_slices+1, 1, H, W)
-            'gt': ori_vol.squeeze().numpy(), # for evaluation (1, H, W, num_slices)
+            'gt': masks, # (C, num_slices+1, 1, H, W)
+            'targets': ori_vol.squeeze().numpy(), # for evaluation (1, H, W, num_slices)
             'info': {  # infos are used for validation and inference
                 'name': patient_id,
                 'labels': labels,

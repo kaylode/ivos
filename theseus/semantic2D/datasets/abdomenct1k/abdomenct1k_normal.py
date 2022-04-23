@@ -32,7 +32,7 @@ class AbdomenCT1KNormalDataset(AbdomenCT1KBaseCSVDataset):
         patient_item = self.fns[idx]
         patient_id = patient_item['pid']
         item_dict = self._load_item(patient_item) 
-        image = item_dict['image']              # torch.Size([C, H, W, T])
+        image = item_dict['image']              # torch.Size([H, W, T])
         gt_vol = item_dict['label'].squeeze(0)  #  torch.Size([H, W, T])
         affine = item_dict['affine']
         case_spacing = item_dict['spacing']
@@ -43,14 +43,13 @@ class AbdomenCT1KNormalDataset(AbdomenCT1KBaseCSVDataset):
         images = []
         masks = []
         for f_idx in frames_idx:
-            this_im = image[:,:,f_idx] #(C, H, W)
+            this_im = image[:,:,f_idx] #(H, W)
             this_gt = gt_vol[:,:,f_idx] #(H, W)
-            this_gt = this_gt.numpy()
 
             images.append(this_im)
             masks.append(this_gt)
-
-        images = torch.stack(images, 0)
+        
+        images = torch.stack(images, 0).unsqueeze(1)
         masks = torch.stack(masks, 0)
 
         
