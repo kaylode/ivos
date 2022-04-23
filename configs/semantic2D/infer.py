@@ -86,11 +86,10 @@ class TestPipeline(BaseTestPipeline):
                     self.prop_model, rgb, k, 
                     top_k=self.top_k, 
                     mem_every=self.mem_every)
-                
                 out_masks = processor.get_prediction({
                     'rgb': rgb,
                     'msk': msk,
-                    'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
+                    'prop_range': [(0, guidemark), (guidemark, rgb.shape[1])] # reference guide frame index, 0 because we already process in the dataset
                 })['masks']
 
                 torch.cuda.synchronize()

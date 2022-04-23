@@ -83,9 +83,12 @@ class InferenceCore:
 
         msk = adict['msk']
         rgb = adict['rgb']
-        frame_idx = adict['frame_idx']
+        prop_range = adict['prop_range']
 
-        self.interact(msk[:,0], frame_idx, rgb.shape[1])
+        # iter through all reference images and register into memory
+        for prange in prop_range:
+            start_idx, end_idx = prange
+            self.interact(msk[:,start_idx], start_idx, end_idx)
 
         # Do unpad -> upsample to original size 
         out_masks = torch.zeros((self.t, 1, *rgb.shape[-2:]), dtype=torch.float32, device=self.device)

@@ -86,7 +86,7 @@ class STCNModel():
         out_masks = self.processor.get_prediction({
             'rgb': rgb,
             'msk': msk,
-            'frame_idx': 0 # reference guide frame index, 0 because we already process in the dataset
+            'prop_range': [(0, int(guidemark)), (int(guidemark), rgb.shape[1])] # reference guide frame index, 0 because we already process in the dataset
         })['masks']
 
         first = out_masks[:guidemark, :, :]
@@ -94,6 +94,10 @@ class STCNModel():
         second = np.flip(second, axis=0)
 
         out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
+
+        del rgb
+        del msk
+        del self.processor
 
         return {
             'outputs': out_masks
