@@ -40,11 +40,11 @@ class VisualizerCallbacks(Callbacks):
         val_batch = next(iter(valloader))
         trainset = trainloader.dataset
         valset = valloader.dataset
-        classnames = valset.classnames
+        self.classnames = valset.classnames
 
         self.visualize_model(model, train_batch)
         self.params['trainer'].evaluate_epoch()
-        self.visualize_gt(train_batch, val_batch, iters, classnames)
+        self.visualize_gt(train_batch, val_batch, iters, self.classnames)
         self.analyze_gt(trainset, valset, iters)
 
     @torch.no_grad()
@@ -95,11 +95,50 @@ class VisualizerCallbacks(Callbacks):
         plt.tight_layout(pad=0)
 
         LOGGER.log([{
-            'tag': "Sanitycheck/batch/train",
+            'tag': "Sanitycheck/train_batch",
             'value': fig,
             'type': LoggerObserver.FIGURE,
             'kwargs': {
                 'step': iters
+            }
+        }])
+
+
+        images = val_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        masks = val_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
+        guidemark = val_batch['info']['guidemark'] # (B, T, H, W) 
+
+        first = images[:guidemark, :, :, :]
+        second = images[guidemark:, :, :, :]
+        second = np.flip(second, axis=0)
+        image_show = np.concatenate([second, first[1:,:,:,:]], axis=0)
+        
+        # iter through timestamp
+        vis_inputs = []
+        for image in image_show:
+            image = image.transpose(1,2,0)
+            image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
+            image = (image*255).astype(int)
+            vis_inputs.append(image)
+        vis_inputs = np.stack(vis_inputs, axis=0).transpose(0,3,1,2)
+
+        # iter through timestamp
+        decode_masks = []
+        decode_preds = []
+        for mask in masks:
+            decode_mask = self.visualizer.decode_segmap(mask.squeeze())
+            decode_masks.append(decode_mask)
+        decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
+        concated_vis = np.concatenate([vis_inputs, decode_masks], axis=-1)
+        
+        ###
+        LOGGER.log([{
+            'tag': "Sanitycheck/val_batch",
+            'value': concated_vis,
+            'type': LoggerObserver.VIDEO,
+            'kwargs': {
+                'step': iters,
+                'fps': 10
             }
         }])
 
@@ -128,7 +167,8 @@ class VisualizerCallbacks(Callbacks):
         
         images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         masks = last_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
-        guidemark = last_batch['info']['guidemark'] # (B, T, H, W) 
+        guidemark = last_batch['info']['guidemark']
+        guide_id = last_batch['info']['guide_id']
         iters = logs['iters']
 
         first = images[:guidemark, :, :, :]
@@ -156,9 +196,12 @@ class VisualizerCallbacks(Callbacks):
         decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
         decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
 
+        concated_vis = np.concatenate([vis_inputs, decode_masks, decode_preds], axis=-1) # (T, C, 3H, W)
+        reference_img = concated_vis[guide_id].transpose(1,2,0) # (C, 3H, W)
+
         LOGGER.log([{
-            'tag': "Validation/vis_inputs",
-            'value': vis_inputs,
+            'tag': "Validation/val_prediction",
+            'value': concated_vis,
             'type': LoggerObserver.VIDEO,
             'kwargs': {
                 'step': iters,
@@ -166,22 +209,22 @@ class VisualizerCallbacks(Callbacks):
             }
         }])
 
-        LOGGER.log([{
-            'tag': "Validation/vis_ground truth",
-            'value': decode_masks,
-            'type': LoggerObserver.VIDEO,
-            'kwargs': {
-                'step': iters,
-                'fps': fps
-            }
-        }])
+        fig = plt.figure(figsize=(15,5))
+        plt.axis('off')
+        plt.imshow(reference_img)
+
+        # segmentation color legends 
+        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
+                                label=self.classnames[i]) for i in range(len(self.classnames))]
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
+                fontsize='large', ncol=(len(self.classnames)//10)+1)
+        plt.tight_layout(pad=0)
 
         LOGGER.log([{
-            'tag': "Validation/vis_prediction",
-            'value': decode_preds,
-            'type': LoggerObserver.VIDEO,
+            'tag': "Validation/reference",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
             'kwargs': {
-                'step': iters,
-                'fps': fps
+                'step': iters
             }
         }])

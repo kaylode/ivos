@@ -79,13 +79,13 @@ data:
         csv_path: /content/data/abdomenct1k/Subtask1-processed/val.csv
   dataloader:
     train:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
         batch_size: 32
         drop_last: false
         shuffle: false
     val:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
         batch_size: 1
         drop_last: false
