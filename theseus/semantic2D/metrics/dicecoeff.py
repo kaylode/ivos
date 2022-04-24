@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 import torch
 import numpy as np
+from theseus.utilities.cuda import move_to
 from theseus.base.metrics.metric_template import Metric
 
 class DiceScore(Metric):
@@ -19,8 +20,16 @@ class DiceScore(Metric):
         """
         Perform calculation based on prediction and targets
         """
-        targets = batch['targets'].long().squeeze(0).permute(2,1,0)
-        preds = torch.from_numpy(outputs['outputs']).long()
+
+        targets = batch['targets']
+        outputs = outputs['outputs']
+        
+        if len(outputs.shape) == 4: # prob
+            preds = torch.argmax(outputs, dim=1)
+            preds = move_to(preds, torch.device('cpu'))
+        else: #argmaxed
+            targets = targets.long().squeeze(0).permute(2,1,0)
+            preds = torch.from_numpy(outputs).long()
 
         one_hot_predicts = torch.nn.functional.one_hot(
               preds.long(), 
