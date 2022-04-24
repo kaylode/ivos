@@ -27,7 +27,7 @@ class ModelWithLoss():
             for metric in metrics:
                 metric.update(outputs, batch)
             return {
-                'outputs': outputs,
+                'model_outputs': outputs,
                 'loss': 0,
                 'loss_dict': {"None": 0}
             }
@@ -37,7 +37,7 @@ class ModelWithLoss():
             }, it=batch['iters'])
         
             return {
-                'outputs': outputs,
+                'model_outputs': outputs,
                 'loss': loss,
                 'loss_dict': loss_dict
             }
