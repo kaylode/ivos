@@ -12,7 +12,7 @@ from theseus.utilities.cuda import move_to
 
 LOGGER = LoggerObserver.getLogger("main")
 
-class NormalVisualizerCallbacks(BaseVisualizerCallbacks):
+class NormalVisualizerCallbacks(Callbacks):
     """
     Callbacks for visualizing stuff during training
     Features:
@@ -44,7 +44,6 @@ class NormalVisualizerCallbacks(BaseVisualizerCallbacks):
         self.visualize_model(model, train_batch)
         self.params['trainer'].evaluate_epoch()
         self.visualize_gt(train_batch, val_batch, iters, self.classnames)
-        self.analyze_gt(trainset, valset, iters)
 
     @torch.no_grad()
     def visualize_model(self, model, batch):
