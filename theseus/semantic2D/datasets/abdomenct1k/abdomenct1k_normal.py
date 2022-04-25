@@ -84,20 +84,14 @@ class AbdomenCT1KNormalDataset(AbdomenCT1KBaseCSVDataset):
             'ori_sizes': ori_sizes
         }
 
-class AbdomenCT1KNormalTestset(torch.utils.data.Dataset):
+class AbdomenCT1KNormalValDataset(AbdomenCT1KNormalDataset):
 
-    def __init__(self, root_dir, sample_fp=0, max_frame=15, transform=None):
-        super().__init__()
-        self.root_dir=root_dir 
-        self.sample_fp=sample_fp 
-        self.max_frame=max_frame
-        self.transform=transform
-        self.load_data()
+    def __init__(self, root_dir, csv_path, sample_fp=0, max_frame=-1, transform=None):
+        super().__init__(root_dir, csv_path, transform)
+        self.sample_fp = sample_fp
+        self.max_frame = max_frame
 
-    def load_data(self):
-        self.fns = sorted(os.listdir(self.root_dir))
-
-    def sampling_frames(self, num_frames, sample_fp, max_frame):
+    def sampling_frames(self, num_frames):
         """sample video into tensor
         Args:
             video_file: location of video file
@@ -107,10 +101,13 @@ class AbdomenCT1KNormalTestset(torch.utils.data.Dataset):
             image_input: sample frames
         """
 
-        assert sample_fp > -1
+        assert self.sample_fp > -1
+
+        if self.max_frame == -1:
+            self.max_frame = num_frames
 
         # Pre-uniform sampling
-        current_frame = num_frames // sample_fp # number of frames based on rate
+        current_frame = num_frames // self.sample_fp # number of frames based on rate
         current_sample_indx = np.linspace(
           0, num_frames - 1, 
           num=current_frame, dtype=int) # sample frames, with step equals sample_fp
@@ -118,50 +115,11 @@ class AbdomenCT1KNormalTestset(torch.utils.data.Dataset):
         # if the length of current_sample_indx is already less than max_frame, just use the current version to tensor
         # else continue to uniformly sample the frames whose length is max_frame
         # when training, the frames are sampled randomly in the uniform split interval
-        if max_frame >=  current_sample_indx.shape[0]:
+        if self.max_frame >=  current_sample_indx.shape[0]:
             frame_index = np.arange(0, current_sample_indx.shape[0])
         else:
-            frame_index = np.linspace(0, current_sample_indx.shape[0] - 1, num=max_frame, dtype=int)
+            frame_index = np.linspace(0, current_sample_indx.shape[0] - 1, num=self.max_frame, dtype=int)
 
         sampled_frame_ids = [current_sample_indx[int(index)] for index in frame_index]
         
         return sampled_frame_ids
-
-    def __getitem__(self, idx):
-        vol_name = self.fns[idx]
-        vol_path = osp.join(self.root_dir, vol_name)
-        
-        vol_image = nib.load(vol_path)
-        affine = vol_image.affine
-        case_spacing = vol_image.header.get_zooms()
-
-        tensor_vol = self.transform({
-            'image': [vol_path],
-        })['image']
-
-        width, height, num_slices = tensor_vol.shape
-        frames_idx = self.sampling_frames(num_slices, self.sample_fp, self.max_frame)
-       
-        images = []
-        for f_idx in frames_idx:
-            this_im = tensor_vol[:,:,f_idx] #(H, W)
-            images.append(this_im)
-
-        images = torch.stack(images, 0)
-
-        return {
-            "input": images, 
-            'img_name': vol_name,
-            'ori_size': [width, height],
-        }
-
-    def collate_fn(self, batch):
-        imgs = torch.cat([i['input'] for i in batch], dim=0)
-        img_names = [i['img_name'] for i in batch]
-        ori_sizes = [i['ori_size'] for i in batch]
-        
-        return {
-            'inputs': imgs,
-            'img_names': img_names,
-            'ori_sizes': ori_sizes
-        }
