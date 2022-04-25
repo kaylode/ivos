@@ -12,7 +12,7 @@ from theseus.utilities.cuda import move_to
 
 LOGGER = LoggerObserver.getLogger("main")
 
-class BaseVisualizerCallbacks(Callbacks):
+class VolumeVisualizerCallbacks(Callbacks):
     """
     Callbacks for visualizing stuff during training
     Features:
@@ -152,3 +152,78 @@ class BaseVisualizerCallbacks(Callbacks):
 
         LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
         return
+
+    @torch.no_grad()
+    def on_val_epoch_end(self, logs: Dict=None):
+        """
+        After finish validation
+        """
+        LOGGER.text("Visualizing predictions...", level=LoggerObserver.DEBUG)
+
+        fps = 10
+        last_batch = logs['last_batch']
+        last_outputs = logs['last_outputs']['outputs']
+        
+        images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        masks = last_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
+        guidemark = last_batch['info']['guidemark']
+        guide_id = last_batch['info']['guide_id']
+        iters = logs['iters']
+
+        first = images[:guidemark, :, :, :]
+        second = images[guidemark:, :, :, :]
+        second = np.flip(second, axis=0)
+        image_show = np.concatenate([second, first[1:,:,:,:]], axis=0)
+        
+        # iter through timestamp
+        vis_inputs = []
+        for image in image_show:
+            image = image.transpose(1,2,0)
+            image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
+            image = (image*255).astype(int)
+            vis_inputs.append(image)
+        vis_inputs = np.stack(vis_inputs, axis=0).transpose(0,3,1,2)
+
+        # iter through timestamp
+        decode_masks = []
+        decode_preds = []
+        for mask, pred in zip(masks, last_outputs):
+            decode_pred = self.visualizer.decode_segmap(pred)
+            decode_mask = self.visualizer.decode_segmap(mask.squeeze())
+            decode_masks.append(decode_mask)
+            decode_preds.append(decode_pred)
+        decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
+        decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
+
+        concated_vis = np.concatenate([vis_inputs, decode_masks, decode_preds], axis=-1) # (T, C, 3H, W)
+        reference_img = concated_vis[guide_id].transpose(1,2,0) # (C, 3H, W)
+
+        LOGGER.log([{
+            'tag': "Validation/val_prediction",
+            'value': concated_vis,
+            'type': LoggerObserver.VIDEO,
+            'kwargs': {
+                'step': iters,
+                'fps': fps
+            }
+        }])
+
+        fig = plt.figure(figsize=(15,5))
+        plt.axis('off')
+        plt.imshow(reference_img)
+
+        # segmentation color legends 
+        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
+                                label=self.classnames[i]) for i in range(len(self.classnames))]
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
+                fontsize='large', ncol=(len(self.classnames)//10)+1)
+        plt.tight_layout(pad=0)
+
+        LOGGER.log([{
+            'tag': "Validation/reference",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': iters
+            }
+        }])

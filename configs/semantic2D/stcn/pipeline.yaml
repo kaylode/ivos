@@ -24,7 +24,7 @@ callbacks:
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
-  - name: VisualizerCallbacks
+  - name: VolumeVisualizerCallbacks
     args: null
   - name: WandbCallbacks
     args: 
