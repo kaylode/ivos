@@ -26,6 +26,7 @@ class DiceScore(Metric):
         
         if len(outputs.shape) == 4: # prob
             preds = torch.argmax(outputs, dim=1)
+            targets = torch.argmax(targets, dim=1)
             preds = move_to(preds, torch.device('cpu'))
         else: #argmaxed
             targets = targets.long().squeeze(0).permute(2,1,0)

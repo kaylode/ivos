@@ -22,7 +22,7 @@ callbacks:
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
-  - name: VisualizerCallbacks
+  - name: NormalVisualizerCallbacks
     args: null
   - name: WandbCallbacks
     args: 
@@ -87,6 +87,6 @@ data:
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 1
+        batch_size: 32
         drop_last: false
         shuffle: false

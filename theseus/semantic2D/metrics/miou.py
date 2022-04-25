@@ -23,6 +23,7 @@ class mIOU(Metric):
         
         if len(outputs.shape) == 4: # prob
             preds = torch.argmax(outputs, dim=1)
+            targets = torch.argmax(targets, dim=1)
             preds = move_to(preds, torch.device('cpu'))
         else: #argmaxed
             targets = targets.long().squeeze(0).permute(2,1,0)
@@ -30,7 +31,9 @@ class mIOU(Metric):
 
         one_hot_predicts = torch.nn.functional.one_hot(
               preds.long(), 
-              num_classes=self.num_classes).permute(0, 3, 1, 2)
+              num_classes=self.num_classes)
+              
+        one_hot_predicts=one_hot_predicts.permute(0, 3, 1, 2)
 
         one_hot_targets = torch.nn.functional.one_hot(
               targets.long(), 
