@@ -15,17 +15,18 @@ class AbdomenCT1KNormalDataset(AbdomenCT1KBaseCSVDataset):
         self, 
         root_dir: str,
         csv_path: str,
+        max_frames: int,
         transform=None,
         **kwargs):
 
         super().__init__(root_dir, csv_path, transform)
+        self.max_frames = max_frames
 
     def sampling_frames(self, num_frames):
-        start_idx = np.random.randint(0, num_frames//3)
-        f1_idx = np.random.randint(num_frames//3, 2*(num_frames//3))
-        f2_idx = np.random.randint(2*(num_frames//3), num_frames)
-
-        frames_idx = [start_idx, f1_idx, f2_idx]
+        if self.max_frames == -1:
+            self.max_frames = num_frames
+            
+        frames_idx = np.random.choice(range(num_frames), size=self.max_frames, replace=False)
         return frames_idx
 
     def __getitem__(self, idx):
@@ -86,10 +87,9 @@ class AbdomenCT1KNormalDataset(AbdomenCT1KBaseCSVDataset):
 
 class AbdomenCT1KNormalValDataset(AbdomenCT1KNormalDataset):
 
-    def __init__(self, root_dir, csv_path, sample_fp=0, max_frame=-1, transform=None):
-        super().__init__(root_dir, csv_path, transform)
+    def __init__(self, root_dir, csv_path, sample_fp=0, max_frames=-1, transform=None):
+        super().__init__(root_dir, csv_path, max_frames, transform)
         self.sample_fp = sample_fp
-        self.max_frame = max_frame
 
     def sampling_frames(self, num_frames):
         """sample video into tensor
@@ -103,8 +103,8 @@ class AbdomenCT1KNormalValDataset(AbdomenCT1KNormalDataset):
 
         assert self.sample_fp > -1
 
-        if self.max_frame == -1:
-            self.max_frame = num_frames
+        if self.max_frames == -1:
+            self.max_frames = num_frames
 
         # Pre-uniform sampling
         current_frame = num_frames // self.sample_fp # number of frames based on rate
@@ -112,13 +112,13 @@ class AbdomenCT1KNormalValDataset(AbdomenCT1KNormalDataset):
           0, num_frames - 1, 
           num=current_frame, dtype=int) # sample frames, with step equals sample_fp
         
-        # if the length of current_sample_indx is already less than max_frame, just use the current version to tensor
-        # else continue to uniformly sample the frames whose length is max_frame
+        # if the length of current_sample_indx is already less than max_frames, just use the current version to tensor
+        # else continue to uniformly sample the frames whose length is max_frames
         # when training, the frames are sampled randomly in the uniform split interval
-        if self.max_frame >=  current_sample_indx.shape[0]:
+        if self.max_frames >=  current_sample_indx.shape[0]:
             frame_index = np.arange(0, current_sample_indx.shape[0])
         else:
-            frame_index = np.linspace(0, current_sample_indx.shape[0] - 1, num=self.max_frame, dtype=int)
+            frame_index = np.linspace(0, current_sample_indx.shape[0] - 1, num=self.max_frames, dtype=int)
 
         sampled_frame_ids = [current_sample_indx[int(index)] for index in frame_index]
         
