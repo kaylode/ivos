@@ -14,7 +14,7 @@ from theseus.utilities.tuner.tuner_callbacks import TuningCallbacks
 LOGGER = LoggerObserver.getLogger('main')
 
 # Change the pipeline that need to tune
-from theseus.semantic.pipeline import Pipeline
+from theseus.semantic2D.pipeline import Pipeline
 
 
 class TuningPipeline(Pipeline):

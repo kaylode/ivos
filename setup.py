@@ -12,7 +12,7 @@ setuptools.setup(
         "albumentations>=1.1.0",
         "torchvision",
         "tqdm",
-        "timm>=0.5.4",
+        "timm==0.4.12",
         "pyyaml>=5.1",
         "webcolors",
         "omegaconf",
