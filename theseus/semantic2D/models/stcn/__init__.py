@@ -68,6 +68,7 @@ class STCNModel():
         else:
             return self.forward_val(data)
 
+    @torch.no_grad()
     def forward_val(self, data: Dict):
         torch.set_grad_enabled(False)
 

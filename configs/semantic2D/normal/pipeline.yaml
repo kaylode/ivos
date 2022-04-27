@@ -73,24 +73,24 @@ data:
         root_dir: /content/data/abdomenct1k/Subtask1-processed/
         csv_path: /content/data/abdomenct1k/Subtask1-processed/train.csv
         sample_fp: 15 #steps between samples
-        max_frame: 5 #maximum 
+        max_frames: 10  
     val:
-      name: AbdomenCT1KNormalDataset
+      name: AbdomenCT1KNormalValDataset
       args:
         root_dir: /content/data/abdomenct1k/Subtask1-processed/
         csv_path: /content/data/abdomenct1k/Subtask1-processed/val.csv
-        sample_fp: 15 #steps between samples
-        max_frame: -1 #maximum 
+        sample_fp: 1 #steps between samples
+        max_frames: -1 #maximum 
   dataloader:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 32
+        batch_size: 8
         drop_last: false
         shuffle: false
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 32
+        batch_size: 1
         drop_last: false
         shuffle: false
