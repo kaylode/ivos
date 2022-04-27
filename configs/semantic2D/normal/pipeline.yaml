@@ -72,8 +72,10 @@ data:
       args:
         root_dir: /content/data/abdomenct1k/Subtask1-processed/
         csv_path: /content/data/abdomenct1k/Subtask1-processed/train.csv
+        sample_fp: 15 #steps between samples
+        max_frame: 5 #maximum 
     val:
-      name: AbdomenCT1KNormalValDataset
+      name: AbdomenCT1KNormalDataset
       args:
         root_dir: /content/data/abdomenct1k/Subtask1-processed/
         csv_path: /content/data/abdomenct1k/Subtask1-processed/val.csv
