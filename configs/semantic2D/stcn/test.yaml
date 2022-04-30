@@ -3,9 +3,17 @@ global:
   cfg_transform: configs/semantic/transform.yaml
   save_dir: runs
   device: cuda:0
-  weights: null
+  ref_weights: null
+  prop_weights: null
   top_k: 20
   mem_every: 5
+ref_model:
+  name: BaseSegModel
+  args:
+    model_name: unetplusplus
+    encoder_name : efficientnet-b0
+    in_channels: 1
+
 data: 
   dataset:
     name: Brats21Testset
