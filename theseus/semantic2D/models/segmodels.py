@@ -60,7 +60,7 @@ class BaseSegModel(nn.Module):
         device: `torch.device`
             current device 
         """
-        outputs = self.model(adict, device)['outputs']
+        outputs = self.forward(adict, device)['outputs']
 
         if self.num_classes == 1:
             thresh = adict['thresh']

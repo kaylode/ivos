@@ -44,11 +44,16 @@ class InferenceCore:
 
     def do_pass(self, key_k, key_v, idx, end_idx):
         self.mem_bank.add_memory(key_k, key_v)
-        closest_ti = end_idx
 
         # Note that we never reach closest_ti, just the frame before it
-        this_range = range(idx+1, closest_ti)
-        end = closest_ti - 1
+        if idx < end_idx:
+            closest_ti = end_idx
+            this_range = range(idx+1, closest_ti)
+            end = closest_ti - 1
+        else:
+            closest_ti = idx
+            this_range = range(end_idx-1, closest_ti, -1)
+            end = closest_ti + 1
 
         for ti in this_range:
             k16, qv16, qf16, qf8, qf4 = self.encode_key(ti)
@@ -68,7 +73,6 @@ class InferenceCore:
 
     def interact(self, mask, frame_idx, end_idx):
         mask, _ = pad_divide_by(mask.cuda(), 16)
-
         self.prob[:, frame_idx] = aggregate(mask, keep_bg=True)
 
         # KV pair for the interacting frame
