@@ -72,7 +72,7 @@ class TestPipeline(BaseTestPipeline):
 
             with torch.cuda.amp.autocast(enabled=False):
                 rgb = data['inputs'].float().cuda()
-                msk = data['targets'][0].cuda()
+                msk = data['targets'][0].cuda() #4, 161, 1, 160, 160
                 info = data['info']
                 name = info['name']
                 guidemark = info['guidemark']

@@ -13,14 +13,14 @@ import torch
 import nibabel as nib
 from theseus.opt import Config
 from theseus.semantic2D.models import MODEL_REGISTRY
-from theseus.semantic2D.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from theseus.utilities.loggers import LoggerObserver
 from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
 from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
 from theseus.base.pipeline import BaseTestPipeline
-
+from theseus.utilities.loading import load_state_dict
 from theseus.utilities.getter import get_instance
 
 class TestPipeline(BaseTestPipeline):
@@ -50,16 +50,19 @@ class TestPipeline(BaseTestPipeline):
         # Load our checkpoint
         self.prop_model = STCNEval().to(self.device).eval()
 
-        CLASSNAMES = self.dataset.classnames
+        self.classnames = self.dataset.classnames
         self.ref_model = get_instance(
             self.opt["ref_model"], 
             registry=self.model_registry, 
-            num_classes=len(CLASSNAMES),
-            classnames=CLASSNAMES)
+            num_classes=len(self.classnames),
+            classnames=self.classnames)
+
+        self.num_classes = len(self.classnames)
 
     def init_loading(self):
         self.prop_weights = self.opt['global']['prop_weights']
         self.ref_weights = self.opt['global']['ref_weights']
+ 
 
         # Performs input mapping such that stage 0 model can be loaded
         prop_saved = torch.load(self.prop_weights)['model']
@@ -71,8 +74,9 @@ class TestPipeline(BaseTestPipeline):
         self.prop_model.load_state_dict(prop_saved)
 
         # Load reference model
-        ref_state_dict = torch.load(self.ref_weights)['model']
-        self.ref_model.load_state_dict(ref_state_dict)
+        ref_state_dict = torch.load(self.ref_weights)
+        self.ref_model.model = load_state_dict(self.ref_model.model, ref_state_dict, "model")
+        self.ref_model = self.ref_model.to(self.device)
         self.ref_model.eval()
 
     def search_reference(self, vol_mask, global_indices, pad_length, strategy="all"):
@@ -94,7 +98,8 @@ class TestPipeline(BaseTestPipeline):
             elif num_classes > max_possible_number_of_classes:
                 max_possible_number_of_classes = num_classes
                 candidates_local_indices = [frame_idx]
-
+        
+        
         if strategy == 'random':
             random_idx = np.random.choice(candidates_local_indices)
             candidates_local_indices = [random_idx]
@@ -106,13 +111,18 @@ class TestPipeline(BaseTestPipeline):
             for i in range(len(candidates_global_indices)-1)
         ]
         prop_range = \
-            [(0, candidates_global_indices[0])] \
+            [(candidates_global_indices[0], 0)] \
             + prop_range \
-            + [(candidates_global_indices[-1], pad_length)]
+            + [(candidates_global_indices[-1], pad_length)] 
 
-        for global_idx in range(pad_length):
+        global_to_local = {
+          k:v for k, v in zip(candidates_global_indices, candidates_local_indices)
+        }
+
+        masks = []
+        for local_idx, global_idx in enumerate(range(pad_length)):
             if global_idx in candidates_global_indices:
-                masks.append(vol_mask[global_idx])
+                masks.append(vol_mask[global_to_local[global_idx]])
             else:
                 masks.append(np.zeros_like(vol_mask[0]))
         
@@ -121,6 +131,16 @@ class TestPipeline(BaseTestPipeline):
 
         # for evaluation (H, W, num_slices)
         return masks, prop_range
+
+    def _encode_masks(self, masks):
+        """
+        Input masks from _load_mask(), but in shape [B, H, W]
+        Output should be one-hot encoding of segmentation masks [B, NC, H, W]
+        """
+        
+        one_hot = torch.nn.functional.one_hot(masks.long(), num_classes=self.num_classes) # (B,H,W,NC)
+        one_hot = one_hot.permute(0, 3, 1, 2) # (B,NC,H,W)
+        return one_hot.float()
 
     @torch.no_grad()
     def inference(self):
@@ -139,23 +159,23 @@ class TestPipeline(BaseTestPipeline):
                 candidates = self.ref_model.get_prediction({
                     'inputs': data['ref_images']
                 }, self.device)['masks']
-                
-                full_images = data['full_images']
 
+                full_images = data['full_images']
                 ref_frames, prop_range = self.search_reference(
                     candidates, 
-                    global_indices=data['ref_indices'], 
-                    pad_length=full_images.shape[0]
-                )
+                    global_indices=data['ref_indices'][0], 
+                    pad_length=full_images.shape[1])
 
+                
                 # SECOND STAGE: Full images
                 rgb = full_images.float().cuda()
-                msk = ref_frames.cuda()
-                info = data['info']
+                msk = self._encode_masks(ref_frames)
+                k = self.num_classes
+                msk = msk.permute(1,0,2,3).unsqueeze(2).cuda()
+                info = data['infos'][0]
                 name = info['img_name']
                 affine = info['affine']
-                k = np.unique(ref_frames)
-
+       
                 torch.cuda.synchronize()
                 process_begin = time.time()
 
@@ -163,21 +183,20 @@ class TestPipeline(BaseTestPipeline):
                     self.prop_model, rgb, k, 
                     top_k=self.top_k, 
                     mem_every=self.mem_every)
-
+                
                 out_masks = processor.get_prediction({
                     'rgb': rgb,
                     'msk': msk,
                     'prop_range': prop_range
                 })['masks']
-
+                
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
                 out_masks = out_masks.transpose(1,2,0) # H, W, T
-                ni_img = nib.Nifti1Image(out_masks, affine.squeeze(0).numpy())
-                patient_id = osp.basename(name[0]).split('.')[0].split('_')[0]
-                this_out_path = osp.join(self.savedir, str(patient_id)+'.nii.gz')
+                ni_img = nib.Nifti1Image(out_masks, affine)
+                this_out_path = osp.join(self.savedir, str(name))
                 nib.save(ni_img, this_out_path)
 
             del rgb
