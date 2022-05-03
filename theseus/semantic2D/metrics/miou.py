@@ -26,7 +26,7 @@ class mIOU(Metric):
             targets = torch.argmax(targets, dim=1)
             preds = move_to(preds, torch.device('cpu'))
         else: #argmaxed
-            targets = targets.long().squeeze(0).permute(2,1,0)
+            targets = targets.permute(3,0,1,2).long().squeeze()
             preds = torch.from_numpy(outputs).long()
 
         one_hot_predicts = torch.nn.functional.one_hot(
