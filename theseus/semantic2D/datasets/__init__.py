@@ -9,10 +9,13 @@ from .abdomenct1k import (
     AbdomenCT1KValDataset,
     AbdomenCT1KNormalDataset,
     AbdomenCT1KNormalValDataset,
-    AbdomenCT1KTestDataset
+    AbdomenCT1KTestDataset,
+    ReSampler
 )
 DATASET_REGISTRY.register(AbdomenCT1KTrainDataset)
 DATASET_REGISTRY.register(AbdomenCT1KValDataset)
 DATASET_REGISTRY.register(AbdomenCT1KNormalValDataset)
 DATASET_REGISTRY.register(AbdomenCT1KNormalDataset)
 DATASET_REGISTRY.register(AbdomenCT1KTestDataset)
+
+DATALOADER_REGISTRY.register(ReSampler)
