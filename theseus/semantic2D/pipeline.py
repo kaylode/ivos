@@ -2,11 +2,13 @@ from typing import Callable, Dict, Optional
 import torch
 from theseus.opt import Config
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
-from theseus.utilities.cuda import get_devices_info
+from theseus.utilities.cuda import get_devices_info, move_to
+from theseus.utilities.loading import load_state_dict
 
 from theseus.opt import Config
 from theseus.base.pipeline import BasePipeline
-from theseus.semantic2D.models.wrapper import ModelWithLoss
+from theseus.semantic2D.models import wrapper as refine_model
+from theseus.base.models import wrapper as refer_model
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic2D.losses import LOSS_REGISTRY
@@ -27,6 +29,7 @@ class Pipeline(BasePipeline):
     ):
         super(Pipeline, self).__init__(opt)
         self.opt = opt
+        self.stage = self.opt['global']['stage']
 
     def init_registry(self):
         self.model_registry = MODEL_REGISTRY
@@ -44,14 +47,27 @@ class Pipeline(BasePipeline):
         )
 
     def init_loading(self):
-        super().init_loading()
+        
+        self.resume = self.opt['global']['resume']
+        self.pretrained = self.opt['global']['pretrained']
+        self.last_epoch = -1
         if self.pretrained:
-            state_dict = torch.load(self.pretrained, map_location='cpu')
-            self.model.model.load_network(state_dict['model'])
+            state_dict = torch.load(self.pretrained)
+            if self.stage == 'reference':
+                self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
+            else:
+                state_dict = torch.load(self.pretrained)
+                self.model.model.load_network(state_dict['model'])
 
         if self.resume:
-            state_dict = torch.load(self.resume, map_location='cpu')
-            self.model.model.load_network(state_dict['model'])
+            state_dict = torch.load(self.resume)
+            self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
+            iters = load_state_dict(None, state_dict, 'iters')
+            self.last_epoch = iters//len(self.train_dataloader) - 1
+            if self.stage == 'reference':
+                self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
+            else:
+                self.model.model.load_network(state_dict['model'])
 
     def init_model(self):
         CLASSNAMES = self.val_dataset.classnames
@@ -60,7 +76,8 @@ class Pipeline(BasePipeline):
             registry=self.model_registry, 
             num_classes=len(CLASSNAMES),
             classnames=CLASSNAMES)
-        # model = move_to(model, self.device)
+        if self.stage == 'reference':
+            model = move_to(model, self.device)
         return model
 
     def init_metrics(self):
@@ -74,7 +91,10 @@ class Pipeline(BasePipeline):
     def init_model_with_loss(self):
         model = self.init_model()
         criterion = self.init_criterion()
-        self.model = ModelWithLoss(model, criterion, self.device)
+        if self.stage == 'reference':
+            self.model = refer_model.ModelWithLoss(model, criterion, self.device)
+        else:
+            self.model = refine_model.ModelWithLoss(model, criterion, self.device)
         self.logger.text(f"Number of trainable parameters: {self.model.trainable_parameters():,}", level=LoggerObserver.INFO)
         device_info = get_devices_info(self.device_name)
         self.logger.text("Using " + device_info, level=LoggerObserver.INFO)

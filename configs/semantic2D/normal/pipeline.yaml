@@ -7,6 +7,7 @@ global:
   device: cuda:0
   pretrained: null
   resume: null
+  stage: reference
 trainer:
   name: SupervisedTrainer
   args:
