@@ -31,9 +31,9 @@ class STCNModel():
         self.top_k_eval = top_k_eval
         self.mem_every_eval = mem_every_eval
 
-        self.train_model = STCNTrain(self.single_object)
+        self.train_model = STCNTrain(self.single_object).cuda()
         self.eval_model = STCNEval()
-        self.training = False
+        self.training = True
         self.pretrained = pretrained
 
         if self.pretrained:
