@@ -28,7 +28,7 @@ class InferenceCore:
         self.k = num_objects
 
         # Background included, not always consistent (i.e. sum up to 1)
-        self.prob = torch.zeros((self.k+1, t, 1, nh, nw), dtype=torch.float32, device=self.device)
+        self.prob = torch.zeros((self.k, t, 1, nh, nw), dtype=torch.float32, device=self.device)
         self.prob[0] = 1e-7
 
         self.t, self.h, self.w = t, h, w
@@ -36,7 +36,7 @@ class InferenceCore:
         self.kh = self.nh//16
         self.kw = self.nw//16
 
-        self.mem_bank = MemoryBank(k=self.k, top_k=top_k)
+        self.mem_bank = MemoryBank(k=self.k-1, top_k=top_k)
 
     def encode_key(self, idx):
         result = self.prop_net.encode_key(self.images[:,idx].cuda())
@@ -51,14 +51,13 @@ class InferenceCore:
             this_range = range(idx+1, closest_ti)
             end = closest_ti - 1
         else:
-            closest_ti = idx
-            this_range = range(end_idx-1, closest_ti, -1)
+            closest_ti = end_idx
+            this_range = range(idx, closest_ti-1, -1)
             end = closest_ti + 1
 
         for ti in this_range:
             k16, qv16, qf16, qf8, qf4 = self.encode_key(ti)
             out_mask = self.prop_net.segment_with_query(self.mem_bank, qf8, qf4, k16, qv16)
-
             out_mask = aggregate(out_mask, keep_bg=True)
             self.prob[:,ti] = out_mask
 

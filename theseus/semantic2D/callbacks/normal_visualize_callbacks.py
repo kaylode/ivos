@@ -138,60 +138,46 @@ class NormalVisualizerCallbacks(Callbacks):
         After finish validation
         """
 
+        # Vizualize model predictions
+        LOGGER.text("Visualizing predictions...", level=LoggerObserver.DEBUG)
+        fps = 10
         iters = logs['iters']
         last_batch = logs['last_batch']
         last_outputs = logs['last_outputs']['outputs']
-        model = self.params['trainer'].model
-        valloader = self.params['trainer'].valloader
-
-        # Vizualize model predictions
-        LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
-
-        model.eval()
-
-        images = last_batch["inputs"]
-        masks = last_batch['targets'].squeeze()
 
         preds = torch.argmax(last_outputs, dim=1)
-        masks = torch.argmax(masks, dim=1)
         preds = move_to(preds, torch.device('cpu'))
+        masks = torch.argmax(masks.squeeze(), dim=1)
 
-        batch = []
-        for idx, (inputs, mask, pred) in enumerate(zip(images, masks, preds)):
-            img_show = inputs.squeeze().numpy()
-            decode_mask = self.visualizer.decode_segmap(mask.numpy())
-            decode_pred = self.visualizer.decode_segmap(pred.numpy())
-            img_cam = TFF.to_tensor(img_show).repeat(3,1,1)
-            decode_mask = TFF.to_tensor(decode_mask/255.0)
-            decode_pred = TFF.to_tensor(decode_pred/255.0)
-            img_show = torch.cat([img_cam, decode_pred, decode_mask], dim=-1)
-            batch.append(img_show)
-            if idx == 32:
-                break
-        grid_img = self.visualizer.make_grid(batch)
+        # iter through timestamp
+        vis_inputs = []
+        image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        for image in image_show:
+            image = image.transpose(1,2,0)
+            image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
+            image = (image*255).astype(int)
+            vis_inputs.append(image)
+        vis_inputs = np.stack(vis_inputs, axis=0).transpose(0,3,1,2)
 
-        fig = plt.figure(figsize=(16,8))
-        plt.axis('off')
-        plt.title('Raw image - Prediction - Ground Truth')
-        plt.imshow(grid_img)
+        # iter through timestamp
+        decode_masks = []
+        decode_preds = []
+        for mask, pred in zip(masks, preds):
+            decode_pred = self.visualizer.decode_segmap(pred)
+            decode_mask = self.visualizer.decode_segmap(mask.squeeze())
+            decode_masks.append(decode_mask)
+            decode_preds.append(decode_pred)
+        decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
+        decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
 
-        # segmentation color legends 
-        classnames = valloader.dataset.classnames
-        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
-                                label=classnames[i]) for i in range(len(classnames))]
-        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large', ncol=(len(classnames)//10)+1)
-        plt.tight_layout(pad=0)
+        concated_vis = np.concatenate([vis_inputs, decode_masks, decode_preds], axis=-1) # (T, C, 3H, W)
 
         LOGGER.log([{
             'tag': "Validation/val_prediction",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
+            'value': concated_vis,
+            'type': LoggerObserver.VIDEO,
             'kwargs': {
-                'step': iters
+                'step': iters,
+                'fps': fps
             }
         }])
-
-        plt.cla()   # Clear axis
-        plt.clf()   # Clear figure
-        plt.close()

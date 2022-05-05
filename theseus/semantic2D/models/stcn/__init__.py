@@ -31,9 +31,9 @@ class STCNModel():
         self.top_k_eval = top_k_eval
         self.mem_every_eval = mem_every_eval
 
-        self.train_model = STCNTrain(self.single_object)
+        self.train_model = STCNTrain(self.single_object).cuda()
         self.eval_model = STCNEval()
-        self.training = False
+        self.training = True
         self.pretrained = pretrained
 
         if self.pretrained:
@@ -76,7 +76,7 @@ class STCNModel():
         msk = data['gt'][0].cuda()
         info = data['info']
         guidemark = info['guidemark']
-        k = len(info['labels'][0])
+        k = self.num_classes
 
         self.processor = InferenceCore(
             self.eval_model, rgb, k, 
@@ -87,14 +87,8 @@ class STCNModel():
         out_masks = self.processor.get_prediction({
             'rgb': rgb,
             'msk': msk,
-            'prop_range': [(0, int(guidemark)), (int(guidemark), rgb.shape[1])] # reference guide frame index, 0 because we already process in the dataset
+            'prop_range': [(int(guidemark), 0), (int(guidemark), rgb.shape[1])] # reference guide frame index, 0 because we already process in the dataset
         })['masks']
-
-        first = out_masks[:guidemark, :, :]
-        second = out_masks[guidemark:, :, :]
-        second = np.flip(second, axis=0)
-
-        out_masks = np.concatenate([second, first[1:,:,:]], axis=0)
 
         del rgb
         del msk

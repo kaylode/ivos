@@ -186,10 +186,10 @@ class TestPipeline(BaseTestPipeline):
                 
                 out_masks = processor.get_prediction({
                     'rgb': rgb,
-                    'msk': msk,
+                    'msk': msk[1:,...],
                     'prop_range': prop_range
                 })['masks']
-                
+
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]

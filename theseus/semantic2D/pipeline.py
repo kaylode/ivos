@@ -60,7 +60,7 @@ class Pipeline(BasePipeline):
                 self.model.model.load_network(state_dict['model'])
 
         if self.resume:
-            state_dict = torch.load(self.resume)
+            state_dict = torch.load(self.resume, map_location=self.device)
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
             iters = load_state_dict(None, state_dict, 'iters')
             self.last_epoch = iters//len(self.train_dataloader) - 1
