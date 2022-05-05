@@ -103,15 +103,9 @@ class VolumeVisualizerCallbacks(Callbacks):
         }])
 
 
-        images = val_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        image_show = val_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         masks = val_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
-        guidemark = val_batch['info']['guidemark'] # (B, T, H, W) 
-
-        first = images[:guidemark, :, :, :]
-        second = images[guidemark:, :, :, :]
-        second = np.flip(second, axis=0)
-        image_show = np.concatenate([second, first[1:,:,:,:]], axis=0)
-        
+      
         # iter through timestamp
         vis_inputs = []
         for image in image_show:
@@ -123,7 +117,6 @@ class VolumeVisualizerCallbacks(Callbacks):
 
         # iter through timestamp
         decode_masks = []
-        decode_preds = []
         for mask in masks:
             decode_mask = self.visualizer.decode_segmap(mask.squeeze())
             decode_masks.append(decode_mask)
@@ -164,17 +157,11 @@ class VolumeVisualizerCallbacks(Callbacks):
         last_batch = logs['last_batch']
         last_outputs = logs['last_outputs']['outputs']
         
-        images = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         masks = last_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
-        guidemark = last_batch['info']['guidemark']
-        guide_id = last_batch['info']['guide_id']
+        guide_id = last_batch['info']['guidemark']
         iters = logs['iters']
 
-        first = images[:guidemark, :, :, :]
-        second = images[guidemark:, :, :, :]
-        second = np.flip(second, axis=0)
-        image_show = np.concatenate([second, first[1:,:,:,:]], axis=0)
-        
         # iter through timestamp
         vis_inputs = []
         for image in image_show:

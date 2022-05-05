@@ -22,6 +22,7 @@ class STCNCallbacks(Callbacks):
         self.total_epoch = self.num_iterations // len(train_dataloader)
         self.increase_skip_epoch = [
             round(self.num_iterations*f) for f in self.increase_skip_fraction]
+        LOGGER.text(f"Skip iteration: {self.increase_skip_epoch}", level=LoggerObserver.INFO)
 
     def on_epoch_start(self, logs:Dict = None):
         """
@@ -37,7 +38,7 @@ class STCNCallbacks(Callbacks):
                 cur_skip = self.skip_values[0]
                 self.skip_values = self.skip_values[1:]
                 self.increase_skip_epoch = self.increase_skip_epoch[1:]
-            print('Increasing skip to: ', cur_skip)
+            LOGGER.text(f'Increasing skip to: {cur_skip}', level=LoggerObserver.INFO)
             self.renew_loader(cur_skip)
 
     def on_train_batch_start(self, logs:Dict = None):

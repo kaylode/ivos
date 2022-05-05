@@ -190,25 +190,11 @@ class AbdomenCT1KValDataset(AbdomenCT1KBaseCSVDataset):
         
         # Choose a reference frame
         stat = self.stats[idx]
-        guide_id = np.random.choice(stat['guides'])
-        first = images[guide_id:, :, :, :]
-
-        # Split in half, flip first half
-        guidemark = first.shape[0]
-        second = images[:guide_id+1, :, :, :]
-        second = torch.flip(second, dims=[0])
-        images = torch.cat([first, second], dim=0)        
+        guidemark = np.random.choice(stat['guides'])
         num_slices = images.shape[0]
-
         masks = []
-        
         # Same for ground truth
         gt_vol = ori_vol.squeeze().numpy()
-        gt_vol1 = gt_vol[:, :, guide_id:]
-        gt_vol2 = gt_vol[:, :, :guide_id+1]
-
-        gt_vol2 = np.flip(gt_vol2, axis=-1)
-        gt_vol = np.concatenate([gt_vol1, gt_vol2], axis=-1)        
 
         # Generate reference frame, only contains first annotation mask 
         for f in range(num_slices):
@@ -231,13 +217,12 @@ class AbdomenCT1KValDataset(AbdomenCT1KBaseCSVDataset):
         masks = masks.unsqueeze(2)
 
         data = {
-            'inputs': images, # (num_slices+1, C, H, W)
-            'gt': masks, # (C, num_slices+1, 1, H, W)
+            'inputs': images, # (num_slices, C, H, W)
+            'gt': masks, # (C, num_slices, 1, H, W)
             'targets': ori_vol.squeeze().numpy(), # for evaluation (1, H, W, num_slices)
             'info': {  # infos are used for validation and inference
                 'name': patient_id,
                 'labels': labels,
-                'guide_id': guide_id,       # guide id frame used for reconvert
                 'guidemark': guidemark,     # 
                 'affine': affine, # from nib.load
                 'case_spacing': case_spacing
