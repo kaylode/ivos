@@ -72,7 +72,7 @@ class InferenceCore:
 
     def interact(self, mask, frame_idx, end_idx):
         mask, _ = pad_divide_by(mask.cuda(), 16)
-        self.prob[:, frame_idx] = aggregate(mask, keep_bg=False)
+        self.prob[:, frame_idx] = aggregate(mask, keep_bg=True)
 
         # KV pair for the interacting frame
         key_k, _, qf16, _, _ = self.encode_key(frame_idx)
