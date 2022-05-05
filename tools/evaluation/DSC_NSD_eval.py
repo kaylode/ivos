@@ -7,9 +7,9 @@ from SurfaceDice import compute_surface_distances, compute_surface_dice_at_toler
 join = os.path.join
 
 
-seg_path = r'../seg'
-gt_path = r'../gt'
-save_path = r'../result'
+seg_path = r'/content/main/runs/stcn-infer/test'
+gt_path = r'/content/data/abdomenct1k/Subtask1-processed/ValMask'
+save_path = r'/content/results'
 save_name = 'eval.csv'
 filenames = os.listdir(seg_path)
 filenames = [x for x in filenames if x.endswith('.nii.gz')]
@@ -25,7 +25,9 @@ for i in range(1, 5):
 for name in filenames:
     seg_metrics['Name'].append(name)
     # load grond truth and segmentation
-    gt_nii = nb.load(join(gt_path, name))
+
+    gt_name = '_'.join(name.split('_')[:2])+'.nii.gz'
+    gt_nii = nb.load(join(gt_path, gt_name))
     case_spacing = gt_nii.header.get_zooms()
     gt_data = np.uint8(gt_nii.get_fdata())
     seg_data = nb.load(join(seg_path, name)).get_fdata()
