@@ -76,7 +76,7 @@ class STCNModel():
         msk = data['gt'][0].cuda()
         info = data['info']
         guidemark = info['guidemark']
-        k = len(info['labels'][0])
+        k = self.num_classes
 
         self.processor = InferenceCore(
             self.eval_model, rgb, k, 

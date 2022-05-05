@@ -189,7 +189,7 @@ class TestPipeline(BaseTestPipeline):
                     'msk': msk,
                     'prop_range': prop_range
                 })['masks']
-                
+
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
