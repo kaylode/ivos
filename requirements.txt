@@ -17,3 +17,4 @@ monai
 SimpleITK
 loguru
 wandb
+imageio

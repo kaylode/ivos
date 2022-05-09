@@ -6,6 +6,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     python_requires='>=3.7',
     install_requires=[
+        "imageio",
         "numpy",
         "torch",
         "tensorboard",
