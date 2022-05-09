@@ -60,7 +60,7 @@ class NormalVisualizerCallbacks(Callbacks):
         }])
 
     def normalize_min_max(self, array):
-        norm_array = (array - np.min(array)) / np.max(array)
+        norm_array = (array - array.min()) / array.max()
         return norm_array
 
     def visualize_gt(self, train_batch, val_batch, iters, classnames):
@@ -153,6 +153,7 @@ class NormalVisualizerCallbacks(Callbacks):
 
         preds = torch.argmax(last_outputs, dim=1)
         preds = move_to(preds, torch.device('cpu'))
+        masks = last_batch['targets']
         masks = torch.argmax(masks.squeeze(), dim=1)
 
         # iter through timestamp
