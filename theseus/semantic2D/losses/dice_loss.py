@@ -19,6 +19,12 @@ class DiceLoss(nn.Module):
         predict = outputs['outputs']
         targets = move_to(batch["targets"], device)
         prediction = F.softmax(predict, dim=1)  
+        
+        if len(targets.shape) == 3:
+            num_classes = prediction.shape[1]
+            targets = torch.nn.functional.one_hot(
+                  targets.long(), 
+                  num_classes=num_classes).permute(0, 3, 1, 2)
 
         # have to use contiguous since they may from a torch.view op
         iflat = prediction.contiguous().view(-1)
