@@ -59,6 +59,10 @@ class NormalVisualizerCallbacks(Callbacks):
             }
         }])
 
+    def normalize_min_max(self, array):
+        norm_array = (array - np.min(array)) / np.max(array)
+        return norm_array
+
     def visualize_gt(self, train_batch, val_batch, iters, classnames):
         """
         Visualize dataloader for sanity check 
@@ -71,6 +75,7 @@ class NormalVisualizerCallbacks(Callbacks):
         batch = []
         for idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = inputs.squeeze().numpy()
+            img_show = self.normalize_min_max(img_show)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show).repeat(3,1,1)
             decode_mask = TFF.to_tensor(decode_mask/255.0)
@@ -105,6 +110,7 @@ class NormalVisualizerCallbacks(Callbacks):
         batch = []
         for idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = inputs.squeeze().numpy()
+            img_show = self.normalize_min_max(img_show)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show).repeat(3,1,1)
             decode_mask = TFF.to_tensor(decode_mask/255.0)
@@ -154,6 +160,7 @@ class NormalVisualizerCallbacks(Callbacks):
         image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         for image in image_show:
             image = image.transpose(1,2,0)
+            image = self.normalize_min_max(image)
             image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
             image = (image*255).astype(int)
             vis_inputs.append(image)

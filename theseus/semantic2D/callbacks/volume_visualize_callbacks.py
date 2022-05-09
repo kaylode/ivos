@@ -61,6 +61,10 @@ class VolumeVisualizerCallbacks(Callbacks):
             }
         }])
 
+    def normalize_min_max(self, array):
+        norm_array = (array - np.min(array)) / np.max(array)
+        return norm_array
+
     def visualize_gt(self, train_batch, val_batch, iters, classnames):
         """
         Visualize dataloader for sanity check 
@@ -74,6 +78,7 @@ class VolumeVisualizerCallbacks(Callbacks):
         for idx, (inputs, mask) in enumerate(zip(images, masks)): # iter through batch
             # iter through timestamp
             for t_input, t_mask in zip(inputs, mask):
+                t_input = self.normalize_min_max(t_input)
                 img_show = self.visualizer.denormalize(t_input, mean=[0,0,0], std=[1,1,1])
                 decode_mask = self.visualizer.decode_segmap(t_mask.numpy())
                 img_show = TFF.to_tensor(img_show)
@@ -110,6 +115,7 @@ class VolumeVisualizerCallbacks(Callbacks):
         vis_inputs = []
         for image in image_show:
             image = image.transpose(1,2,0)
+            image = self.normalize_min_max(image)
             image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
             image = (image*255).astype(int)
             vis_inputs.append(image)
@@ -166,6 +172,7 @@ class VolumeVisualizerCallbacks(Callbacks):
         vis_inputs = []
         for image in image_show:
             image = image.transpose(1,2,0)
+            image = self.normalize_min_max(image)
             image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
             image = (image*255).astype(int)
             vis_inputs.append(image)
