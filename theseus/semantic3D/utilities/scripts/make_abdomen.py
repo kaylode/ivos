@@ -198,6 +198,9 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
                 sitk_type=sitk.sitkUInt8
             )
 
+    pd.DataFrame(df_dict['train']).to_csv(osp.join(out_dir, 'train.csv'), index=False)
+    pd.DataFrame(df_dict['val']).to_csv(osp.join(out_dir, 'val.csv'), index=False)
+    
     print("Processing test files")
     for test_filename in tqdm(test_filenames):
         image_path = osp.join(root_dir, 'TestImage', test_filename)
@@ -214,8 +217,6 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
             sitk_type=sitk.sitkFloat32
         )
     
-    pd.DataFrame(df_dict['train']).to_csv(osp.join(out_dir, 'train.csv'), index=False)
-    pd.DataFrame(df_dict['val']).to_csv(osp.join(out_dir, 'val.csv'), index=False)
 
 if __name__ == '__main__':
     args = parser.parse_args()
