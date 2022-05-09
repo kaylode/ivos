@@ -160,8 +160,9 @@ class NormalVisualizerCallbacks(Callbacks):
         vis_inputs = []
         image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         for image in image_show:
-            image = image.transpose(1,2,0)
             image = self.normalize_min_max(image)
+            image = np.stack([image, image, image], axis=-1)
+
             image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
             image = (image*255).astype(int)
             vis_inputs.append(image)
@@ -171,12 +172,13 @@ class NormalVisualizerCallbacks(Callbacks):
         decode_masks = []
         decode_preds = []
         for mask, pred in zip(masks, preds):
-            decode_pred = self.visualizer.decode_segmap(pred)
-            decode_mask = self.visualizer.decode_segmap(mask.squeeze())
+            decode_pred = self.visualizer.decode_segmap(pred.numpy())
+            decode_mask = self.visualizer.decode_segmap(mask.squeeze().numpy())
             decode_masks.append(decode_mask)
             decode_preds.append(decode_pred)
         decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
         decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
+
 
         concated_vis = np.concatenate([vis_inputs, decode_masks, decode_preds], axis=-1) # (T, C, 3H, W)
 
