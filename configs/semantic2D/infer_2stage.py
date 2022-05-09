@@ -10,6 +10,7 @@ import time
 import numpy as np
 from tqdm import tqdm
 import torch
+import imageio
 import nibabel as nib
 from theseus.opt import Config
 from theseus.semantic2D.models import MODEL_REGISTRY
@@ -19,6 +20,7 @@ from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from theseus.utilities.loggers import LoggerObserver
 from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
 from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
+from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.base.pipeline import BaseTestPipeline
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.getter import get_instance
@@ -36,6 +38,11 @@ class TestPipeline(BaseTestPipeline):
         super().init_globals()
         self.top_k = self.opt['global']['top_k']
         self.mem_every = self.opt['global']['mem_every']
+        self.save_visualization = self.opt['global']['save_visualization']
+
+        if self.save_visualization:
+            self.visualizer = Visualizer()
+
 
     def init_registry(self):
         self.model_registry = MODEL_REGISTRY
@@ -142,10 +149,30 @@ class TestPipeline(BaseTestPipeline):
         one_hot = one_hot.permute(0, 3, 1, 2) # (B,NC,H,W)
         return one_hot.float()
 
+    def save_gif(self, images, masks, save_dir, outname):
+        # images: (T, C, H, W)
+        # masks: (H, W, T)
+        if len(images.shape) == 4:
+            images = images[:, 0, :, :]
+
+        norm_images = []
+        norm_masks = []
+        for i in range(images.shape[-1]):
+            norm_image = (images[i, :, :] - np.min(images[i, :, :])) / np.max(images[i, :, :])
+            norm_mask = self.visualizer.decode_segmap(masks[:, :, i], self.num_classes)
+            norm_images.append(norm_image)
+            norm_masks.append(norm_mask)
+        
+        imageio.mimsave(osp.join(save_dir, f'{outname}_input.gif'), norm_images)
+        imageio.mimsave(osp.join(save_dir, f'{outname}_mask.gif'), norm_masks)
+
     @torch.no_grad()
     def inference(self):
         self.init_pipeline()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
+
+        savedir = osp.join(self.savedir, 'nib')
+        os.makedirs(savedir, exist_ok=True)
         torch.autograd.set_grad_enabled(False)
         
         total_process_time = 0
@@ -196,14 +223,22 @@ class TestPipeline(BaseTestPipeline):
 
                 out_masks = out_masks.transpose(1,2,0) # H, W, T
                 ni_img = nib.Nifti1Image(out_masks, affine)
-                this_out_path = osp.join(self.savedir, str(name))
+                this_out_path = osp.join(savedir, str(name))
                 nib.save(ni_img, this_out_path)
 
             del rgb
             del msk
             del processor
 
+            if self.save_visualization:
+                gif_name = str(name).split('.')[0]
+                visdir = osp.join(self.savedir, 'visualization')
+                os.makedirs(visdir, exist_ok=True)
+                self.save_gif(full_images, out_masks, visdir, gif_name)
+                self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
+
         self.logger.text(f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of processed volumes: {len(self.dataloader)}", level=LoggerObserver.INFO)
         self.logger.text(f"Execution time: {total_process_time}s", level=LoggerObserver.INFO)
         
 

@@ -9,6 +9,7 @@ global:
   prop_weights: null
   top_k: 20
   mem_every: 5
+  save_visualization: True
 ref_model:
   name: BaseSegModel
   args:
