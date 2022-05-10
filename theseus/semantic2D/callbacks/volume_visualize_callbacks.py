@@ -62,7 +62,7 @@ class VolumeVisualizerCallbacks(Callbacks):
         }])
 
     def normalize_min_max(self, array):
-        norm_array = (array - np.min(array)) / np.max(array)
+        norm_array = (array - array.min()) / array.max()
         return norm_array
 
     def visualize_gt(self, train_batch, val_batch, iters, classnames):
