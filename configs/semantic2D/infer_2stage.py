@@ -183,12 +183,12 @@ class TestPipeline(BaseTestPipeline):
 
         for data in tqdm(self.dataloader):
             
-            with torch.cuda.amp.autocast(enabled=False):
-
+            with torch.cuda.amp.autocast(enabled=False):                
                 # FIRST STAGE: Get reference frames
-                candidates = self.ref_model.get_prediction({
-                    'inputs': data['ref_images']
-                }, self.device)['masks']
+                with torch.no_grad():
+                    candidates = self.ref_model.get_prediction({
+                        'inputs': data['ref_images']
+                    }, self.device)['masks']
 
                 full_images = data['full_images']
                 ref_frames, prop_range = self.search_reference(
@@ -214,11 +214,12 @@ class TestPipeline(BaseTestPipeline):
                     top_k=self.top_k, 
                     mem_every=self.mem_every)
                 
-                out_masks = processor.get_prediction({
-                    'rgb': rgb,
-                    'msk': msk[1:,...],
-                    'prop_range': prop_range
-                })['masks']
+                with torch.no_grad():
+                    out_masks = processor.get_prediction({
+                        'rgb': rgb,
+                        'msk': msk[1:,...],
+                        'prop_range': prop_range
+                    })['masks']
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
