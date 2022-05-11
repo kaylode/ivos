@@ -25,7 +25,7 @@ setuptools.setup(
         "progressbar2",
         "opencv-python" ,
         "gitpython",
-        "SimpleITK",
+        "SimpleITK==2.0.2",
         "monai",
         "loguru",
         "wandb"
