@@ -45,21 +45,25 @@ def postprocess(pred_dir, gt_dir, out_dir):
     print("Processing prediction files")
     for test_filename in tqdm(filenames):
         raw_image_path = osp.join(gt_dir, test_filename)
+
+        # test_filename = test_filename.split('.')[0] + '_0000.nii.gz'
         pred_image_path = osp.join(pred_dir, test_filename)
         assert osp.isfile(pred_image_path), f"Missing {pred_image_path}"
 
         raw_image_dict = load_ct_info(raw_image_path)
-        pred_image_dict = convert_2_npy(pred_image_path, target_size=raw_image_dict['mask'].shape)
+        pred_image_dict = convert_2_npy(pred_image_path, target_size=raw_image_dict['npy_image'].shape)
+        pred_image_dict['mask'] = change_axes_of_image(pred_image_dict['mask'], raw_image_dict['subdirection'])
 
         dest_image_path = osp.join(out_dir, test_filename)
+
 
         save_ct_from_npy(
             npy_image=pred_image_dict['mask'],
             save_path=dest_image_path,
-            origin=pred_image_dict['origin'],
-            spacing=pred_image_dict['spacing'],
-            direction=pred_image_dict['direction'],
-            sitk_type=sitk.sitkFloat32
+            origin=raw_image_dict['origin'],
+            spacing=raw_image_dict['spacing'],
+            direction=raw_image_dict['direction'],
+            sitk_type=sitk.sitkUInt8
         )
     
 
