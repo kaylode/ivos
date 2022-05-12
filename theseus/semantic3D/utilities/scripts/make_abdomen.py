@@ -99,8 +99,6 @@ def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=T
         'zoom_factor': zoom_factor
     }
 
-    return result_dict
-
 def split_train_val(root_dir, out_dir, ratio=0.9):
     filenames = os.listdir(osp.join(root_dir, 'TrainImage'))
     test_filenames = os.listdir(osp.join(root_dir, 'TestImage'))

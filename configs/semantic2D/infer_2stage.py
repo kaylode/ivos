@@ -154,17 +154,20 @@ class TestPipeline(BaseTestPipeline):
         # masks: (H, W, T)
         if len(images.shape) == 4:
             images = images[:, 0, :, :]
-
         norm_images = []
         norm_masks = []
-        for i in range(images.shape[-1]):
-            norm_image = (images[i, :, :] - np.min(images[i, :, :])) / np.max(images[i, :, :])
+        for i in range(images.shape[0]):
+            norm_image = (images[i, :, :] - images[i, :, :].min()) / images[i, :, :].max()
+            norm_image = (norm_image*255)
             norm_mask = self.visualizer.decode_segmap(masks[:, :, i], self.num_classes)
             norm_images.append(norm_image)
             norm_masks.append(norm_mask)
+
+        norm_images = np.stack(norm_images, axis = 0)
+        norm_masks = np.stack(norm_masks, axis = 0)
         
-        imageio.mimsave(osp.join(save_dir, f'{outname}_input.gif'), norm_images)
-        imageio.mimsave(osp.join(save_dir, f'{outname}_mask.gif'), norm_masks)
+        imageio.mimsave(osp.join(save_dir, f'{outname}_input.gif'), norm_images.astype(np.uint8))
+        imageio.mimsave(osp.join(save_dir, f'{outname}_mask.gif'), norm_masks.astype(np.uint8))
 
     @torch.no_grad()
     def inference(self):
@@ -180,12 +183,12 @@ class TestPipeline(BaseTestPipeline):
 
         for data in tqdm(self.dataloader):
             
-            with torch.cuda.amp.autocast(enabled=False):
-
+            with torch.cuda.amp.autocast(enabled=False):                
                 # FIRST STAGE: Get reference frames
-                candidates = self.ref_model.get_prediction({
-                    'inputs': data['ref_images']
-                }, self.device)['masks']
+                with torch.no_grad():
+                    candidates = self.ref_model.get_prediction({
+                        'inputs': data['ref_images']
+                    }, self.device)['masks']
 
                 full_images = data['full_images']
                 ref_frames, prop_range = self.search_reference(
@@ -195,10 +198,10 @@ class TestPipeline(BaseTestPipeline):
 
                 
                 # SECOND STAGE: Full images
-                rgb = full_images.float().cuda()
+                rgb = full_images.float()
                 msk = self._encode_masks(ref_frames)
                 k = self.num_classes
-                msk = msk.permute(1,0,2,3).unsqueeze(2).cuda()
+                msk = msk.permute(1,0,2,3).unsqueeze(2)
                 info = data['infos'][0]
                 name = info['img_name']
                 affine = info['affine']
@@ -211,11 +214,12 @@ class TestPipeline(BaseTestPipeline):
                     top_k=self.top_k, 
                     mem_every=self.mem_every)
                 
-                out_masks = processor.get_prediction({
-                    'rgb': rgb,
-                    'msk': msk[1:,...],
-                    'prop_range': prop_range
-                })['masks']
+                with torch.no_grad():
+                    out_masks = processor.get_prediction({
+                        'rgb': rgb,
+                        'msk': msk[1:,...],
+                        'prop_range': prop_range
+                    })['masks']
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
@@ -234,7 +238,7 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split('.')[0]
                 visdir = osp.join(self.savedir, 'visualization')
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(full_images, out_masks, visdir, gif_name)
+                self.save_gif(full_images.squeeze(), out_masks, visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
         self.logger.text(f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO)

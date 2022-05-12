@@ -39,7 +39,7 @@ def eval(args):
         gt_nii = nb.load(osp.join(gt_path, gt_name))
         case_spacing = gt_nii.header.get_zooms()
         gt_data = np.uint8(gt_nii.get_fdata())
-        seg_data = nb.load(osp.join(seg_path, name)).get_fdata()
+        seg_data = np.uint8(nb.load(osp.join(seg_path, name)).get_fdata())
 
         for i in range(1, NUM_CLASSES+1):
             if np.sum(gt_data==i)==0 and np.sum(seg_data==i)==0:
