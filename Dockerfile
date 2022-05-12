@@ -8,6 +8,7 @@ ARG PYTORCH_VERSION=1.10
 ARG CUDA_CHANNEL=nvidia
 ARG INSTALL_CHANNEL=pytorch
 
+
 # Setup workdir and non-root user
 
 ARG USERNAME=hcmus
@@ -20,6 +21,7 @@ RUN apt-get update &&\
     chmod 0440 /etc/sudoers.d/$USERNAME &&\
     rm -rf /var/lib/apt/lists/*
 
+RUN chown -R $USERNAME:$USERNAME /home/$USERNAME/
 
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
     apt-get -qq update && apt-get install -y --no-install-recommends \
@@ -59,7 +61,7 @@ SHELL ["/bin/bash","-c"]
 RUN conda init bash && source ~/.bashrc && \
     python -m pip install -r requirements.txt && \
     python -m pip install git+https://github.com/cheind/py-thin-plate-spline && \
-    python -m pip install -e . 
+    python -m pip install -e .
 
 USER $USERNAME
 RUN conda init bash 

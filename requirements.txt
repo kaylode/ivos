@@ -3,7 +3,6 @@ pyyaml>=5.1
 webcolors
 tensorboard
 tqdm
-timm>=0.5.4
 omegaconf
 pycocotools
 gdown>=4.4.0
@@ -12,9 +11,13 @@ tabulate
 segmentation-models-pytorch
 gitpython
 progressbar2
-opencv-python-headless==4.2.0.32 
+opencv-python-headless
 monai
 SimpleITK==2.0.2
 loguru
+pandas
 wandb
+opencv-python
+setuptools==59.5.0
 imageio
+nibabel
