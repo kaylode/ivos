@@ -7,9 +7,10 @@ global:
   device: cuda:0
   ref_weights: null
   prop_weights: null
-  top_k: 20
-  mem_every: 5
+  top_k: 20 # top k frames in memory to calculate affinity 
+  mem_every: 5 # save frames every k step
   save_visualization: True
+  strategy: all # strategy for choosing reference images
 ref_model:
   name: BaseSegModel
   args:
@@ -22,7 +23,7 @@ data:
     name: AbdomenCT1KTestDataset
     args:
       root_dir: /content/data/abdomenct1k/Subtask1-processed/ValImage
-      max_ref_frames: 15
+      max_ref_frames: 64
   dataloader:
     name: DataLoaderWithCollator
     args:

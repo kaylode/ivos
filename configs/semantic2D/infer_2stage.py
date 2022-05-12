@@ -36,6 +36,7 @@ class TestPipeline(BaseTestPipeline):
 
     def init_globals(self):
         super().init_globals()
+        self.reference_strategy = self.opt['global']['strategy']
         self.top_k = self.opt['global']['top_k']
         self.mem_every = self.opt['global']['mem_every']
         self.save_visualization = self.opt['global']['save_visualization']
@@ -194,7 +195,8 @@ class TestPipeline(BaseTestPipeline):
                 ref_frames, prop_range = self.search_reference(
                     candidates, 
                     global_indices=data['ref_indices'][0], 
-                    pad_length=full_images.shape[1])
+                    pad_length=full_images.shape[1],
+                    strategy=self.reference_strategy)
 
                 
                 # SECOND STAGE: Full images
