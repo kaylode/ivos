@@ -103,5 +103,19 @@ class PercentileClip(MapTransform):
 
         return d
 
+class IntensityClip(MapTransform):
+    def __init__(self, keys, min_value: int, max_value: int, allow_missing_keys: bool = False) -> None:
+        super().__init__(keys, allow_missing_keys=allow_missing_keys)
+        self.min_value = min_value
+        self.max_value = max_value
+
+    def __call__(self, data):
+        d = dict(data)
+
+        for key in self.keys:
+            d[key] = np.clip(d[key],self.min_value, self.max_value)
+
+        return d
+
 TRANSFORM_REGISTRY.register(LoadImageAndResize3D, prefix='Monai')
 TRANSFORM_REGISTRY.register(PercentileClip, prefix='Monai')

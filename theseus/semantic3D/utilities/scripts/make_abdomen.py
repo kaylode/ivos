@@ -10,6 +10,7 @@ from tqdm import tqdm
 import pandas as pd
 from theseus.semantic3D.augmentations.monai_tf import (
     PercentileClip,
+    IntensityClip,
     NormalizeIntensityd,
     Compose
 )
@@ -44,7 +45,8 @@ NUM_LABELS = 5
 TARGET_TRAIN_SIZE = [-1,320,320]
 TARGET_TEST_SIZE = [-1,512,512]
 TRANSFORM = Compose([
-    # PercentileClip(keys=['image'],min_pct=2, max_pct=98),
+    # PercentileClip(keys=['image'],min_pct=2, max_pct=98), or
+    # IntensityClip(keys=['image'], min_value=-325.0, max_value=325.0),
     NormalizeIntensityd(keys=['image'])
 ])
 
