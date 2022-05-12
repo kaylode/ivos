@@ -1,9 +1,7 @@
-import os.path as osp
-import nibabel as nib # common way of importing nibabel
+from typing import Union
 import torch
 import numpy as np
 import os
-import os.path as osp
 from theseus.semantic2D.datasets.abdomenct1k import AbdomenCT1KBaseDataset
 from theseus.utilities.loggers.observer import LoggerObserver
 
@@ -13,7 +11,7 @@ class AbdomenCT1KTestDataset(AbdomenCT1KBaseDataset):
     def __init__(
         self, 
         root_dir: str,
-        max_ref_frames: int = 15,
+        max_ref_frames: Union[int, float] = 15,
         transform=None,
         **kwargs):
         
@@ -35,8 +33,17 @@ class AbdomenCT1KTestDataset(AbdomenCT1KBaseDataset):
     def sampling_frames(self, num_frames):
         if self.max_ref_frames == -1:
             self.max_ref_frames = num_frames
-            
-        frames_idx = np.random.choice(range(num_frames), size=self.max_ref_frames, replace=False)
+        
+        # If num frames is fewer than max_ref_frames, use all for referencing
+        if isinstance(self.max_ref_frames, float):
+            max_ref_frames = int(self.max_ref_frames * num_frames)
+        else:
+            max_ref_frames = self.max_ref_frames
+
+        if num_frames < self.max_ref_frames:
+            return [i for i in range(num_frames)]
+
+        frames_idx = np.random.choice(range(num_frames), size=max_ref_frames, replace=False)
         frames_idx.sort()
         return frames_idx.tolist()
 
