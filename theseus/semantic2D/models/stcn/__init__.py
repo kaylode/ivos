@@ -52,12 +52,18 @@ class STCNModel():
         return self.train_model
 
     def eval(self):
+        """
+        Switch to eval mode
+        """
         self.train_model.to(torch.device('cpu'))
         self.eval_model.to(torch.device('cuda'))
         self.eval_model.load_state_dict(self.train_model.state_dict())
         self.training = False
 
     def train(self):
+        """
+        Switch to train mode
+        """
         self.train_model.to(torch.device('cuda'))
         self.eval_model.to(torch.device('cpu'))
         self.training = True
@@ -70,6 +76,10 @@ class STCNModel():
 
     @torch.no_grad()
     def forward_val(self, data: Dict):
+        """
+        Evaluation stage
+        Get the reference mask from dataset, propagate to other frames
+        """
         torch.set_grad_enabled(False)
 
         rgb = data['inputs'].float().cuda()

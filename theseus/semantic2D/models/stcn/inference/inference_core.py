@@ -8,6 +8,9 @@ from theseus.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by
 
 
 class InferenceCore:
+    """
+    Inference module, which performs iterative propagation
+    """
     def __init__(self, prop_net:STCNEval, images, num_objects, top_k=20, mem_every=5, include_last=False):
         self.prop_net = prop_net
         self.mem_every = mem_every

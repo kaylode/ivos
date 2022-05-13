@@ -88,6 +88,9 @@ class LoadImageAndResize3D(MapTransform):
         return d
 
 class PercentileClip(MapTransform):
+    """
+    Perform clipping on volume CT by intensity percentile
+    """
     def __init__(self, keys, min_pct: int, max_pct: int, allow_missing_keys: bool = False) -> None:
         super().__init__(keys, allow_missing_keys=allow_missing_keys)
         self.min_pct = min_pct
@@ -104,6 +107,9 @@ class PercentileClip(MapTransform):
         return d
 
 class IntensityClip(MapTransform):
+    """
+    Perform clipping on volume CT by intensity value
+    """
     def __init__(self, keys, min_value: int, max_value: int, allow_missing_keys: bool = False) -> None:
         super().__init__(keys, allow_missing_keys=allow_missing_keys)
         self.min_value = min_value

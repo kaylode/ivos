@@ -19,8 +19,7 @@ def all_to_onehot(masks, labels):
 
 class AbdomenCT1KBaseDataset(torch.utils.data.Dataset):
     """
-    Generate pseudo VOS data by applying random transforms on static images.
-    Single-object only.
+    Dataset to load AbdomenCT1k data.
 
     abdomenct1k
     ├── TrainImage
@@ -30,12 +29,8 @@ class AbdomenCT1KBaseDataset(torch.utils.data.Dataset):
     ├── TrainMask
     │   └── <file1>.nii.gz
 
-    volume_dir: `str`
-        path to `TrainImage`
-    label_dir: `str`
-        path to `TrainMask`
-    max_jump: `int`
-        max number of frames to jump
+    root_dir: `str`
+        path to root_dir
     """
     def __init__(
         self, 
