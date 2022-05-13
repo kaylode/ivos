@@ -210,7 +210,7 @@ class AbdomenCT1KValDataset(AbdomenCT1KBaseCSVDataset):
             masks = (masks > 0.5).astype(np.uint8)
             masks = torch.from_numpy(all_to_onehot(masks, labels)).float()
         else:
-            labels = np.unique(masks)
+            labels = np.array([i for i in range(self.num_classes)])
             labels = labels[labels!=0]
             masks = torch.from_numpy(all_to_onehot(masks, labels)).float()
 
