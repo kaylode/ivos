@@ -27,15 +27,21 @@ class BaseSegModel(nn.Module):
         num_classes: int = 1000,
         aux_params: Dict = None,
         in_channels: int = 3,
+        pretrained: bool = True,
         **kwargs):
         super().__init__()
+
+        if pretrained:
+            encoder_weights = "imagenet"
+        else:
+            encoder_weights = None
 
         self.num_classes = num_classes
         self.model = smp.create_model(
             arch = model_name,
             encoder_name = encoder_name,
             in_channels = in_channels,
-            encoder_weights = "imagenet",
+            encoder_weights = encoder_weights,
             classes = num_classes, 
             aux_params = aux_params)
 

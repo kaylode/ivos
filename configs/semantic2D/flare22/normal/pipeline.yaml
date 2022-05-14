@@ -35,6 +35,7 @@ model:
     model_name: unetplusplus
     encoder_name : efficientnet-b0
     in_channels: 1
+    pretrained: False
 loss:
   name: MultiLoss
   args:
