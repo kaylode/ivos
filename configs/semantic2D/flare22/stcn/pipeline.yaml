@@ -80,14 +80,14 @@ data:
     train:
       name: FLARE22TrainDataset
       args:
-        root_dir: /content/data/flare2022-processed/
-        csv_path: /content/data/flare2022-processed/annotations/train.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/train.csv
         max_jump: 7 #initial
     val:
       name: FLARE22ValDataset
       args:
-        root_dir: /content/data/flare2022-processed/
-        csv_path: /content/data/flare2022-processed/annotations/val.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/val.csv
   dataloader:
     train:
       name: DataLoader
