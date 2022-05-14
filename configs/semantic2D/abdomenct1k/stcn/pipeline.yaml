@@ -2,7 +2,7 @@ global:
   exp_name: stcn-theseus
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/stcn/transform.yaml
+  cfg_transform: configs/semantic2D/abdomenct1k/stcn/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
@@ -39,8 +39,17 @@ model:
     mem_every_eval: 5
     pretrained: True
 loss:
-  name: STCNLoss
-  args: null
+  name: STCNLossV2
+  args:
+    weights: null
+    losses:
+      - name: OhemCELoss
+        args: 
+          thresh: 0.8
+      - name: FocalTverskyLoss
+        args: 
+          alpha: 0.35
+          gamma: 0.75
 metrics:
 - name: mIOU
   args:

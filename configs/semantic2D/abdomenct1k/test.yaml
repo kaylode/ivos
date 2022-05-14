@@ -2,7 +2,7 @@ global:
   exp_name: null
   exist_ok: False
   debug: True
-  cfg_transform: /content/main/configs/semantic2D/stcn/transform.yaml
+  cfg_transform: /content/main/configs/semantic2D/abdomenct1k/transform.yaml
   save_dir: runs
   device: cuda:0
   ref_weights: null

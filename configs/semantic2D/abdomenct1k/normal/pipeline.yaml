@@ -2,7 +2,7 @@ global:
   exp_name: normal-theseus
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/normal/transform.yaml
+  cfg_transform: configs/semantic2D/abdomenct1k/normal/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
