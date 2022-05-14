@@ -42,15 +42,15 @@ flare22
 """
 
 NUM_LABELS = 14
-TARGET_TRAIN_SIZE = [-1,320,320]
-TARGET_TEST_SIZE = [-1,512,512]
+TARGET_TRAIN_SIZE = [320,320,320]
+TARGET_TEST_SIZE = [512,512,512]
 TRANSFORM = Compose([
     # PercentileClip(keys=['image'],min_pct=2, max_pct=98), or
     IntensityClip(keys=['image'], min_value=-3024.0, max_value=3024.0),
     NormalizeIntensityd(keys=['image'])
 ])
 
-def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=True):
+def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=True, test=False):
     image_dict = load_ct_info(vol_path)
 
     if target_size[0] == -1:
@@ -106,10 +106,10 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     test_filenames = os.listdir(osp.join(root_dir, 'Validation'))
 
     train_filenames = np.random.choice(filenames, size=int(ratio*len(filenames)), replace=False)
-    train_masknames = ['_'.join(i.split('_')[:2])+'.nii.gz' for i in train_filenames]
+    train_masknames = ['_'.join(i.split('_')[:-1])+'.nii.gz' for i in train_filenames]
 
     val_filenames = [i for i in filenames if i not in train_filenames]
-    val_masknames = ['_'.join(i.split('_')[:2])+'.nii.gz' for i in val_filenames]
+    val_masknames = ['_'.join(i.split('_')[:-1])+'.nii.gz' for i in val_filenames]
 
     target_imagesTr = osp.join(out_dir, "TrainImage")
     target_labelsTr = osp.join(out_dir, "TrainMask")
@@ -203,7 +203,7 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     
     print("Processing test files")
     for test_filename in tqdm(test_filenames):
-        image_path = osp.join(root_dir, 'TestImage', test_filename)
+        image_path = osp.join(root_dir, 'Validation', test_filename)
         image_dict = convert_2_npy(image_path, gt_path=None, target_size=TARGET_TEST_SIZE[:], normalize=True)
 
         dest_image_path = osp.join(target_imagesTs, test_filename)
