@@ -46,7 +46,6 @@ def postprocess(pred_dir, gt_dir, out_dir):
     for test_filename in tqdm(filenames):
         raw_image_path = osp.join(gt_dir, test_filename)
 
-        # test_filename = test_filename.split('.')[0] + '_0000.nii.gz'
         pred_image_path = osp.join(pred_dir, test_filename)
         assert osp.isfile(pred_image_path), f"Missing {pred_image_path}"
 
@@ -54,6 +53,7 @@ def postprocess(pred_dir, gt_dir, out_dir):
         pred_image_dict = convert_2_npy(pred_image_path, target_size=raw_image_dict['npy_image'].shape)
         pred_image_dict['mask'] = change_axes_of_image(pred_image_dict['mask'], raw_image_dict['subdirection'])
 
+        test_filename = test_filename.split('.')[0] + '.nii.gz'
         dest_image_path = osp.join(out_dir, test_filename)
 
 
