@@ -24,6 +24,7 @@ np.random.seed(SEED)
 parser = argparse.ArgumentParser("Process volume CT")
 parser.add_argument("-i", "--input_dir", type=str, help="Volume directory")
 parser.add_argument("-o", "--out_dir", type=str, help="Output directory")
+parser.add_argument("--binary", action='store_true', type=bool, help="Whether to split into binary masks")
 parser.add_argument("--ratio", type=float, default=0.9, help="Ratio split")
 
 """
@@ -50,7 +51,24 @@ TRANSFORM = Compose([
     NormalizeIntensityd(keys=['image'])
 ])
 
-def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=True, test=False):
+CLASSNAMES = [
+    "background",
+    "liver", 
+    "kidney_r",
+    "spleen",
+    "pancreas",
+    "aorta",
+    "IVC",
+    "RAG",
+    "LAG",
+    "gallbladder",
+    "esophagus",
+    "stomach",
+    "duodenum",
+    "kidney_l",
+]
+
+def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=True, binary=False):
     image_dict = load_ct_info(vol_path)
 
     if target_size[0] == -1:
@@ -142,10 +160,7 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         image_dict = convert_2_npy(image_path, gt_path, target_size=TARGET_TRAIN_SIZE[:], normalize=True)
         
         dest_image_path = osp.join(target_imagesTr, train_filename)
-        dest_gt_path = osp.join(target_labelsTr, train_maskname)
 
-        df_dict['train']['image'].append(osp.join("TrainImage", train_filename))
-        df_dict['train']['label'].append(osp.join("TrainMask", train_maskname))
 
         save_ct_from_npy(
             npy_image=image_dict['image'],
@@ -157,14 +172,37 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         )
 
         if image_dict['mask'] is not None:
-            save_ct_from_npy(
-                npy_image=image_dict['mask'],
-                save_path=dest_gt_path,
-                origin=image_dict['origin'],
-                spacing=image_dict['spacing'],
-                direction=image_dict['direction'],
-                sitk_type=sitk.sitkUInt8
-            )
+            if args.binary:
+                mask = image_dict['mask']
+                labels = np.unique(mask)
+                for label in labels:
+                    if label == 0:
+                        continue
+                    tmp_mask = mask == label
+                    os.makedirs(osp.join(target_labelsTr, CLASSNAMES[label]), exist_ok=True)
+                    dest_gt_path = osp.join(target_labelsTr, CLASSNAMES[label], train_maskname)
+                    df_dict['train']['image'].append(osp.join("TrainImage", train_filename))
+                    df_dict['train']['label'].append(osp.join("TrainMask", CLASSNAMES[label], train_maskname))
+                    save_ct_from_npy(
+                        npy_image=tmp_mask,
+                        save_path=dest_gt_path,
+                        origin=image_dict['origin'],
+                        spacing=image_dict['spacing'],
+                        direction=image_dict['direction'],
+                        sitk_type=sitk.sitkUInt8
+                    )
+            else:
+                df_dict['train']['image'].append(osp.join("TrainImage", train_filename))
+                df_dict['train']['label'].append(osp.join("TrainMask", train_maskname))
+                dest_gt_path = osp.join(target_labelsTr, train_maskname)
+                save_ct_from_npy(
+                    npy_image=image_dict['mask'],
+                    save_path=dest_gt_path,
+                    origin=image_dict['origin'],
+                    spacing=image_dict['spacing'],
+                    direction=image_dict['direction'],
+                    sitk_type=sitk.sitkUInt8
+                )
 
     print("Processing val files")
     for val_filename, val_maskname in tqdm(zip(val_filenames, val_masknames)):
