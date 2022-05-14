@@ -10,7 +10,7 @@ class STCNCallbacks(Callbacks):
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
-        self.skip_values = [10, 15, 20, 25, 5]
+        self.skip_values = [3, 5, 7, 10, 5]
         self.increase_skip_fraction = [0.1, 0.2, 0.3, 0.4, 0.9, 1.0]
 
     def on_start(self, logs:Dict = None):
