@@ -32,9 +32,7 @@ class ModelWithLoss():
                 'loss_dict': {"None": 0}
             }
         else:
-            loss, loss_dict = self.criterion.compute({
-                **batch, **outputs
-            }, it=batch['iters'])
+            loss, loss_dict = self.criterion(outputs, batch, self.device)
         
             return {
                 'model_outputs': outputs,
