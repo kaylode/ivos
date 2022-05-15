@@ -1,0 +1,4 @@
+from .twosampler import TwoStreamBatchSampler
+from theseus.semantic2D.datasets import DATALOADER_REGISTRY
+
+DATALOADER_REGISTRY.register(TwoStreamBatchSampler)
