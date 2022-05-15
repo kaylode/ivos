@@ -7,7 +7,7 @@ global:
   device: cuda:0
   ref_weights: null
   prop_weights: null
-  top_k: 7 # top k frames in memory to calculate affinity 
+  top_k: 20 # top k frames in memory to calculate affinity 
   mem_every: 5 # save frames every k step
   save_visualization: True
   strategy: all # strategy for choosing reference images
@@ -24,6 +24,7 @@ data:
     args:
       root_dir: /content/data/flare2022-processed/TestImage
       max_ref_frames: 64
+      sample_fp: 5
   dataloader:
     name: DataLoaderWithCollator
     args:

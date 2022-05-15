@@ -32,3 +32,6 @@ DATASET_REGISTRY.register(FLARE22ValDataset)
 DATASET_REGISTRY.register(FLARE22NormalValDataset)
 DATASET_REGISTRY.register(FLARE22NormalDataset)
 DATASET_REGISTRY.register(FLARE22TestDataset)
+
+from .folder import VolumeFolderDataset
+DATASET_REGISTRY.register(VolumeFolderDataset)

@@ -3,9 +3,9 @@ import nibabel as nib # common way of importing nibabel
 import torch
 import numpy as np
 import pandas as pd
+from theseus.semantic2D.utilities.sampling import sampling_frames
 from theseus.semantic2D.datasets.flare2022 import FLARE22BaseCSVDataset
 from theseus.utilities.loggers.observer import LoggerObserver
-
 LOGGER = LoggerObserver.getLogger('main')
 
 # CLASS FOR SIMPLE SEGMENTATION MODELS
@@ -23,11 +23,7 @@ class FLARE22NormalDataset(FLARE22BaseCSVDataset):
         self.max_frames = max_frames
 
     def sampling_frames(self, num_frames):
-        if self.max_frames == -1:
-            self.max_frames = num_frames
-            
-        frames_idx = np.random.choice(range(num_frames), size=self.max_frames, replace=False)
-        return frames_idx
+        return sampling_frames(num_frames, max_frames=self.max_frames)
 
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
@@ -92,34 +88,8 @@ class FLARE22NormalValDataset(FLARE22NormalDataset):
         self.sample_fp = sample_fp
 
     def sampling_frames(self, num_frames):
-        """sample video into tensor
-        Args:
-            video_file: location of video file
-            max_frame: max frame number
-            sample_fp: sampling rate
-        Returns:
-            image_input: sample frames
-        """
-
-        assert self.sample_fp > -1
-
-        if self.max_frames == -1:
-            self.max_frames = num_frames
-
-        # Pre-uniform sampling
-        current_frame = num_frames // self.sample_fp # number of frames based on rate
-        current_sample_indx = np.linspace(
-          0, num_frames - 1, 
-          num=current_frame, dtype=int) # sample frames, with step equals sample_fp
-        
-        # if the length of current_sample_indx is already less than max_frames, just use the current version to tensor
-        # else continue to uniformly sample the frames whose length is max_frames
-        # when training, the frames are sampled randomly in the uniform split interval
-        if self.max_frames >=  current_sample_indx.shape[0]:
-            frame_index = np.arange(0, current_sample_indx.shape[0])
-        else:
-            frame_index = np.linspace(0, current_sample_indx.shape[0] - 1, num=self.max_frames, dtype=int)
-
-        sampled_frame_ids = [current_sample_indx[int(index)] for index in frame_index]
-        
-        return sampled_frame_ids
+        return sampling_frames(
+            num_frames, 
+            max_frames=self.max_frames, 
+            uniform=True, 
+            sampling_rate=self.sample_fp)

@@ -2,6 +2,7 @@ from typing import Union
 import torch
 import numpy as np
 import os
+from theseus.semantic2D.utilities.sampling import sampling_frames
 from theseus.semantic2D.datasets.flare2022 import FLARE22BaseDataset
 from theseus.utilities.loggers.observer import LoggerObserver
 
@@ -11,12 +12,14 @@ class FLARE22TestDataset(FLARE22BaseDataset):
     def __init__(
         self, 
         root_dir: str,
+        sample_fp: int = 5,
         max_ref_frames: Union[int, float] = 15,
         transform=None,
         **kwargs):
         
         super().__init__(root_dir, transform)
         self.max_ref_frames = max_ref_frames
+        self.sample_fp = sample_fp
         self.load_data()
 
     def load_data(self):
@@ -29,23 +32,6 @@ class FLARE22TestDataset(FLARE22BaseDataset):
                 'pid': pid,
                 'vol': volume_name,
             })
-        
-    def sampling_frames(self, num_frames):
-        if self.max_ref_frames == -1:
-            self.max_ref_frames = num_frames
-        
-        # If num frames is fewer than max_ref_frames, use all for referencing
-        if isinstance(self.max_ref_frames, float):
-            max_ref_frames = int(self.max_ref_frames * num_frames)
-        else:
-            max_ref_frames = self.max_ref_frames
-
-        if num_frames < self.max_ref_frames:
-            return [i for i in range(num_frames)]
-
-        frames_idx = np.random.choice(range(num_frames), size=max_ref_frames, replace=False)
-        frames_idx.sort()
-        return frames_idx.tolist()
 
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
@@ -63,7 +49,12 @@ class FLARE22TestDataset(FLARE22BaseDataset):
 
         # Reference frames
         images = []
-        frames_idx = self.sampling_frames(num_slices)
+        frames_idx = sampling_frames(
+            num_slices, 
+            max_frames=self.max_ref_frames,
+            uniform=True, 
+            sampling_rate=self.sample_fp)
+            
         for f_idx in frames_idx:
             this_im = image[:,:,f_idx] #(H, W)
             images.append(this_im)
