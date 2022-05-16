@@ -95,7 +95,7 @@ data:
         root_dir: /content/data/flare2022/labelled-processed320clip/
         csv_path: /content/data/flare2022/labelled-processed320clip/train.csv
         sample_fp: 5 #steps between samples
-        max_frames: 30
+        max_frames: 27
     unsup_train:
       name: VolumeFolderDataset
       args:  

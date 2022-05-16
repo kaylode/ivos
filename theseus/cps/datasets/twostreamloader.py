@@ -58,6 +58,6 @@ class TwoStreamDataLoader(torch.utils.data.DataLoader):
             'targets': masks,
             'img_names': img_names,
             'ori_sizes': ori_sizes,
-            'split_pos': self.batch_sizes[0]
+            'split_pos': masks.shape[0]
         }
         
