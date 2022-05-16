@@ -59,7 +59,8 @@ class SemiSupervisedTrainer(BaseTrainer):
         """
         self.model.train()
         self.callbacks.run('on_train_epoch_start')
-        self.optimizer.zero_grad()
+        for optimizer in self.optimizers:
+            optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
 
             # Check if shutdown flag has been turned on

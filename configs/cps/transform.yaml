@@ -18,14 +18,10 @@ unsup_train:
     transforms:
       - name: MonaiLoadImaged
         args:
-          keys: [image, label]
-      - name: MonaiUnsqueezeOnAxisd
-        args:
-          keys: [label]
-          axis: 0
+          keys: [image]
       - name: MonaiToTensord
         args:
-          keys: [image, label]
+          keys: [image]
 val:
   name: MonaiCompose
   args:

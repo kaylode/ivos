@@ -17,19 +17,33 @@ trainer:
     evaluate_interval: 1
     print_interval: 20
     save_interval: 1000
+callbacks:
+  - name: LoggerCallbacks
+    args: null 
+  - name: CheckpointCallbacks
+    args:
+      best_key: dice-avg
+  - name: NormalVisualizerCallbacks
+    args: null
+  #- name: WandbCallbacks
+   # args: 
+    #  username: kaylode
+     # project_name: flare22
 model:
   name: CrossPseudoSupervision
   args:
     model1:
       name: BaseSegModel
       args:
-        backbone_name: unetplusplus
+        model_name: unetplusplus
         encoder_name: efficientnet-b0
+        in_channels: 1
     model2:
       name: BaseSegModel
       args:
-        backbone_name: deeplabv3plus
+        model_name: deeplabv3plus
         encoder_name: efficientnet-b0
+        in_channels: 1
 loss:
   name: CPSLoss
   args:
@@ -74,21 +88,21 @@ data:
     train:
       name: FLARE22NormalDataset
       args:
-        root_dir: /content/data/flare2022-processed/labelled/labelled-processed320clip/
-        csv_path: /content/data/flare2022-processed/labelled/labelled-processed320clip/train.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/train.csv
         sample_fp: 5 #steps between samples
         max_frames: 40
     unsup_train:
       name: VolumeFolderDataset
       args:  
-        root_dir: 
+        root_dir: /content/data/flare2022/labelled-processed320clip/TrainImage/
         sample_fp: 5 #steps between samples
         max_frames: 10
     val:
       name: FLARE22NormalValDataset
       args:
-        root_dir: /content/data/flare2022-processed/labelled/labelled-processed320clip/
-        csv_path: /content/data/flare2022-processed/labelled/labelled-processed320clip/val.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/val.csv
         sample_fp: 2 #steps between samples
         max_frames: -1 #maximum 
   dataloader:
