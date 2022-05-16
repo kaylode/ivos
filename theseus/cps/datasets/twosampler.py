@@ -1,20 +1,20 @@
 # Source: https://github.com/HiLab-git/SSL4MIS/blob/8ebc2d9e3455d01ee2b47a9379aeaf213d72570c/code/dataloaders/dataset.py
 import itertools
 import numpy as np
-from torch.utils.data.sampler import Sampler
+from torch.utils.data.sampler import BatchSampler
 
-class TwoStreamBatchSampler(Sampler):
+class TwoStreamBatchSampler(BatchSampler):
     """Iterate two sets of indices
     An 'epoch' is one iteration through the primary indices.
     During the epoch, the secondary indices are iterated through
     as many times as needed.
     """
 
-    def __init__(self, primary_indices, secondary_indices, batch_size, secondary_batch_size):
+    def __init__(self, primary_indices, secondary_indices, primary_batch_size, secondary_batch_size):
         self.primary_indices = primary_indices
         self.secondary_indices = secondary_indices
         self.secondary_batch_size = secondary_batch_size
-        self.primary_batch_size = batch_size - secondary_batch_size
+        self.primary_batch_size = primary_batch_size
 
         assert len(self.primary_indices) >= self.primary_batch_size > 0
         assert len(self.secondary_indices) >= self.secondary_batch_size > 0

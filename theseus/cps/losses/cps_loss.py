@@ -42,24 +42,24 @@ class CPSLoss(nn.Module):
         # Supervised loss
         sup_loss1, sup_loss_dict1 = self.sup_criterion(
             outputs = {'outputs': outputs1[:split_pos]},
-            batch = {'targets': batch['targets'][:split_pos]},
+            batch = {'targets': batch['targets']},
             device = device
         )
         sup_loss2, sup_loss_dict2 = self.sup_criterion(
             outputs = {'outputs': outputs2[:split_pos]},
-            batch = {'targets': batch['targets'][:split_pos]},
+            batch = {'targets': batch['targets']},
             device = device
         )
 
         # Unsupervised loss
         unsup_loss1, unsup_loss_dict1 = self.unsup_criterion(
             outputs = {'outputs': outputs_soft1[split_pos:]},
-            batch = {'targets': pseudo_outputs2.unsqueeze(1)},
+            batch = {'targets': pseudo_outputs2},
             device = device
         )
         unsup_loss2, unsup_loss_dict2 = self.unsup_criterion(
             outputs = {'outputs': outputs_soft2[split_pos:]},
-            batch = {'targets': pseudo_outputs1.unsqueeze(1)},
+            batch = {'targets': pseudo_outputs1},
             device = device
         )  
 

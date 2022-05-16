@@ -7,7 +7,6 @@ from theseus.utilities.loading import load_state_dict
 
 from theseus.opt import Config
 from theseus.base.pipeline import BasePipeline
-from theseus.semantic2D.models import wrapper as refine_model
 from theseus.base.models import wrapper as refer_model
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
@@ -54,8 +53,7 @@ class Pipeline(BasePipeline):
             registry=self.model_registry, 
             num_classes=len(CLASSNAMES),
             classnames=CLASSNAMES)
-        if self.stage == 'reference':
-            model = move_to(model, self.device)
+        model = move_to(model, self.device)
         return model
     
 
@@ -92,12 +90,12 @@ class Pipeline(BasePipeline):
             get_instance(
                 self.opt["optimizer"],
                 registry=self.optimizer_registry,
-                params=self.model.model1.parameters(),
+                params=self.model.model.model1.parameters(),
             ),
             get_instance(
                 self.opt["optimizer"],
                 registry=self.optimizer_registry,
-                params=self.model.model2.parameters(),
+                params=self.model.model.model2.parameters(),
             ),
         ]
 
@@ -117,13 +115,13 @@ class Pipeline(BasePipeline):
         #     self.last_epoch = iters//len(self.train_dataloader) - 1
 
 
-    def init_schedulers(self):
+    def init_scheduler(self):
         self.schedulers = [
             get_instance(
                 self.opt["scheduler"], registry=self.scheduler_registry, optimizer=self.optimizers[0],
                 **{
                     'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
-                    'trainset': self.train_dataset,
+                    'trainset': self.sup_train_dataset,
                     'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
                     'last_epoch': self.last_epoch,
                 }
@@ -131,7 +129,7 @@ class Pipeline(BasePipeline):
             get_instance(self.opt["scheduler"], registry=self.scheduler_registry, optimizer=self.optimizers[1],
                 **{
                     'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
-                    'trainset': self.train_dataset,
+                    'trainset': self.sup_train_dataset,
                     'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
                     'last_epoch': self.last_epoch,
                 }
@@ -149,6 +147,14 @@ class Pipeline(BasePipeline):
             registry=self.metric_registry, 
             num_classes=len(CLASSNAMES),
             classnames=CLASSNAMES)
+
+    def init_model_with_loss(self):
+        model = self.init_model()
+        criterion = self.init_criterion()
+        self.model = refer_model.ModelWithLoss(model, criterion, self.device)
+        self.logger.text(f"Number of trainable parameters: {self.model.trainable_parameters():,}", level=LoggerObserver.INFO)
+        device_info = get_devices_info(self.device_name)
+        self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
             
     def init_trainer(self, callbacks):
         self.trainer = get_instance(

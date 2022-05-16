@@ -80,10 +80,9 @@ class SemiSupervisedTrainer(BaseTrainer):
                 loss_dict = outputs['loss_dict']
 
             # Backward loss
-            for optimizer in self.optimizers:
-                self.scaler(loss, optimizer)
-            self.scaler.step(optimizer[0], clip_grad=self.clip_grad, parameters=self.model.model1.parameters())
-            self.scaler.step(optimizer[1], clip_grad=self.clip_grad, parameters=self.model.model2.parameters())
+            self.scaler(loss, None)
+            self.scaler.step(self.optimizers[0], clip_grad=self.clip_grad, parameters=self.model.model.model1.parameters())
+            self.scaler.step(self.optimizers[1], clip_grad=self.clip_grad, parameters=self.model.model.model2.parameters())
             
             # Optmizer step
             for sched, step_per_epoch in zip(self.schedulers, self.step_per_epochs):

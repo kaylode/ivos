@@ -13,12 +13,15 @@ class CrossPseudoSupervision(nn.Module):
         self, 
         model1: nn.Module, 
         model2: nn.Module, 
+        reduction: str = 'sum',
         **kwargs):
 
         super().__init__()
         self.model1 = model1
         self.model2 = model2
         self.num_classes = self.model1.num_classes
+        self.training = True
+        self.reduction = reduction
     
     def get_model(self):
         return self
@@ -32,25 +35,44 @@ class CrossPseudoSupervision(nn.Module):
             output = output.sum(dim=0) #[B, C, H, W]
         elif reduction == 'max':
             output, _ = output.max(dim=0) #[B, C, H, W]
+        elif reduction == 'first':
+            return logit1
+        elif reduction == 'second':
+            return logit2
 
         return output
 
-    def forward(self, batch: Dict, device: torch.device):
-        inputs = batch['inputs']
-        outputs1 = self.model1(inputs, device)['outputs']
-        outputs2 = self.model2(inputs, device)['outputs']
+    def eval_mode(self):
+        """
+        Switch to eval mode
+        """
+        self.training = False
 
-        return {
-            'outputs': [outputs1, outputs2],
-        }
+    def train_mode(self):
+        """
+        Switch to train mode
+        """
+        self.training = True
+
+    def forward(self, batch: Dict, device: torch.device):
+        outputs1 = self.model1(batch, device)['outputs']
+        outputs2 = self.model2(batch, device)['outputs']
+        if self.training:
+            return {
+                'outputs': [outputs1, outputs2],
+            }
+        else:
+            outputs = self.ensemble_learning(outputs1, outputs2, reduction=self.reduction)
+            return {
+                'outputs': outputs
+            }
     
     @torch.no_grad()
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
-        inputs = adict['inputs']
-        outputs1 = self.model1(inputs, device)['outputs']
-        outputs2 = self.model2(inputs, device)['outputs']
+        outputs1 = self.model1(adict, device)['outputs']
+        outputs2 = self.model2(adict, device)['outputs']
 
-        probs = self.ensemble_learning(outputs1, outputs2)
+        probs = self.ensemble_learning(outputs1, outputs2, reduction=self.reduction)
         predict = torch.argmax(probs, dim=1)
 
         predict = predict.detach().cpu().squeeze().numpy()

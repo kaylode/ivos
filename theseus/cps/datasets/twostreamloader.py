@@ -31,14 +31,14 @@ class TwoStreamDataLoader(torch.utils.data.DataLoader):
         sampler = TwoStreamBatchSampler(
             primary_indices=labeled_idxs,
             secondary_indices=unlabeled_idxs,
-            batch_size=batch_sizes[0],
+            primary_batch_size=batch_sizes[0],
             secondary_batch_size=batch_sizes[1]
         )
 
         super().__init__(
             dataset=cat_dataset, 
             collate_fn=self.mutual_collate_fn, 
-            sampler=sampler,
+            batch_sampler=sampler,
             **kwargs
         )
 
