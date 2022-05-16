@@ -7,7 +7,7 @@ global:
   device: cuda:0
   pretrained: null
   resume: null
-  stage: refine
+  stage: reference
 trainer:
   name: SemiSupervisedTrainer
   args:
@@ -27,10 +27,10 @@ callbacks:
       best_key: dice-avg
   - name: TwoStreamVisualizerCallbacks
     args: null
-  #- name: WandbCallbacks
-   # args: 
-    #  username: kaylode
-     # project_name: flare22
+  - name: WandbCallbacks
+    args: 
+      username: kaylode
+      project_name: flare22
 model:
   name: CrossPseudoSupervision
   args:
@@ -40,14 +40,14 @@ model:
         model_name: unetplusplus
         encoder_name: efficientnet-b0
         in_channels: 1
-        pretrained: False
+        pretrained: True
     model2:
       name: BaseSegModel
       args:
         model_name: deeplabv3plus
         encoder_name: efficientnet-b0
         in_channels: 1
-        pretrained: False
+        pretrained: True
 loss:
   name: CPSLoss
   args:

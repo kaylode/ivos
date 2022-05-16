@@ -11,6 +11,13 @@ class CPSCallbacks(Callbacks):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
+    def sanitycheck(self, logs: Dict=None):
+        """
+        Sanitycheck before starting. Run only when debug=True
+        """
+        train_dataloader = self.params['trainer'].trainloader
+        self.iter_length = len(train_dataloader)
+
     def on_start(self, logs:Dict = None):
         """
         On initialization
