@@ -114,7 +114,7 @@ class FLARE22BaseCSVDataset(FLARE22BaseDataset):
         for _, row in df.iterrows():
             # train_0047_0000.nii.gz
             volume_name, mask_name = row
-            pid = volume_name.split('_')[1] 
+            pid = volume_name.split('_')[2] 
             self.fns.append({
                 'pid': pid,
                 'vol': volume_name,
