@@ -24,7 +24,7 @@ np.random.seed(SEED)
 parser = argparse.ArgumentParser("Process volume CT")
 parser.add_argument("-i", "--input_dir", type=str, help="Volume directory")
 parser.add_argument("-o", "--out_dir", type=str, help="Output directory")
-parser.add_argument("--binary", action='store_true', type=bool, help="Whether to split into binary masks")
+parser.add_argument("--binary", action='store_true',  help="Whether to split into binary masks")
 parser.add_argument("--ratio", type=float, default=0.9, help="Ratio split")
 
 """
