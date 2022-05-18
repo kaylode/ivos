@@ -5,7 +5,8 @@ global:
   cfg_transform: configs/cps/transform.yaml
   save_dir: runs
   device: cuda:0
-  pretrained: null
+  pretrained1: null
+  pretrained2: null
   resume: null
   stage: reference
 trainer:
@@ -99,7 +100,7 @@ data:
     unsup_train:
       name: VolumeFolderDataset
       args:  
-        root_dir: /content/data/flare2022/labelled-processed320clip/TrainImage/
+        root_dir: /content/data/flare2022/TrainUnlabelledImage-processed-part1
         sample_fp: 5 #steps between samples
         max_frames: 5
     val:

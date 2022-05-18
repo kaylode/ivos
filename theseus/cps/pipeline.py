@@ -103,16 +103,25 @@ class Pipeline(BasePipeline):
         self.resume = self.opt['global']['resume']
         self.pretrained = self.opt['global']['pretrained']
         self.last_epoch = -1
-        # if self.pretrained:
-        #     state_dict = torch.load(self.pretrained)
-        #     self.model.model = load_state_dict(self.model.model, state_dict, 'model')
+        self.pretrained1 = self.opt['global']['pretrained1']
+        self.pretrained2 = self.opt['global']['pretrained2']
 
-        # if self.resume:
-        #     state_dict = torch.load(self.resume)
-        #     self.model.model = load_state_dict(self.model.model, state_dict, 'model')
-        #     self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-        #     iters = load_state_dict(None, state_dict, 'iters')
-        #     self.last_epoch = iters//len(self.train_dataloader) - 1
+        if self.pretrained1:
+            state_dict = torch.load(self.pretrained1)
+            self.model.model.model1.model = load_state_dict(self.model.model.model1.model, state_dict, 'model')
+
+        if self.pretrained2:
+            state_dict = torch.load(self.pretrained2)
+            self.model.model.model2.model = load_state_dict(self.model.model.model2.model, state_dict, 'model')
+
+        if self.resume:
+            state_dict = torch.load(self.resume)
+            self.model.model.model1.model = load_state_dict(self.model.model.model1.model, state_dict, 'model1')
+            self.model.model.model2.model = load_state_dict(self.model.model.model2.model, state_dict, 'model2')
+            self.optimizers[0] = load_state_dict(self.optimizers[0], state_dict, 'optimizer1')
+            self.optimizers[1] = load_state_dict(self.optimizers[0], state_dict, 'optimizer2')
+            iters = load_state_dict(None, state_dict, 'iters')
+            self.last_epoch = iters//len(self.train_dataloader) - 1
 
 
     def init_scheduler(self):
@@ -136,9 +145,10 @@ class Pipeline(BasePipeline):
             )
         ]
 
-        # if self.resume:
-        #     state_dict = torch.load(self.resume)
-        #     self.scheduler = load_state_dict(self.scheduler, state_dict, 'scheduler')
+        if self.resume:
+            state_dict = torch.load(self.resume)
+            self.schedulers[0] = load_state_dict(self.schedulers[0], state_dict, 'scheduler1')
+            self.schedulers[1] = load_state_dict(self.schedulers[1], state_dict, 'scheduler2')
 
     def init_metrics(self):
         CLASSNAMES = self.val_dataset.classnames
