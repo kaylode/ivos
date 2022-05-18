@@ -19,3 +19,19 @@ DATASET_REGISTRY.register(AbdomenCT1KNormalDataset)
 DATASET_REGISTRY.register(AbdomenCT1KTestDataset)
 
 DATALOADER_REGISTRY.register(ReSampler)
+
+from .flare2022 import (
+    FLARE22TrainDataset,    
+    FLARE22ValDataset,
+    FLARE22NormalDataset,
+    FLARE22NormalValDataset,
+    FLARE22TestDataset,
+)
+DATASET_REGISTRY.register(FLARE22TrainDataset)
+DATASET_REGISTRY.register(FLARE22ValDataset)
+DATASET_REGISTRY.register(FLARE22NormalValDataset)
+DATASET_REGISTRY.register(FLARE22NormalDataset)
+DATASET_REGISTRY.register(FLARE22TestDataset)
+
+from .folder import VolumeFolderDataset
+DATASET_REGISTRY.register(VolumeFolderDataset)

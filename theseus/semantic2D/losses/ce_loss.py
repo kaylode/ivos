@@ -78,14 +78,15 @@ class OhemCELoss(nn.Module):
     def forward(self, outputs: Dict, batch: Dict, device: torch.device) -> torch.Tensor:
         pred = outputs["outputs"]
         labels = move_to(batch["targets"], device)
-        labels = torch.argmax(labels, dim=1) 
 
+        if len(labels.shape) != 3:
+            labels = torch.argmax(labels, dim=1) 
+        
         if self.weight is not None:
             self.criterion.weight = move_to(self.criterion.weight, device)
 
         # preds in shape [B, C, H, W] and labels in shape [B, H, W]
         n_min = labels[labels != self.ignore_label].numel() // 16
-
         loss = self.criterion(pred, labels).view(-1)
         loss_hard = loss[loss > self.thresh]
 

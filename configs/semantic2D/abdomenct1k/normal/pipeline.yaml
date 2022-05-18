@@ -1,13 +1,13 @@
 global:
-  exp_name: stcn-theseus
+  exp_name: normal-theseus
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/stcn/transform.yaml
+  cfg_transform: configs/semantic2D/abdomenct1k/normal/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
   resume: null
-  stage: refine
+  stage: reference
 trainer:
   name: SupervisedTrainer
   args:
@@ -20,40 +20,40 @@ trainer:
 callbacks:
   - name: LoggerCallbacks
     args: null 
-  - name: STCNCallbacks
-    args: null 
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
-  - name: VolumeVisualizerCallbacks
+  - name: NormalVisualizerCallbacks
     args: null
   - name: WandbCallbacks
     args: 
       username: kaylode
       project_name: flare22
 model:
-  name: STCNModel
+  name: BaseSegModel
   args:
-    single_object: False
-    top_k_eval: 20
-    mem_every_eval: 5
-    pretrained: True
+    model_name: unetplusplus
+    encoder_name : efficientnet-b0
+    in_channels: 1
 loss:
-  name: STCNLoss
-  args: null
+  name: MultiLoss
+  args:
+    weights: null
+    losses:
+      - name: CELoss
+        args: {}
+      - name: DiceLoss
+        args: {}
 metrics:
 - name: mIOU
   args:
 - name: DiceScore
   args:
     calc_each_class: True
-# - name: NormalizedSurfaceDistance
-#   args:
-#     calc_each_class: True
 optimizer:
   name: AdamW
   args:
-    lr: 0.0003
+    lr: 0.0001
     weight_decay: 0.0000001
     betas:
     - 0.937
@@ -69,29 +69,28 @@ scheduler:
 data:
   dataset:
     train:
-      name: AbdomenCT1KTrainDataset
+      name: AbdomenCT1KNormalDataset
       args:
         root_dir: /content/data/abdomenct1k/Subtask1-processed/
         csv_path: /content/data/abdomenct1k/Subtask1-processed/annotations/train.csv
-        max_jump: 10 #initial
+        sample_fp: 10 #steps between samples
+        max_frames: 15  
     val:
-      name: AbdomenCT1KValDataset
+      name: AbdomenCT1KNormalValDataset
       args:
         root_dir: /content/data/abdomenct1k/Subtask1-processed/
         csv_path: /content/data/abdomenct1k/Subtask1-processed/annotations/val.csv
+        sample_fp: 1 #steps between samples
+        max_frames: -1 #maximum 
   dataloader:
     train:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
-        batch_size: 16
+        batch_size: 4
         drop_last: false
         shuffle: false
-        sampler:
-          name: ReSampler
-          args:
-            num_repeat: 10
     val:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
         batch_size: 1
         drop_last: false

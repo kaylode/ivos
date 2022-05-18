@@ -1,5 +1,6 @@
 import webcolors
 
+#https://htmlcolorcodes.com/color-names/
 STANDARD_COLORS = [
     'DarkGrey', 'LawnGreen', 'Crimson', 'LightBlue' , 'Gold', 'BlanchedAlmond', 'Bisque',
     'Aquamarine', 'BlueViolet', 'BurlyWood', 'CadetBlue', 'AntiqueWhite','Azure', 
@@ -26,6 +27,12 @@ STANDARD_COLORS = [
     'WhiteSmoke', 'Yellow', 'YellowGreen'
 ]
 
+FLARE22_COLORS = [
+    'DarkGrey', 'Crimson', 'LawnGreen', 'SteelBlue', 'Gold', 'Aquamarine',
+    'HotPink', 'LemonChiffon', 'RoyalBlue', 'SandyBrown', 'Tan', 'LightSkyBlue',
+    'Olive', 'LightSalmon' , 'YellowGreen'
+]
+
 def from_colorname_to_bgr(color):
     rgb_color = webcolors.name_to_rgb(color)
     result = (rgb_color.blue/255.0, rgb_color.green/255.0, rgb_color.red/255.0)
@@ -37,4 +44,4 @@ def standard_to_bgr(list_color_name):
         standard.append(from_colorname_to_bgr(list_color_name[i]))
     return standard
 
-color_list = standard_to_bgr(STANDARD_COLORS)
+color_list = standard_to_bgr(FLARE22_COLORS)

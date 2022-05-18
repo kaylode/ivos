@@ -12,7 +12,7 @@ parser.add_argument("-l", "--mask_dir", default=None, type=str, help="Volume dir
 
 def analyze_intensity(image, mask=None):
     if mask is not None:
-        binary_mask = mask[mask != 0]
+        binary_mask = mask != 0
         mask_image = binary_mask*image
     else:
         mask_image = np.zeros(image.shape)

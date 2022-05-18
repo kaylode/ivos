@@ -10,36 +10,41 @@
 
 - Analyze dataset
 ```
-python theseus/semantic3D/utilities/eda.py \
+python tools/eda/run.py \
     -i <image dir> \
     -l <mask dir>
 ```
 
-
 - Preprocess AbdomenCT1k and split train/val
 ```
-python theseus/semantic3D/utilities/preprocess/scripts/make_abdomen.py \
+python tools/preprocess/make_abdomen.py \
     -i data/abdomenct1k/Subtask1 \
     -o data/abdomenct1k/Subtask1-processed512clip \
     --ratio 0.95
 ```
 
-
+- Preprocess FLARE22 and split train/val
+```
+python tools/preprocess/make_flare22.py \
+    -i data/flare22 \
+    -o data/flare22-processed512clip \
+    --ratio 0.95
+```
 
 ### **Training**
 
 #### Reference model
 - Edit `normal/pipeline.yaml` then run
 ```
-python configs/semantic2D/train.py \
-      -c configs/semantic2D/normal/pipeline.yaml \
+python tools/train/train.py \
+      -c configs/semantic2D/<dataset>/normal/pipeline.yaml \
 ```
 
 #### Propagation model
 - Edit `stcn/pipeline.yaml` then run
 ```
-python configs/semantic2D/train.py \
-      -c configs/semantic2D/stcn/pipeline.yaml \
+python tools/train/train.py \
+      -c configs/semantic2D/<dataset>/stcn/pipeline.yaml \
 ```
 
 ### **Inference**
@@ -53,7 +58,7 @@ download_from_wandb("checkpoints/best.pth", "kaylode/flare22/2mkfc2ne", "weights
 
 - To perform 2-stage inference, first modify `stcn/test.yaml`, then run
 ```
-python configs/semantic2D/infer_2stage.py \
+python tools/inference/infer_2stage.py \
       -c configs/semantic2D/stcn/test.yaml \
       -o global.ref_weights=weights/normal/checkpoints/best.pth \
       global.prop_weights=weights/stcn/checkpoints/best.pth \
@@ -61,7 +66,7 @@ python configs/semantic2D/infer_2stage.py \
 
 - After that, run below command to prepare submission
 ```
-python theseus/semantic3D/utilities/postprocess/make_submission.py \
+python tools/postprocess/make_submission.py \
   -g <ground truth> \
   -p <prediction dir> \
   -o <output dir>

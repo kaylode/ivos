@@ -1,8 +1,8 @@
 global:
-  exp_name: normal-theseus
+  exp_name: flare22-normal
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/normal/transform.yaml
+  cfg_transform: configs/semantic2D/flare22/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
@@ -35,6 +35,7 @@ model:
     model_name: unetplusplus
     encoder_name : efficientnet-b0
     in_channels: 1
+    pretrained: False
 loss:
   name: MultiLoss
   args:
@@ -69,24 +70,24 @@ scheduler:
 data:
   dataset:
     train:
-      name: AbdomenCT1KNormalDataset
+      name: FLARE22NormalDataset
       args:
-        root_dir: /content/data/abdomenct1k/Subtask1-processed/
-        csv_path: /content/data/abdomenct1k/Subtask1-processed/annotations/train.csv
-        sample_fp: 10 #steps between samples
-        max_frames: 15  
+        root_dir: /content/data/flare2022-processed/labelled/labelled-processed320clip/
+        csv_path: /content/data/flare2022-processed/labelled/labelled-processed320clip/train.csv
+        sample_fp: 5 #steps between samples
+        max_frames: 40  
     val:
-      name: AbdomenCT1KNormalValDataset
+      name: FLARE22NormalValDataset
       args:
-        root_dir: /content/data/abdomenct1k/Subtask1-processed/
-        csv_path: /content/data/abdomenct1k/Subtask1-processed/annotations/val.csv
-        sample_fp: 1 #steps between samples
+        root_dir: /content/data/flare2022-processed/labelled/labelled-processed320clip/
+        csv_path: /content/data/flare2022-processed/labelled/labelled-processed320clip/val.csv
+        sample_fp: 2 #steps between samples
         max_frames: -1 #maximum 
   dataloader:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 4
+        batch_size: 1
         drop_last: false
         shuffle: false
     val:
