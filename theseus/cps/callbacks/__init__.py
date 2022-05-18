@@ -1,0 +1,8 @@
+from theseus.cps.callbacks.cps_callbacks import CPSCallbacks
+from theseus.cps.callbacks.visualization_callbacks import TwoStreamVisualizerCallbacks
+from theseus.cps.callbacks.checkpoint_callbacks import TwoStreamCheckpointCallbacks
+from theseus.semantic2D.callbacks import CALLBACKS_REGISTRY
+
+CALLBACKS_REGISTRY.register(CPSCallbacks)
+CALLBACKS_REGISTRY.register(TwoStreamVisualizerCallbacks)
+CALLBACKS_REGISTRY.register(TwoStreamCheckpointCallbacks)
