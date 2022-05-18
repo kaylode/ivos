@@ -1,8 +1,6 @@
 from typing import Dict, Any
 import torch
 import torch.nn as nn
-import numpy as np
-from theseus.utilities.cuda import move_to
 from theseus.utilities.loading import load_state_dict
 from theseus.semantic2D.models.stcn.networks.network import STCNTrain
 from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
@@ -40,7 +38,7 @@ class STCNModel():
             pretrained_path = load_pretrained_model('stcn')
             if pretrained_path:
                 state_dict = torch.load(pretrained_path, map_location='cpu')
-                self.load_network(state_dict)
+                self.train_model = self.load_network(self.train_model, state_dict)
         
     def state_dict(self):
         return self.train_model.state_dict()
@@ -57,7 +55,7 @@ class STCNModel():
         """
         self.train_model.to(torch.device('cpu'))
         self.eval_model.to(torch.device('cuda'))
-        self.eval_model.load_state_dict(self.train_model.state_dict())
+        self.eval_model = self.load_network(self.eval_model, self.train_model.state_dict())
         self.training = False
 
     def train(self):
@@ -180,7 +178,7 @@ class STCNModel():
 
         return out
 
-    def load_network(self, state_dict):
+    def load_network(self, model, state_dict):
         # This method loads only the network weight and should be used to load a pretrained model
 
         # Maps SO weight (without other_mask) to MO weight (with other_mask)
@@ -191,4 +189,5 @@ class STCNModel():
                     nn.init.orthogonal_(pads)
                     state_dict[k] = torch.cat([state_dict[k], pads], 1)
 
-        self.train_model = load_state_dict(self.train_model, state_dict)
+        model = load_state_dict(model, state_dict)
+        return model

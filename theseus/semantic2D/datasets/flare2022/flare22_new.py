@@ -56,7 +56,7 @@ class FLARE22TrainDatasetV2(FLARE22BaseCSVDataset):
             gt_path = osp.join(self.root_dir, item['label'])
             gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
             gt_vol = gt_vol.transpose(2,0,1)
-            vol_dict['guides'], _ = REFERENCER.search_reference(gt_vol, strategy="non-empty")
+            vol_dict['guides'] = REFERENCER.search_reference(gt_vol, strategy="non-empty")
             self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
@@ -184,7 +184,7 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
             gt_path = osp.join(self.root_dir, item['label'])
             gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
             gt_vol = gt_vol.transpose(2,0,1)
-            vol_dict['guides'] = REFERENCER.search_reference(gt_vol, strategy="most-classes")
+            vol_dict['guides'], _ = REFERENCER.search_reference(gt_vol, strategy="most-classes")
             self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
