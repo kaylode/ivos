@@ -4,9 +4,12 @@ import torch
 import numpy as np
 from theseus.semantic2D.datasets.flare2022 import FLARE22BaseCSVDataset, all_to_onehot
 from theseus.utilities.loggers.observer import LoggerObserver
-
+from theseus.semantic2D.utilities.sampling import sampling_frames
+from theseus.semantic2D.utilities.referencer import Referencer
 LOGGER = LoggerObserver.getLogger('main')
 
+
+REFERENCER = Referencer()
 
 class FLARE22TrainDataset(FLARE22BaseCSVDataset):
     """
@@ -38,6 +41,23 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
 
         super().__init__(root_dir, csv_path, transform)
         self.max_jump = max_jump
+        self.compute_stats()
+
+    def compute_stats(self):
+        """
+        Compute statistic for dataset
+        """
+        LOGGER.text("Computing statistic...", level=LoggerObserver.INFO)
+        self.stats = []
+        for item in self.fns:
+            vol_dict = {
+                'guides': [],
+            }
+            gt_path = osp.join(self.root_dir, item['label'])
+            gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
+            gt_vol = gt_vol.transpose(2,0,1)
+            vol_dict['guides'] = REFERENCER.search_reference(gt_vol, strategy="non-empty")
+            self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
         
@@ -55,11 +75,14 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
         _, h, w, num_slices = stacked_vol.shape
 
         trials = 0
+        stat = self.stats[idx]
         while trials < 5:
 
             # Don't want to bias towards beginning/end
             this_max_jump = min(num_slices, self.max_jump)
-            start_idx = np.random.randint(num_slices-this_max_jump+1)
+            # start_idx = np.random.randint(num_slices-this_max_jump+1)
+            start_idx = np.random.choice(stat['guides'])
+
             f1_idx = start_idx + np.random.randint(this_max_jump+1) + 1
             f1_idx = min(f1_idx, num_slices-this_max_jump, num_slices-1)
 
@@ -156,24 +179,12 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
 
             vol_dict = {
                 'guides': [],
-                'num_labels': []
             }
 
-            patient_id = item['pid']
             gt_path = osp.join(self.root_dir, item['label'])
             gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
-            num_slices = gt_vol.shape[-1]
-            
-            # Search for guide frames, in which most classes are presented
-            max_possible_number_of_classes = 0
-            for frame_idx in range(num_slices):
-                num_classes = len(np.unique(gt_vol[:, :, frame_idx]))
-                if num_classes == max_possible_number_of_classes:
-                    vol_dict['guides'].append(frame_idx)
-                elif num_classes > max_possible_number_of_classes:
-                    max_possible_number_of_classes = num_classes
-                    vol_dict['guides'] = [frame_idx]
-
+            gt_vol = gt_vol.transpose(2,0,1)
+            vol_dict['guides'], _ = REFERENCER.search_reference(gt_vol, strategy="most-classes")
             self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
