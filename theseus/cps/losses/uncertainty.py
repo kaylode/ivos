@@ -75,13 +75,18 @@ class UncertaintyCPSLoss(nn.Module):
         consistency: float = 0.1,
         consistency_rampup: float = 200.0,
         weights: List[float] = [1.0, 1.0],
+        lambda_me_target: float = 0,
+        lambda_kl_target: float = 0,
         **kwargs):
         super().__init__()
         self.unsup_criterion = unsup_criterion
         self.sup_criterion = sup_criterion
         self.consistency = consistency
         self.consistency_rampup = consistency_rampup
-        self.uncertainty_estimation = UELoss(weights=weights)
+        self.uncertainty_estimation = UELoss(
+            lambda_me_target=lambda_me_target, 
+            lambda_kl_target=lambda_kl_target, 
+            weights=weights)
 
     def get_current_consistency_weight(self, epoch):
         # Consistency ramp-up from https://arxiv.org/abs/1610.02242
