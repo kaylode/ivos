@@ -57,7 +57,7 @@ class Pipeline(BasePipeline):
                 self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
             else:
                 state_dict = torch.load(self.pretrained)
-                self.model.model.load_network(state_dict['model'])
+                self.model.model.load_network(self.model.model.train_model, state_dict['model'])
 
         if self.resume:
             state_dict = torch.load(self.resume, map_location=self.device)
@@ -67,7 +67,7 @@ class Pipeline(BasePipeline):
             if self.stage == 'reference':
                 self.model.model.model = load_state_dict(self.model.model.model, state_dict, 'model')
             else:
-                self.model.model.load_network(state_dict['model'])
+                self.model.model.load_network(self.model.model.train_model, state_dict['model'])
 
     def init_model(self):
         CLASSNAMES = self.val_dataset.classnames

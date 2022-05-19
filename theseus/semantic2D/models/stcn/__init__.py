@@ -38,7 +38,7 @@ class STCNModel():
             pretrained_path = load_pretrained_model('stcn')
             if pretrained_path:
                 state_dict = torch.load(pretrained_path, map_location='cpu')
-                self.train_model = self.load_network(self.train_model, state_dict)
+                self.train_model = load_state_dict(self.train_model, state_dict, strict=False)
         
     def state_dict(self):
         return self.train_model.state_dict()
