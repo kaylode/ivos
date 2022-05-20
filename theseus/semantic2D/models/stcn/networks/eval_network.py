@@ -19,10 +19,10 @@ from theseus.semantic2D.models.stcn.networks.network import Decoder
 
 
 class STCNEval(nn.Module):
-    def __init__(self, backbone: str = 'resnet50', pretrained: bool = True):
+    def __init__(self, pretrained: bool = True):
         super().__init__()
-        self.key_encoder = KeyEncoder(backbone, pretrained) 
-        self.value_encoder = ValueEncoder(backbone, pretrained) 
+        self.key_encoder = KeyEncoder('mbv3s', pretrained) 
+        self.value_encoder = ValueEncoder('mbv3s', pretrained) 
 
         f16_dim = self.key_encoder.model.f16_dim #1024
         f8_dim = self.key_encoder.model.f8_dim #512

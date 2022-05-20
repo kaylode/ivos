@@ -33,7 +33,6 @@ class Decoder(nn.Module):
         x = self.up_8_4(f4, x)
 
         x = self.pred(F.relu(x))
-        
         x = F.interpolate(x, scale_factor=4, mode='bilinear', align_corners=False)
         return x
 
@@ -74,17 +73,17 @@ class MemoryReader(nn.Module):
 
 
 class STCNTrain(nn.Module):
-    def __init__(self, single_object, backbone: str = 'resnet50', pretrained: bool = True):
+    def __init__(self, single_object, pretrained: bool = True):
         super().__init__()
         self.single_object = single_object
 
-        self.key_encoder = KeyEncoder(backbone, pretrained)
-        if single_object:
-            self.value_encoder = ValueEncoderSO(backbone, pretrained) 
-        else:
-            self.value_encoder = ValueEncoder(backbone, pretrained) 
-
+        self.key_encoder = KeyEncoder('mbv3s', pretrained)
         f16_dim = self.key_encoder.model.f16_dim #1024
+        if single_object:
+            self.value_encoder = ValueEncoderSO('mbv3s', pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
+        else:
+            self.value_encoder = ValueEncoder('mbv3s', pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
+
         f8_dim = self.key_encoder.model.f8_dim #512
         f4_dim = self.key_encoder.model.f4_dim #256
 
