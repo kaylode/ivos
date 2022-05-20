@@ -85,7 +85,8 @@ class TestPipeline(BaseTestPipeline):
                 processor = InferenceCore(
                     self.prop_model, rgb, k, 
                     top_k=self.top_k, 
-                    mem_every=self.mem_every)
+                    mem_every=self.mem_every,
+                    device=self.device)
                 out_masks = processor.get_prediction({
                     'rgb': rgb,
                     'msk': msk,

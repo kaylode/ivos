@@ -75,7 +75,8 @@ class Pipeline(BasePipeline):
             self.opt["model"], 
             registry=self.model_registry, 
             num_classes=len(CLASSNAMES),
-            classnames=CLASSNAMES)
+            classnames=CLASSNAMES,
+            device=self.device)
         if self.stage == 'reference':
             model = move_to(model, self.device)
         return model
