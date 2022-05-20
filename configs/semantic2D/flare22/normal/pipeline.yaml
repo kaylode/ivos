@@ -62,11 +62,9 @@ optimizer:
 scheduler:
   name: SchedulerWrapper
   args:
-    scheduler_name: cosine2
-    t_initial: 20
-    t_mul: 0.95
-    eta_mul: 0.95
-    eta_min: 1.0e-07
+    scheduler_name: multistep
+    milestones: [500, 1000, 1500]
+    gamma: 0.1
 data:
   dataset:
     train:

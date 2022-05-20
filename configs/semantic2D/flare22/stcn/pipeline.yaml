@@ -35,7 +35,7 @@ model:
   name: STCNModel
   args:
     single_object: False
-    top_k_eval: 20
+    top_k_eval: 10
     mem_every_eval: 4
     pretrained: False
 loss:
@@ -45,10 +45,10 @@ loss:
     losses:
       - name: OhemCELoss
         args: 
-          thresh: 0.8
+          thresh: 0.5
       - name: FocalTverskyLoss
         args: 
-          alpha: 0.35
+          alpha: 0.5
           gamma: 0.75
 metrics:
 - name: mIOU
@@ -70,24 +70,22 @@ optimizer:
 scheduler:
   name: SchedulerWrapper
   args:
-    scheduler_name: cosine2
-    t_initial: 20
-    t_mul: 0.95
-    eta_mul: 0.95
-    eta_min: 1.0e-07
+    scheduler_name: multistep
+    milestones: [500, 1000, 1500]
+    gamma: 0.1
 data:
   dataset:
     train:
       name: FLARE22TrainDataset
       args:
-        root_dir: /content/data/flare2022/labelled-processed320clip/
-        csv_path: /content/data/flare2022/labelled-processed320clip/train.csv
+        root_dir: /content/data/flare2022/labelled_320_clip_binary/
+        csv_path: /content/data/flare2022/labelled_320_clip_binary/train.csv
         max_jump: 5 #initial
     val:
       name: FLARE22ValDataset
       args:
-        root_dir: /content/data/flare2022/labelled-processed320clip/
-        csv_path: /content/data/flare2022/labelled-processed320clip/val.csv
+        root_dir: /content/data/flare2022/labelled_320_clip_binary/
+        csv_path: /content/data/flare2022/labelled_320_clip_binary/val.csv
   dataloader:
     train:
       name: DataLoader
@@ -95,10 +93,6 @@ data:
         batch_size: 16
         drop_last: false
         shuffle: false
-        sampler:
-          name: ReSampler
-          args:
-            num_repeat: 10
     val:
       name: DataLoader
       args:
