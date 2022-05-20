@@ -8,8 +8,8 @@ on:
   push:
     branches: [master]
   pull_request:
-    types:
-      - opened
+    branches:
+      - master
 defaults:
   run:
     shell: bash
