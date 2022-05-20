@@ -1,5 +1,5 @@
 import pytest 
-from tests import DATA_DIR
+from tests import DATA_PRE_DIR
 import os.path as osp 
 import SimpleITK as sitk
 import numpy as np
@@ -14,11 +14,11 @@ def type_check(imgPath, img_type):
         assert img.dtype == np.float32
     del img
 
-@pytest.mark.order("second")
+@pytest.mark.order("third")
 def test_sanity_check_dataset():
-    data_folder = DATA_DIR
-    train_csv = pd.read_csv(osp.join(DATA_DIR,'train.csv'))
-    valid_csv = pd.read_csv(osp.join(DATA_DIR,'val.csv'))
+    data_folder = DATA_PRE_DIR
+    train_csv = pd.read_csv(osp.join(DATA_PRE_DIR,'train.csv'))
+    valid_csv = pd.read_csv(osp.join(DATA_PRE_DIR,'val.csv'))
 
     for i, row in train_csv.iterrows(): 
         imgPath = osp.join(data_folder,row['image'])
