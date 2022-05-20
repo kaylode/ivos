@@ -1,8 +1,8 @@
-
-  
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from theseus.semantic2D.models.stcn.utilities.loading import load_pretrained_model 
+from theseus.utilities.loading import load_state_dict
 
 __all__ = ['MobileNetV3', 'mobilenetv3']
 
@@ -117,7 +117,7 @@ class MobileBottleneck(nn.Module):
 
 
 class MobileNetBackbone(nn.Module):
-    def __init__(self, mode='mbv3s', width_mult=1.0, extra_chan=0):
+    def __init__(self, mode='mbv3s', width_mult=1.0, extra_chan=0, pretrained=True):
         super(MobileNetBackbone, self).__init__()
         input_channel = 16
         last_channel = 1280
@@ -198,8 +198,11 @@ class MobileNetBackbone(nn.Module):
 
         # make it nn.Sequential
         self.layers_os4, self.layers_os8, self.layers_os16, self.layers_os32 = [nn.Sequential(*layer) for layer in layers]
-
-        self._initialize_weights()
+        
+        if pretrained:
+            self.load_pretrained(mode)
+        else:
+            self._initialize_weights()
 
     def forward(self, x, return_more=False):
         x1 = self.layers_os4(x)
@@ -225,3 +228,8 @@ class MobileNetBackbone(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
+
+    def load_pretrained(self, name):
+        pretrained_path = load_pretrained_model(name)
+        state_dict = torch.load(pretrained_path, map_location='cpu')
+        load_state_dict(self, state_dict, strict=False)

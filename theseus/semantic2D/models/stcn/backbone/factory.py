@@ -7,4 +7,4 @@ def create_model(name, pretrained:bool = True, **kwargs):
         return ResNetBackbone(name, pretrained, **kwargs)
 
     if 'mbv3' in name:
-        return MobileNetBackbone(name, **kwargs)
+        return MobileNetBackbone(name, pretrained=pretrained**kwargs)
