@@ -27,10 +27,10 @@ callbacks:
       best_key: dice-avg
   - name: VolumeVisualizerCallbacks
     args: null
-  - name: WandbCallbacks
-    args: 
-      username: kaylode
-      project_name: flare22
+  # - name: WandbCallbacks
+  #   args: 
+  #     username: kaylode
+  #     project_name: flare22
 model:
   name: STCNModel
   args:
@@ -95,10 +95,6 @@ data:
         batch_size: 16
         drop_last: false
         shuffle: false
-        sampler:
-          name: ReSampler
-          args:
-            num_repeat: 10
     val:
       name: DataLoader
       args:
