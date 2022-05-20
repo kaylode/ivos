@@ -6,7 +6,7 @@ name: autobuild
 
 on:
   push:
-    branches: [main, add-test]
+    branches: [master]
   pull_request:
 
 defaults:
