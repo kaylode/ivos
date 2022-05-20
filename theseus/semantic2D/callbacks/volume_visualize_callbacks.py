@@ -23,7 +23,6 @@ class VolumeVisualizerCallbacks(Callbacks):
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
-
         self.visualizer = Visualizer()
 
     def sanitycheck(self, logs: Dict=None):
@@ -199,25 +198,5 @@ class VolumeVisualizerCallbacks(Callbacks):
             'kwargs': {
                 'step': iters,
                 'fps': fps
-            }
-        }])
-
-        fig = plt.figure(figsize=(15,5))
-        plt.axis('off')
-        plt.imshow(reference_img)
-
-        # segmentation color legends 
-        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
-                                label=self.classnames[i]) for i in range(len(self.classnames))]
-        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large', ncol=(len(self.classnames)//10)+1)
-        plt.tight_layout(pad=0)
-
-        LOGGER.log([{
-            'tag': "Validation/reference",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': iters
             }
         }])

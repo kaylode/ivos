@@ -206,7 +206,7 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
                 )
 
     print("Processing val files")
-    pbar = tqdm(zip(val_filenames, val_masknames))
+    pbar = tqdm(zip(val_filenames, val_masknames), total=len(val_filenames))
     tbar = tqdm(bar_format='{desc}{postfix}')
     for val_filename, val_maskname in pbar:
         image_path = osp.join(root_dir, 'TrainImage', val_filename)
@@ -243,7 +243,7 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     pd.DataFrame(df_dict['val']).to_csv(osp.join(out_dir, 'val.csv'), index=False)
     
     print("Processing test files")
-    pbar = tqdm(test_filenames)
+    pbar = tqdm(test_filenames, total=len(test_filenames))
     tbar = tqdm(bar_format='{desc}{postfix}')
     for test_filename in pbar:
         image_path = osp.join(root_dir, 'Validation', test_filename)

@@ -132,7 +132,7 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
             sec_masks = np.zeros_like(tar_masks)
             selector = torch.FloatTensor([1, 0])
 
-        cls_gt = np.zeros((3, h, w), dtype=np.int)
+        cls_gt = np.zeros((3, h, w), dtype=np.int32)
         cls_gt[tar_masks[:,0] > 0.5] = 1
         cls_gt[sec_masks[:,0] > 0.5] = 2
 
