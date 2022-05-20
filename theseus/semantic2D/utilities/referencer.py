@@ -23,6 +23,8 @@ class Referencer:
             return self._get_random_slices(mask)
         if strategy == 'least-uncertainty':
             return self._get_least_uncertainty(mask)
+        if strategy == 'largest-area':
+            return self._get_all_classes(mask)
 
 
     def _get_most_classes(self, mask: np.ndarray):
@@ -41,6 +43,33 @@ class Referencer:
                 candidate_indices = [frame_idx]
 
         return candidate_indices, max_possible_number_of_classes
+
+    def _get_all_classes(self, mask: np.ndarray):
+        """
+        Search for guide frames, in which all classes are presented
+        """
+
+        num_slices = mask.shape[0]
+
+        available_classes = np.unique(mask)
+        class_dict = {
+            int(k): [] for k in available_classes
+        }
+        for frame_idx in range(num_slices):
+            current_classes = np.unique(mask[frame_idx, :, :])
+            for cl in current_classes:
+                class_dict[int(cl)].append({
+                    'index': frame_idx,
+                    'area': np.sum(mask[frame_idx, :, :] == cl)
+                })
+
+        candidate_indices = []
+        for k in available_classes:
+            sorted_class_dict_by_class_area = sorted(class_dict[k], key=lambda d: d['area'], reverse=True) 
+            candidate_indices.append(sorted_class_dict_by_class_area[0])
+
+        candidate_indices = list(set(candidate_indices)).sort()
+        return candidate_indices
 
     def _get_non_empty(self, mask: np.ndarray):
         """
@@ -86,10 +115,11 @@ class Referencer:
                 (indexes[i], indexes[i+1])
                 for i in range(len(indexes)-1)
             ]
+
             prop_range = \
-                [(indexes[0], 0)] \
+                [(min(indexes), 0)] \
                 + prop_range \
-                + [(indexes[-1], length)] 
+                + [(max(indexes), length)] 
 
         return prop_range
 

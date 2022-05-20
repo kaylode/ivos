@@ -184,7 +184,7 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
             gt_path = osp.join(self.root_dir, item['label'])
             gt_vol = nib.load(gt_path).get_fdata()# (H, W, NS)
             gt_vol = gt_vol.transpose(2,0,1)
-            vol_dict['guides'], _ = REFERENCER.search_reference(gt_vol, strategy="most-classes")
+            vol_dict['guides'] = REFERENCER.search_reference(gt_vol, strategy="largest-area")
             self.stats.append(vol_dict)
 
     def __getitem__(self, idx):
@@ -201,7 +201,7 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
         
         # Choose a reference frame
         stat = self.stats[idx]
-        guidemark = np.random.choice(stat['guides'])
+        guide_indices = stat['guides']
         num_slices = images.shape[0]
         masks = []
         # Same for ground truth
@@ -209,7 +209,7 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
 
         # Generate reference frame, only contains first annotation mask 
         for f in range(num_slices):
-            if f==0 or f == guidemark:
+            if f in guide_indices:
                 masks.append(gt_vol[:,:,f])
             else:
                 masks.append(np.zeros_like(masks[0]))
@@ -234,7 +234,7 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
             'info': {  # infos are used for validation and inference
                 'name': patient_id,
                 'labels': labels,
-                'guidemark': guidemark,     # 
+                'guide_indices': guide_indices,     # 
                 'affine': affine, # from nib.load
                 'case_spacing': case_spacing
             },

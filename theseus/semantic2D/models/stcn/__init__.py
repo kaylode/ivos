@@ -83,7 +83,7 @@ class STCNModel():
         rgb = data['inputs'].float().cuda()
         msk = data['gt'][0].cuda()
         info = data['info']
-        guidemark = info['guidemark']
+        guide_indices = info['guide_indices']
         k = self.num_classes
 
         self.processor = InferenceCore(
@@ -95,7 +95,7 @@ class STCNModel():
         out_masks = self.processor.get_prediction({
             'rgb': rgb,
             'msk': msk,
-            'prop_range': [(int(guidemark), 0), (int(guidemark), rgb.shape[1])] # reference guide frame index, 0 because we already process in the dataset
+            'guide_indices': guide_indices
         })['masks']
 
         del rgb

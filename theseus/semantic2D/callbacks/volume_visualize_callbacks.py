@@ -165,7 +165,6 @@ class VolumeVisualizerCallbacks(Callbacks):
         
         image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         masks = last_batch['targets'].permute(3,0,1,2).long().numpy() # (B, T, H, W) 
-        guide_id = last_batch['info']['guidemark']
         iters = logs['iters']
 
         # iter through timestamp
@@ -190,7 +189,6 @@ class VolumeVisualizerCallbacks(Callbacks):
         decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
 
         concated_vis = np.concatenate([vis_inputs, decode_masks, decode_preds], axis=-1) # (T, C, 3H, W)
-        reference_img = concated_vis[guide_id].transpose(1,2,0) # (C, 3H, W)
 
         LOGGER.log([{
             'tag': "Validation/val_prediction",
@@ -199,25 +197,5 @@ class VolumeVisualizerCallbacks(Callbacks):
             'kwargs': {
                 'step': iters,
                 'fps': fps
-            }
-        }])
-
-        fig = plt.figure(figsize=(15,5))
-        plt.axis('off')
-        plt.imshow(reference_img)
-
-        # segmentation color legends 
-        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
-                                label=self.classnames[i]) for i in range(len(self.classnames))]
-        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large', ncol=(len(self.classnames)//10)+1)
-        plt.tight_layout(pad=0)
-
-        LOGGER.log([{
-            'tag': "Validation/reference",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': iters
             }
         }])
