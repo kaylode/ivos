@@ -13,7 +13,7 @@ class Referencer:
         """
         vol_mask: argmaxed segmentation mask. (T, H, W)
         """
-        assert strategy in ['non-empty', 'most-classes', 'random', 'least-uncertainty'], "Wrong strategy chosen"
+        assert strategy in ['non-empty', 'most-classes', 'random', 'least-uncertainty', 'largest-area'], "Wrong strategy chosen"
 
         if strategy == 'non-empty':
             return self._get_non_empty(mask)
@@ -66,9 +66,10 @@ class Referencer:
         candidate_indices = []
         for k in available_classes:
             sorted_class_dict_by_class_area = sorted(class_dict[k], key=lambda d: d['area'], reverse=True) 
-            candidate_indices.append(sorted_class_dict_by_class_area[0])
+            candidate_indices.append(sorted_class_dict_by_class_area[0]['index'])
 
-        candidate_indices = list(set(candidate_indices)).sort()
+        candidate_indices = list(set(candidate_indices))
+        candidate_indices.sort()
         return candidate_indices
 
     def _get_non_empty(self, mask: np.ndarray):

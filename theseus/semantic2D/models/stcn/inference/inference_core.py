@@ -98,7 +98,6 @@ class InferenceCore:
         rgb = adict['rgb']
         guide_indices = adict['guide_indices']
 
-
         # iter through all reference images and register into memory
         prop_range = REFERENCER.find_propagation_range(guide_indices, length=msk.shape[0])
         for prange in prop_range:

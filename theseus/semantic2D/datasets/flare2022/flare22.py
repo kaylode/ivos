@@ -212,7 +212,7 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
             if f in guide_indices:
                 masks.append(gt_vol[:,:,f])
             else:
-                masks.append(np.zeros_like(masks[0]))
+                masks.append(np.zeros_like(gt_vol[:, :, 0]))
         
         masks = np.stack(masks, 0)
 

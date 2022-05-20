@@ -83,7 +83,8 @@ class STCNModel():
         rgb = data['inputs'].float().cuda()
         msk = data['gt'][0].cuda()
         info = data['info']
-        guide_indices = info['guide_indices']
+        guide_indices = [i.item() for i in info['guide_indices']]
+
         k = self.num_classes
 
         self.processor = InferenceCore(
