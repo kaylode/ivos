@@ -46,7 +46,7 @@ class FeatureFusionBlock(nn.Module):
 class ValueEncoderSO(nn.Module):
     def __init__(
         self, 
-        backbone: str = 'mod-resnet18', 
+        backbone: str = 'resnet18-mod', 
         pretrained: bool = True, 
         key_dim: int = 1024, out_dim: int = 512):
         super().__init__()
@@ -66,7 +66,7 @@ class ValueEncoderSO(nn.Module):
 class ValueEncoder(nn.Module):
     def __init__(
         self, 
-        backbone: str = 'mod-resnet18', 
+        backbone: str = 'resnet18-mod', 
         pretrained: bool = True,
         key_dim: int = 1024, out_dim: int = 512):
         super().__init__()

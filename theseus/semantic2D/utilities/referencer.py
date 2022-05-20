@@ -88,9 +88,9 @@ class Referencer:
         """
         Search for non-empty mask slices
         """
-        candidate_indices = np.random.choice(range(mask.shape[0]), size=num_slices, replace=False)
+        candidate_indices = np.random.choice([i for i in range(mask.shape[0])], size=num_slices, replace=False)
 
-        if not isinstance(candidate_indices, list):
+        if not isinstance(candidate_indices, (list, np.ndarray)):
             candidate_indices = [candidate_indices]
         return candidate_indices
 

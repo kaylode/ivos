@@ -198,7 +198,7 @@ class ResNetBackbone(nn.Module):
         self.layer2 = model.layer2 # 1/8, 128
         self.layer3 = model.layer3 # 1/16, 256
 
-    def forward(self, x, return_more=True):
+    def forward(self, x, return_more=False):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)   # 1/2, 64
