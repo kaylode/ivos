@@ -175,7 +175,7 @@ class MobileNetBackbone(nn.Module):
         # building first layer
         last_channel = make_divisible(last_channel * width_mult) if width_mult > 1.0 else last_channel
 
-        self.layers_os4 = [conv_bn(3+extra_chan, input_channel, 2, nlin_layer=Hswish)]#after 1st bottle neck
+        self.layers_os4 = [conv_bn(1+extra_chan, input_channel, 2, nlin_layer=Hswish)]#after 1st bottle neck
         self.layers_os8 = [] #after 3rd bottle neck
         self.layers_os16 = [] #after 8th bottle neck
         self.layers_os32 = [] #last
