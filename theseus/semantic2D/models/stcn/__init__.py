@@ -19,7 +19,11 @@ class STCNModel():
         single_object: bool = False,
         top_k_eval: int = 20,
         mem_every_eval: int = 5,
+        include_last_val: bool = False,
         pretrained: bool = False,
+        pretrained_backbone: bool = True,
+        key_backbone:str = 'resnet50', 
+        value_backbone:str = 'resnet18-mod',
         **kwargs):
         super().__init__()
 
@@ -29,10 +33,11 @@ class STCNModel():
         self.top_k_eval = top_k_eval
         self.mem_every_eval = mem_every_eval
 
-        self.train_model = STCNTrain(self.single_object).cuda()
-        self.eval_model = STCNEval()
+        self.train_model = STCNTrain(key_backbone, value_backbone, self.single_object, pretrained_backbone).cuda()
+        self.eval_model = STCNEval(key_backbone, value_backbone, pretrained_backbone)
         self.training = True
         self.pretrained = pretrained
+        self.include_last_val = include_last_val
 
         if self.pretrained:
             pretrained_path = load_pretrained_model('stcn')
@@ -90,7 +95,8 @@ class STCNModel():
         self.processor = InferenceCore(
             self.eval_model, rgb, k, 
             top_k=self.top_k_eval, 
-            mem_every=self.mem_every_eval
+            mem_every=self.mem_every_eval,
+            include_last=self.include_last_val
         )
 
         out_masks = self.processor.get_prediction({

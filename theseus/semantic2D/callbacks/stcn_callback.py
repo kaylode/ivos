@@ -8,18 +8,16 @@ class STCNCallbacks(Callbacks):
     """
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, skip_values, increase_skip_fraction, **kwargs) -> None:
         super().__init__()
-        self.skip_values = [3, 5, 7, 10, 5]
-        self.increase_skip_fraction = [0.1, 0.2, 0.3, 0.4, 0.9, 1.0]
+        self.skip_values = skip_values
+        self.increase_skip_fraction = increase_skip_fraction
 
     def on_start(self, logs:Dict = None):
         """
         On initialization
         """
-        train_dataloader = self.params['trainer'].trainloader
         self.num_iterations = self.params['trainer'].num_iterations
-        self.total_epoch = self.num_iterations // len(train_dataloader)
         self.increase_skip_epoch = [
             round(self.num_iterations*f) for f in self.increase_skip_fraction]
         LOGGER.text(f"Skip iteration: {self.increase_skip_epoch}", level=LoggerObserver.INFO)
@@ -30,11 +28,9 @@ class STCNCallbacks(Callbacks):
         Calculate current iterations and decide whether to update skip value
         """
         iters = logs['iters']
-        train_dataloader = self.params['trainer'].trainloader
-        current_epoch = iters // len(train_dataloader)
 
-        if current_epoch!=self.total_epoch and current_epoch>=self.increase_skip_epoch[0]:
-            while current_epoch >= self.increase_skip_epoch[0]:
+        if iters!=self.num_iterations and iters>=self.increase_skip_epoch[0]:
+            while iters >= self.increase_skip_epoch[0]:
                 cur_skip = self.skip_values[0]
                 self.skip_values = self.skip_values[1:]
                 self.increase_skip_epoch = self.increase_skip_epoch[1:]
@@ -60,5 +56,4 @@ class STCNCallbacks(Callbacks):
     def renew_loader(self, max_skip: int):
         # //5 because we only have annotation for every five frames
         self.params['trainer'].trainloader.dataset.max_jump = max_skip
-        self.params['trainer'].valloader.dataset.max_jump = max_skip
         LOGGER.text(f'Renewed with skip: {max_skip}', level=LoggerObserver.INFO)

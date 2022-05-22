@@ -73,16 +73,21 @@ class MemoryReader(nn.Module):
 
 
 class STCNTrain(nn.Module):
-    def __init__(self, single_object, pretrained: bool = True):
+    def __init__(self, 
+        key_backbone:str = 'resnet50', 
+        value_backbone:str = 'resnet18-mod', 
+        single_object: bool = False, 
+        pretrained: bool = True):
+
         super().__init__()
         self.single_object = single_object
 
-        self.key_encoder = KeyEncoder('mbv3s', pretrained)
+        self.key_encoder = KeyEncoder(key_backbone, pretrained)
         f16_dim = self.key_encoder.model.f16_dim #1024
         if single_object:
-            self.value_encoder = ValueEncoderSO('mbv3s', pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
+            self.value_encoder = ValueEncoderSO(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
         else:
-            self.value_encoder = ValueEncoder('mbv3s', pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
+            self.value_encoder = ValueEncoder(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
 
         f8_dim = self.key_encoder.model.f8_dim #512
         f4_dim = self.key_encoder.model.f4_dim #256

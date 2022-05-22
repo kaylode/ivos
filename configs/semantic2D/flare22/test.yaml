@@ -7,10 +7,17 @@ global:
   device: cuda:0
   ref_weights: null
   prop_weights: null
+  save_visualization: True
+  ref_strategy: all # strategy for choosing reference images
+  prop_strategy: all # strategy for propagating images
+
+prop_model:
+  key_backbone: resnet50
+  value_backbone: resnet18-mod
   top_k: 20 # top k frames in memory to calculate affinity 
   mem_every: 5 # save frames every k step
-  save_visualization: True
-  strategy: all # strategy for choosing reference images
+  include_last_val: True # whether to use last frame to retrieve current
+
 ref_model:
   name: BaseSegModel
   args:
@@ -30,4 +37,4 @@ data:
     args:
       batch_size: 1
       drop_last: False
-      shuffle: True
+      shuffle: False

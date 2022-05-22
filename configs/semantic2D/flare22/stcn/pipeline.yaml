@@ -21,7 +21,9 @@ callbacks:
   - name: LoggerCallbacks
     args: null 
   - name: STCNCallbacks
-    args: null 
+    args: 
+      skip_values: [3, 5, 7, 10, 5]  
+      increase_skip_fraction: [0.1, 0.2, 0.3, 0.4, 0.9, 1.0] 
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
@@ -35,30 +37,28 @@ model:
   name: STCNModel
   args:
     single_object: False
-    top_k_eval: 10
-    mem_every_eval: 4
+    key_backbone: resnet50
+    value_backbone: resnet18-mod
+    pretrained_backbone: True
+    top_k_eval: 20
+    mem_every_eval: 5
+    include_last_val: True # whether to use last frame to retrieve current
     pretrained: False
 loss:
   name: STCNLossV2
   args:
     weights: null
     losses:
-      - name: OhemCELoss
-        args: 
-          thresh: 0.5
-      - name: FocalTverskyLoss
-        args: 
-          alpha: 0.5
-          gamma: 0.75
+      - name: CELoss
+        args: {}
+      - name: DiceLoss
+        args: {}
 metrics:
 - name: mIOU
   args:
 - name: DiceScore
   args:
     calc_each_class: True
-# - name: NormalizedSurfaceDistance
-#   args:
-#     calc_each_class: True
 optimizer:
   name: AdamW
   args:
@@ -71,7 +71,7 @@ scheduler:
   name: SchedulerWrapper
   args:
     scheduler_name: multistep
-    milestones: [500, 1000, 1500]
+    milestones: [200, 500, 800]
     gamma: 0.1
 data:
   dataset:
@@ -80,7 +80,7 @@ data:
       args:
         root_dir: /content/data/flare2022/labelled_320_clip_binary/
         csv_path: /content/data/flare2022/labelled_320_clip_binary/train.csv
-        max_jump: 5 #initial
+        max_jump: 3 #initial
     val:
       name: FLARE22ValDataset
       args:
@@ -90,9 +90,9 @@ data:
     train:
       name: DataLoader
       args:
-        batch_size: 16
-        drop_last: false
-        shuffle: false
+        batch_size: 64
+        drop_last: true
+        shuffle: true
     val:
       name: DataLoader
       args:
