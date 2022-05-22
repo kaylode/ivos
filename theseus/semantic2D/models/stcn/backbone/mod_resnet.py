@@ -30,7 +30,10 @@ def load_weights_sequential(target, source_state, extra_chan=1):
 
                 new_dict[k1] = tar_v
 
-    target.load_state_dict(new_dict, strict=False)
+    try:
+        target.load_state_dict(new_dict, strict=False)
+    except:
+        pass
 
 
 model_urls = {
