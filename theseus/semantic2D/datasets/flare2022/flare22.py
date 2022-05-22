@@ -69,10 +69,9 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
         gt_vol = item_dict['label']
         affine = item_dict['affine']
         case_spacing = item_dict['spacing']
-        stacked_vol = torch.stack([image, image, image], dim=0)
 
         gt_vol = gt_vol.squeeze(0)
-        _, h, w, num_slices = stacked_vol.shape
+        h, w, num_slices = image.shape
 
         trials = 0
         stat = self.stats[idx]
@@ -98,7 +97,7 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
             masks = []
             target_object = None
             for f_idx in frames_idx:
-                this_im = stacked_vol[:,:,:,f_idx] #(C, H, W)
+                this_im = image[:,:,f_idx] #(C, H, W)
                 this_gt = gt_vol[:,:,f_idx] #(H, W)
                 this_gt = this_gt.numpy()
 
@@ -136,6 +135,7 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
         cls_gt[tar_masks[:,0] > 0.5] = 1
         cls_gt[sec_masks[:,0] > 0.5] = 2
 
+        images = images.unsqueeze(1)
         data = {
             'inputs': images, # normalized image, torch.Tensor (T, C, H, W) 
             'targets': tar_masks, # target mask, numpy (T, 1, H, W) , values 1 at primary class
@@ -195,10 +195,8 @@ class FLARE22ValDataset(FLARE22BaseCSVDataset):
         ori_vol = item_dict['label']
         affine = item_dict['affine']
         case_spacing = item_dict['spacing']
-        stacked_vol = torch.stack([image, image, image], dim=0)
+        images = image.permute(2,0,1).unsqueeze(1)  # (C, H, W, NS) --> (NS, C, H, W)
 
-        images = stacked_vol.permute(3, 0, 1, 2) # (C, H, W, NS) --> (NS, C, H, W)
-        
         # Choose a reference frame
         stat = self.stats[idx]
         guide_indices = stat['guides']

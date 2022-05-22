@@ -42,9 +42,9 @@ class VolumeVisualizerCallbacks(Callbacks):
         self.classnames = valset.classnames
 
         self.visualize_model(model, train_batch)
-        self.params['trainer'].evaluate_epoch()
         self.visualize_gt(train_batch, val_batch, iters, self.classnames)
         self.analyze_gt(trainset, valset, iters)
+        self.params['trainer'].evaluate_epoch()
 
     @torch.no_grad()
     def visualize_model(self, model, batch):
@@ -79,6 +79,7 @@ class VolumeVisualizerCallbacks(Callbacks):
             # iter through timestamp
             for t_input, t_mask in zip(inputs, mask):
                 t_input = self.normalize_min_max(t_input)
+                t_input = torch.stack([t_input, t_input, t_input], dim=1)
                 img_show = self.visualizer.denormalize(t_input, mean=[0,0,0], std=[1,1,1])
                 decode_mask = self.visualizer.decode_segmap(t_mask.numpy())
                 img_show = TFF.to_tensor(img_show)
@@ -114,10 +115,10 @@ class VolumeVisualizerCallbacks(Callbacks):
         # iter through timestamp
         vis_inputs = []
         for image in image_show:
-            image = image.transpose(1,2,0)
             image = self.normalize_min_max(image)
-            image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
+            image = self.visualizer.denormalize(image, mean=[0], std=[1])
             image = (image*255).astype(int)
+            image = np.stack([image, image, image], axis=-1)
             vis_inputs.append(image)
         vis_inputs = np.stack(vis_inputs, axis=0).transpose(0,3,1,2)
 
@@ -170,10 +171,10 @@ class VolumeVisualizerCallbacks(Callbacks):
         # iter through timestamp
         vis_inputs = []
         for image in image_show:
-            image = image.transpose(1,2,0)
             image = self.normalize_min_max(image)
-            image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
+            image = self.visualizer.denormalize(image, mean=[0], std=[1])
             image = (image*255).astype(int)
+            image = np.stack([image, image, image], axis=-1)
             vis_inputs.append(image)
         vis_inputs = np.stack(vis_inputs, axis=0).transpose(0,3,1,2)
 

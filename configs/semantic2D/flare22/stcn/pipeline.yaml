@@ -30,16 +30,16 @@ callbacks:
   - name: VolumeVisualizerCallbacks
     args: null
   - name: WandbCallbacks
-    args: 
-      username: kaylode
-      project_name: flare22
+   args: 
+     username: kaylode
+     project_name: flare22
 model:
   name: STCNModel
   args:
-    single_object: False
-    key_backbone: resnet50
+    single_object: True
+    key_backbone: resnet50-mod
     value_backbone: resnet18-mod
-    pretrained_backbone: True
+    pretrained_backbone: False
     top_k_eval: 20
     mem_every_eval: 5
     include_last_val: True # whether to use last frame to retrieve current
@@ -90,7 +90,7 @@ data:
     train:
       name: DataLoader
       args:
-        batch_size: 64
+        batch_size: 16
         drop_last: true
         shuffle: true
     val:

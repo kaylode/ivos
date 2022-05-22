@@ -41,9 +41,10 @@ class STCNEval(nn.Module):
 
     def encode_value(self, frame, kf16, masks): 
         k, _, h, w = masks.shape
+        num_channels = frame.shape[1]
 
         # Extract memory key/value for a frame with multiple masks
-        frame = frame.view(1, 3, h, w).repeat(k, 1, 1, 1)
+        frame = frame.view(1, num_channels, h, w).repeat(k, 1, 1, 1)
         # Compute the "others" mask
         if k != 1:
             others = torch.cat([
