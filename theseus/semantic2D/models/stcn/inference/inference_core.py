@@ -14,7 +14,7 @@ class InferenceCore:
     """
     Inference module, which performs iterative propagation
     """
-    def __init__(self, prop_net:STCNEval, images, num_objects, top_k=20, mem_every=5, include_last=False):
+    def __init__(self, prop_net:STCNEval, images, num_objects, top_k=20, mem_every=5, include_last=False,device='cuda'):
         self.prop_net = prop_net
         self.mem_every = mem_every
         self.include_last = include_last
@@ -29,7 +29,7 @@ class InferenceCore:
         nh, nw = images.shape[-2:]
 
         self.images = images
-        self.device = 'cuda'
+        self.device = device
 
         self.k = num_objects
 
@@ -49,7 +49,7 @@ class InferenceCore:
         self.mem_bank = MemoryBank(k=self.k-1, top_k=top_k)
 
     def encode_key(self, idx):
-        result = self.prop_net.encode_key(self.images[:,idx].cuda())
+        result = self.prop_net.encode_key(self.images[:,idx].to(self.device))
         return result
 
     def do_pass(self, key_k, key_v, idx, end_idx):
@@ -74,7 +74,7 @@ class InferenceCore:
             if ti != end:
                 is_mem_frame = ((ti % self.mem_every) == 0)
                 if self.include_last or is_mem_frame:
-                    prev_value = self.prop_net.encode_value(self.images[:,ti].cuda(), qf16, out_mask[1:])
+                    prev_value = self.prop_net.encode_value(self.images[:,ti].to(self.device), qf16, out_mask[1:])
                     prev_key = k16.unsqueeze(2)
                     self.mem_bank.add_memory(prev_key, prev_value, is_temp=not is_mem_frame)
 
@@ -84,9 +84,10 @@ class InferenceCore:
         mask, _ = pad_divide_by(mask.cuda(), 16)
         self.prob[:, frame_idx] += move_to(aggregate(mask, keep_bg=True), torch.device('cpu'))
 
+
         # KV pair for the interacting frame
         key_k, _, qf16, _, _ = self.encode_key(frame_idx)
-        key_v = self.prop_net.encode_value(self.images[:,frame_idx].cuda(), qf16, self.prob[1:,frame_idx].cuda())
+        key_v = self.prop_net.encode_value(self.images[:,frame_idx].to(self.device), qf16, self.prob[1:,frame_idx].to(self.device))
         key_k = key_k.unsqueeze(2)
 
         # Propagate

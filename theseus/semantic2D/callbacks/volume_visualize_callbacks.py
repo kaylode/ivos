@@ -23,7 +23,6 @@ class VolumeVisualizerCallbacks(Callbacks):
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
-
         self.visualizer = Visualizer()
 
     def sanitycheck(self, logs: Dict=None):

@@ -110,6 +110,7 @@ class TestPipeline(BaseTestPipeline):
                 # FIRST STAGE: Get reference frames
                 process_begin = time.time()
 
+
                 custom_batch = []
                 out_masks = []
                 inputs = data['inputs']

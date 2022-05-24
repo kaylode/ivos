@@ -24,16 +24,17 @@ class STCNModel():
         pretrained_backbone: bool = True,
         key_backbone:str = 'resnet50', 
         value_backbone:str = 'resnet18-mod',
+        device: str = 'cpu',
         **kwargs):
         super().__init__()
-
+        self.device = torch.device(device)
         self.num_classes = num_classes
         self.classnames = classnames
         self.single_object = single_object
         self.top_k_eval = top_k_eval
         self.mem_every_eval = mem_every_eval
 
-        self.train_model = STCNTrain(key_backbone, value_backbone, self.single_object, pretrained_backbone).cuda()
+        self.train_model = STCNTrain(key_backbone, value_backbone, self.single_object, pretrained_backbone).to(self.device)
         self.eval_model = STCNEval(key_backbone, value_backbone, pretrained_backbone)
         self.training = True
         self.pretrained = pretrained
@@ -58,8 +59,8 @@ class STCNModel():
         """
         Switch to eval mode
         """
-        self.train_model.to(torch.device('cpu'))
-        self.eval_model.to(torch.device('cuda'))
+        self.train_model.to(self.device)
+        self.eval_model.to(self.device)
         self.eval_model = self.load_network(self.eval_model, self.train_model.state_dict())
         self.training = False
 
@@ -67,8 +68,8 @@ class STCNModel():
         """
         Switch to train mode
         """
-        self.train_model.to(torch.device('cuda'))
-        self.eval_model.to(torch.device('cpu'))
+        self.train_model.to(self.device)
+        self.eval_model.to(self.device)
         self.training = True
 
     def __call__(self, data:Dict):
@@ -85,8 +86,8 @@ class STCNModel():
         """
         torch.set_grad_enabled(False)
 
-        rgb = data['inputs'].float().cuda()
-        msk = data['gt'][0].cuda()
+        rgb = data['inputs'].float().to(self.device)
+        msk = data['gt'][0].to(self.device)
         info = data['info']
         guide_indices = [i.item() for i in info['guide_indices']]
 
@@ -97,6 +98,7 @@ class STCNModel():
             top_k=self.top_k_eval, 
             mem_every=self.mem_every_eval,
             include_last=self.include_last_val
+            device=self.device
         )
 
         out_masks = self.processor.get_prediction({
@@ -119,7 +121,9 @@ class STCNModel():
 
         for k, v in data.items():
             if type(v) != list and type(v) != dict and type(v) != int:
-                data[k] = v.cuda(non_blocking=True)
+                if self.device == 'cuda':
+                    data[k] = v.cuda(non_blocking=True)
+                # data[k] = v.cuda(non_blocking=True)
 
         out = {}
         Fs = data['inputs'].float()

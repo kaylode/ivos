@@ -221,6 +221,8 @@ class TestPipeline(BaseTestPipeline):
                     top_k=self.prop_config['top_k'], 
                     mem_every=self.prop_config['mem_every'],
                     include_last=self.prop_config['include_last'])
+                    device=self.device)
+
                 
                 with torch.no_grad():
                     out_masks = processor.get_prediction({
