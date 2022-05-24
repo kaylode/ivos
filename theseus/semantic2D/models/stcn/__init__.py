@@ -19,7 +19,11 @@ class STCNModel():
         single_object: bool = False,
         top_k_eval: int = 20,
         mem_every_eval: int = 5,
+        include_last_val: bool = False,
         pretrained: bool = False,
+        pretrained_backbone: bool = True,
+        key_backbone:str = 'resnet50', 
+        value_backbone:str = 'resnet18-mod',
         device: str = 'cpu',
         **kwargs):
         super().__init__()
@@ -30,10 +34,11 @@ class STCNModel():
         self.top_k_eval = top_k_eval
         self.mem_every_eval = mem_every_eval
 
-        self.train_model = STCNTrain(self.single_object).to(self.device)
-        self.eval_model = STCNEval()
+        self.train_model = STCNTrain(key_backbone, value_backbone, self.single_object, pretrained_backbone).to(self.device)
+        self.eval_model = STCNEval(key_backbone, value_backbone, pretrained_backbone)
         self.training = True
         self.pretrained = pretrained
+        self.include_last_val = include_last_val
 
         if self.pretrained:
             pretrained_path = load_pretrained_model('stcn')
@@ -84,20 +89,22 @@ class STCNModel():
         rgb = data['inputs'].float().to(self.device)
         msk = data['gt'][0].to(self.device)
         info = data['info']
-        guidemark = info['guidemark']
+        guide_indices = [i.item() for i in info['guide_indices']]
+
         k = self.num_classes
 
         self.processor = InferenceCore(
             self.eval_model, rgb, k, 
             top_k=self.top_k_eval, 
             mem_every=self.mem_every_eval,
+            include_last=self.include_last_val
             device=self.device
         )
 
         out_masks = self.processor.get_prediction({
             'rgb': rgb,
             'msk': msk,
-            'prop_range': [(int(guidemark), 0), (int(guidemark), rgb.shape[1])] # reference guide frame index, 0 because we already process in the dataset
+            'guide_indices': guide_indices
         })['masks']
 
         del rgb
@@ -187,8 +194,8 @@ class STCNModel():
 
         # Maps SO weight (without other_mask) to MO weight (with other_mask)
         for k in list(state_dict.keys()):
-            if k == 'value_encoder.conv1.weight':
-                if state_dict[k].shape[1] == 4:
+            if k == 'value_encoder.model.conv1.weight':
+                if state_dict[k].shape[1] == 2:
                     pads = torch.zeros((64,1,7,7), device=state_dict[k].device)
                     nn.init.orthogonal_(pads)
                     state_dict[k] = torch.cat([state_dict[k], pads], 1)

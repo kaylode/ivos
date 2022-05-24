@@ -20,13 +20,12 @@ from theseus.semantic2D.models.stcn.backbone.modules import (
 
 
 class Decoder(nn.Module):
-    def __init__(self):
+    def __init__(self, f16_dim:int = 1024, f8_dim:int = 512, f4_dim:int = 256):
         super().__init__()
-        self.compress = ResBlock(1024, 512)
-        self.up_16_8 = UpsampleBlock(512, 512, 256) # 1/16 -> 1/8
-        self.up_8_4 = UpsampleBlock(256, 256, 256) # 1/8 -> 1/4
-
-        self.pred = nn.Conv2d(256, 1, kernel_size=(3,3), padding=(1,1), stride=1)
+        self.compress = ResBlock(f16_dim, f8_dim)
+        self.up_16_8 = UpsampleBlock(f8_dim, f8_dim, f4_dim) # 1/16 -> 1/8
+        self.up_8_4 = UpsampleBlock(f4_dim, f4_dim, f4_dim) # 1/8 -> 1/4
+        self.pred = nn.Conv2d(f4_dim, 1, kernel_size=(3,3), padding=(1,1), stride=1)
 
     def forward(self, f16, f8, f4):
         x = self.compress(f16)
@@ -34,7 +33,6 @@ class Decoder(nn.Module):
         x = self.up_8_4(f4, x)
 
         x = self.pred(F.relu(x))
-        
         x = F.interpolate(x, scale_factor=4, mode='bilinear', align_corners=False)
         return x
 
@@ -75,24 +73,33 @@ class MemoryReader(nn.Module):
 
 
 class STCNTrain(nn.Module):
-    def __init__(self, single_object):
+    def __init__(self, 
+        key_backbone:str = 'resnet50', 
+        value_backbone:str = 'resnet18-mod', 
+        single_object: bool = False, 
+        pretrained: bool = True):
+
         super().__init__()
         self.single_object = single_object
 
-        self.key_encoder = KeyEncoder()
+        self.key_encoder = KeyEncoder(key_backbone, pretrained)
+        f16_dim = self.key_encoder.model.f16_dim #1024
         if single_object:
-            self.value_encoder = ValueEncoderSO() 
+            self.value_encoder = ValueEncoderSO(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
         else:
-            self.value_encoder = ValueEncoder() 
+            self.value_encoder = ValueEncoder(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
+
+        f8_dim = self.key_encoder.model.f8_dim #512
+        f4_dim = self.key_encoder.model.f4_dim #256
 
         # Projection from f16 feature space to key space
-        self.key_proj = KeyProjection(1024, keydim=64)
+        self.key_proj = KeyProjection(f16_dim, keydim=64)
 
         # Compress f16 a bit to use in decoding later on
-        self.key_comp = nn.Conv2d(1024, 512, kernel_size=3, padding=1)
+        self.key_comp = nn.Conv2d(f16_dim, f8_dim, kernel_size=3, padding=1)
 
         self.memory = MemoryReader()
-        self.decoder = Decoder()
+        self.decoder = Decoder(f16_dim=f16_dim, f8_dim=f8_dim, f4_dim=f4_dim)
 
     def aggregate(self, prob):
         new_prob = torch.cat([
@@ -160,5 +167,3 @@ class STCNTrain(nn.Module):
             return self.segment(*args, **kwargs)
         else:
             raise NotImplementedError
-
-
