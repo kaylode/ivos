@@ -27,6 +27,7 @@ class STCNModel():
         device: str = 'cpu',
         **kwargs):
         super().__init__()
+        self.device_name = device
         self.device = torch.device(device)
         self.num_classes = num_classes
         self.classnames = classnames
@@ -97,7 +98,7 @@ class STCNModel():
             self.eval_model, rgb, k, 
             top_k=self.top_k_eval, 
             mem_every=self.mem_every_eval,
-            include_last=self.include_last_val
+            include_last=self.include_last_val,
             device=self.device
         )
 
@@ -121,7 +122,7 @@ class STCNModel():
 
         for k, v in data.items():
             if type(v) != list and type(v) != dict and type(v) != int:
-                if self.device == 'cuda':
+                if self.device == self.device_name:
                     data[k] = v.cuda(non_blocking=True)
                 # data[k] = v.cuda(non_blocking=True)
 
