@@ -7,6 +7,7 @@ global:
   device: cuda:0
   weights: null
   stage: reference
+  save_csv: True
   save_binary: True
   save_visualization: True
   use_uncertainty: False

@@ -36,6 +36,7 @@ class TestPipeline(BaseTestPipeline):
 
     def init_globals(self):
         super().init_globals()
+        self.save_csv = self.opt['global']['save_csv']
         self.save_binary = self.opt['global']['save_binary']
         self.use_uncertainty = self.opt['global']['use_uncertainty']
         self.save_visualization = self.opt['global']['save_visualization']
@@ -164,7 +165,8 @@ class TestPipeline(BaseTestPipeline):
                 self.save_gif(data['inputs'].numpy(), out_masks, visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
-        pd.DataFrame(df_dict).to_csv(osp.join(self.savedir, 'pseudo.csv'), index=False)
+        if self.save_csv:
+            pd.DataFrame(df_dict).to_csv(osp.join(self.savedir, 'pseudo.csv'), index=False)
 
         self.logger.text(f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO)
         self.logger.text(f"Number of processed volumes: {len(self.dataloader)}", level=LoggerObserver.INFO)
