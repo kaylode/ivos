@@ -1,6 +1,7 @@
 from dis import get_instructions
 import pytest
 import torchvision
+from theseus.base.datasets import DATALOADER_REGISTRY
 from theseus.opt import Opts
 from theseus.semantic2D.datasets import DATASET_REGISTRY
 from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
@@ -26,12 +27,13 @@ def test_dataset(tmp_path, dataset_name):
     ])
     tf = get_instance_recursively(cfg_tf['train'], registry=TRANSFORM_REGISTRY)
     ds = get_instance_recursively(cfg['data']['dataset']['train'], registry=DATASET_REGISTRY, transform=tf)
-    dataloader = DataLoader(
-        [ds[0]],
-        batch_size=1,
-        shuffle=False,
-        num_workers=0,
+
+    dataloader = get_instance_recursively(
+        cfg['data']["dataloader"]['train'],
+        registry=DATALOADER_REGISTRY,
+        dataset=[ds[0]],
     )
+
     # data = {
     #         'inputs': images, # normalized image, torch.Tensor (T, C, H, W) 
     #         'targets': tar_masks, # target mask, numpy (T, 1, H, W) , values 1 at primary class
