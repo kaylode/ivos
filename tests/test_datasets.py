@@ -29,9 +29,9 @@ def test_dataset(tmp_path, dataset_name):
     ds = get_instance_recursively(cfg['data']['dataset']['train'], registry=DATASET_REGISTRY, transform=tf)
 
     dataloader = get_instance_recursively(
-        cfg['data']["dataloader"]['train'],
+        cfg['data']["dataloader"]['train'].update({'batch_size': 1}),
         registry=DATALOADER_REGISTRY,
-        dataset=[ds[0]],
+        dataset=ds,
     )
 
     # data = {
