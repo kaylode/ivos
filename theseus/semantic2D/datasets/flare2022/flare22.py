@@ -1,3 +1,4 @@
+from typing import Union
 import os.path as osp
 import nibabel as nib # common way of importing nibabel
 import torch
@@ -36,11 +37,13 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
         root_dir: str,
         csv_path: str,
         max_jump: int=25,
+        max_frames: Union[int, float] = 5,
         transform=None,
         **kwargs):
 
         super().__init__(root_dir, csv_path, transform)
         self.max_jump = max_jump
+        self.max_frames = max_frames
         self.compute_stats()
 
     def compute_stats(self):
@@ -59,6 +62,43 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
             vol_dict['guides'] = REFERENCER.search_reference(gt_vol, strategy="non-empty")
             self.stats.append(vol_dict)
 
+    def sampling_frames(self, num_frames):
+        return sampling_frames(num_frames, max_frames=self.max_frames)
+
+    def wrap_item(self, images, masks):
+        
+        h, w = images[0].shape
+        images = torch.stack(images, 0).unsqueeze(1)
+        labels = np.unique(masks[0])
+        masks = np.stack(masks, 0)
+        # Remove background
+        labels = labels[labels!=0]
+        
+        if len(labels) == 0:
+            target_object = -1 # all black if no objects
+            has_second_object = False
+        else:
+            target_object = np.random.choice(labels)
+            has_second_object = (len(labels) > 1)
+            if has_second_object:
+                labels = labels[labels!=target_object]
+                second_object = np.random.choice(labels)
+
+        tar_masks = (masks==target_object).astype(np.float32)[:,np.newaxis,:,:]
+        if has_second_object:
+            sec_masks = (masks==second_object).astype(np.float32)[:,np.newaxis,:,:]
+            selector = torch.FloatTensor([1, 1])
+        else:
+            sec_masks = np.zeros_like(tar_masks)
+            selector = torch.FloatTensor([1, 0])
+
+        cls_gt = np.zeros((3, h, w), dtype=np.int)
+        cls_gt[tar_masks[:,0] > 0.5] = 1
+        cls_gt[sec_masks[:,0] > 0.5] = 2
+
+        return images, tar_masks, sec_masks, cls_gt, selector
+
+
     def __getitem__(self, idx):
         
         patient_item = self.fns[idx]
@@ -73,15 +113,14 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
         gt_vol = gt_vol.squeeze(0)
         h, w, num_slices = image.shape
 
-        trials = 0
         stat = self.stats[idx]
-        while trials < 5:
+        sampling_indices = self.sampling_frames(len(stat['guides']))
+        candidate_indices = [stat['guides'][i] for i in sampling_indices]
 
+        batch = []
+        for start_idx in candidate_indices:
             # Don't want to bias towards beginning/end
             this_max_jump = min(num_slices, self.max_jump)
-            # start_idx = np.random.randint(num_slices-this_max_jump+1)
-            start_idx = np.random.choice(stat['guides'])
-
             f1_idx = start_idx + np.random.randint(this_max_jump+1) + 1
             f1_idx = min(f1_idx, num_slices-this_max_jump, num_slices-1)
 
@@ -89,71 +128,62 @@ class FLARE22TrainDataset(FLARE22BaseCSVDataset):
             f2_idx = min(f2_idx, num_slices-this_max_jump//2, num_slices-1)
 
             frames_idx = [start_idx, f1_idx, f2_idx]
-            if np.random.rand() < 0.5:
+
+            if np.random.rand() < 0.5 and f2_idx in stat['guides']:
                 # Reverse time
                 frames_idx = frames_idx[::-1]
 
             images = []
             masks = []
-            target_object = None
             for f_idx in frames_idx:
-                this_im = image[:,:,f_idx] #(C, H, W)
+                this_im = image[:,:,f_idx] # (H, W)
                 this_gt = gt_vol[:,:,f_idx] #(H, W)
                 this_gt = this_gt.numpy()
-
                 images.append(this_im)
                 masks.append(this_gt)
 
-            images = torch.stack(images, 0)
+            images, tar_masks, sec_masks, cls_gt, selector = self.wrap_item(images, masks)
 
-            labels = np.unique(masks[0])
-            # Remove background
-            labels = labels[labels!=0]
-            
-            if len(labels) == 0:
-                target_object = -1 # all black if no objects
-                has_second_object = False
-                trials += 1
-            else:
-                target_object = np.random.choice(labels)
-                has_second_object = (len(labels) > 1)
-                if has_second_object:
-                    labels = labels[labels!=target_object]
-                    second_object = np.random.choice(labels)
-                break
+            data = {
+                'input': images, # normalized image, torch.Tensor (T, C, H, W) 
+                'target': tar_masks, # target mask, numpy (T, 1, H, W) , values 1 at primary class
+                'cls_gt': cls_gt, # numpy (T, H, W), each pixel present one class
+                'sec_gt': sec_masks, # second object mask, numpy (T, 1, H, W) , values 1 at second class
+                'selector': selector, # [1, 1] if has second object, else [1, 0]
+                'info': {
+                    'name': patient_id,
+                    'slice_id': frames_idx,
+                    'affine': affine,
+                    'case_spacing': case_spacing
+                },
+            }
+        
+            batch.append(data)
 
-        masks = np.stack(masks, 0)
-        tar_masks = (masks==target_object).astype(np.float32)[:,np.newaxis,:,:]
-        if has_second_object:
-            sec_masks = (masks==second_object).astype(np.float32)[:,np.newaxis,:,:]
-            selector = torch.FloatTensor([1, 1])
-        else:
-            sec_masks = np.zeros_like(tar_masks)
-            selector = torch.FloatTensor([1, 0])
-
-        cls_gt = np.zeros((3, h, w), dtype=np.int32)
-        cls_gt[tar_masks[:,0] > 0.5] = 1
-        cls_gt[sec_masks[:,0] > 0.5] = 2
-
-        images = images.unsqueeze(1)
-        data = {
-            'inputs': images, # normalized image, torch.Tensor (T, C, H, W) 
-            'targets': tar_masks, # target mask, numpy (T, 1, H, W) , values 1 at primary class
-            'cls_gt': cls_gt, # numpy (T, H, W), each pixel present one class
-            'sec_gt': sec_masks, # second object mask, numpy (T, 1, H, W) , values 1 at second class
-            'selector': selector, # [1, 1] if has second object, else [1, 0]
-            'info': {
-                'name': patient_id,
-                'slice_id': frames_idx,
-                'affine': affine,
-                'case_spacing': case_spacing
-            },
-        }
-
-        return data
+        return batch
 
     def __len__(self):
         return len(self.fns)
+
+    def collate_fn(self, batch):
+        
+        new_batch = [item for sublist in batch for item in sublist]
+
+        inputs = torch.stack([item['input'] for item in new_batch], dim=0)
+        targets = torch.stack([torch.from_numpy(item['target']) for item in new_batch], dim=0)
+        cls_gts = torch.stack([torch.from_numpy(item['cls_gt']) for item in new_batch], dim=0)
+        sec_gts = torch.stack([torch.from_numpy(item['sec_gt']) for item in new_batch], dim=0)
+        selectors = torch.stack([item['selector'] for item in new_batch], dim=0)
+        infos = [item['info'] for item in new_batch]
+        
+        return {
+            'inputs': inputs,
+            'targets': targets,
+            'cls_gt': cls_gts,
+            'sec_gt': sec_gts,
+            'selector': selectors,
+            'info': infos
+        }
 
 class FLARE22ValDataset(FLARE22BaseCSVDataset):
     def __init__(
