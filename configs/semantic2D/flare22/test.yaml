@@ -16,7 +16,7 @@ prop_model:
   value_backbone: resnet18-mod
   top_k: 20 # top k frames in memory to calculate affinity 
   mem_every: 5 # save frames every k step
-  include_last_val: True # whether to use last frame to retrieve current
+  include_last: True # whether to use last frame to retrieve current
 
 ref_model:
   name: CrossPseudoSupervision

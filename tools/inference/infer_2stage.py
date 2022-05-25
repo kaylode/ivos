@@ -89,6 +89,7 @@ class TestPipeline(BaseTestPipeline):
 
         # Load reference model
         ref_state_dict = torch.load(self.ref_weights)
+
         self.ref_model.model1.model = load_state_dict(
             self.ref_model.model1.model, ref_state_dict, "model1"
         )
@@ -195,7 +196,12 @@ class TestPipeline(BaseTestPipeline):
 
                 with torch.no_grad():
                     out_masks = processor.get_prediction(
-                        {"rgb": rgb, "msk": msk[1:, ...], "guide_indices": ref_indices,}
+                        {
+                            "rgb": rgb,
+                            "msk": msk[1:, ...],
+                            "guide_indices": ref_indices,
+                            "bidirectional": True,
+                        }
                     )["masks"]
 
                 torch.cuda.synchronize()
