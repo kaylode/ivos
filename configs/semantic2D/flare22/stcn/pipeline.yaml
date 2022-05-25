@@ -12,38 +12,38 @@ trainer:
   name: SupervisedTrainer
   args:
     use_fp16: true
-    num_iterations: 10000
+    num_iterations: 5000
     clip_grad:  10.0
     evaluate_interval: 1
     print_interval: 20
-    save_interval: 1000
+    save_interval: 500
 callbacks:
   - name: LoggerCallbacks
     args: null 
   - name: STCNCallbacks
     args: 
-      skip_values: [3, 5, 7, 10, 5]  
+      skip_values: [2, 3, 5, 7, 5]  
       increase_skip_fraction: [0.1, 0.2, 0.3, 0.4, 0.9, 1.0] 
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
   - name: VolumeVisualizerCallbacks
     args: null
-  # - name: WandbCallbacks
-  #   args: 
-  #     username: kaylode
-  #     project_name: flare22
+  - name: WandbCallbacks
+    args: 
+      username: kaylode
+      project_name: flare22
 model:
   name: STCNModel
   args:
-    single_object: True
+    single_object: False
     key_backbone: resnet50-mod
     value_backbone: resnet18-mod
-    pretrained_backbone: False
+    pretrained_backbone: True
     top_k_eval: 20
     mem_every_eval: 5
     include_last_val: True # whether to use last frame to retrieve current
-    pretrained: False
+    pretrained: True
 loss:
   name: STCNLossV2
   args:
@@ -71,26 +71,27 @@ scheduler:
   name: SchedulerWrapper
   args:
     scheduler_name: multistep
-    milestones: [200, 500, 800]
+    milestones: [300, 1000, 1500]
     gamma: 0.1
 data:
   dataset:
     train:
       name: FLARE22TrainDataset
       args:
-        root_dir: /content/data/flare2022/labelled_320_clip_binary/
-        csv_path: /content/data/flare2022/labelled_320_clip_binary/train.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/train.csv
         max_jump: 3 #initial
+        max_frames: 24
     val:
       name: FLARE22ValDataset
       args:
-        root_dir: /content/data/flare2022/labelled_320_clip_binary/
-        csv_path: /content/data/flare2022/labelled_320_clip_binary/val.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/val.csv
   dataloader:
     train:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
-        batch_size: 16
+        batch_size: 1
         drop_last: true
         shuffle: true
     val:
