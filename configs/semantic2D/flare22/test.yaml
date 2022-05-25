@@ -8,28 +8,39 @@ global:
   ref_weights: null
   prop_weights: null
   save_visualization: True
-  ref_strategy: all # strategy for choosing reference images
+  ref_strategy: largest-area # strategy for choosing reference images
   prop_strategy: all # strategy for propagating images
 
 prop_model:
-  key_backbone: resnet50
+  key_backbone: resnet50-mod
   value_backbone: resnet18-mod
   top_k: 20 # top k frames in memory to calculate affinity 
   mem_every: 5 # save frames every k step
   include_last_val: True # whether to use last frame to retrieve current
 
 ref_model:
-  name: BaseSegModel
+  name: CrossPseudoSupervision
   args:
-    model_name: unetplusplus
-    encoder_name : efficientnet-b0
-    in_channels: 1
+    model1:
+      name: BaseSegModel
+      args:
+        model_name: unetplusplus
+        encoder_name: efficientnet-b0
+        in_channels: 1
+        pretrained: True
+    model2:
+      name: BaseSegModel
+      args:
+        model_name: deeplabv3plus
+        encoder_name: efficientnet-b0
+        in_channels: 1
+        pretrained: True
 
 data: 
   dataset:
     name: FLARE22TestDataset
     args:
-      root_dir: /content/data/flare2022-processed/TestImage
+      root_dir: /content/data/flare2022/labelled-processed320clip/Validation
       max_ref_frames: 64
       sample_fp: 5
   dataloader:
