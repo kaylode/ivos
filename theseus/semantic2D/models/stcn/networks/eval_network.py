@@ -26,10 +26,10 @@ class STCNEval(nn.Module):
         super().__init__()
         self.key_encoder = KeyEncoder(key_backbone, pretrained) 
         f16_dim = self.key_encoder.model.f16_dim #1024
-        self.value_encoder = ValueEncoder(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
-
         f8_dim = self.key_encoder.model.f8_dim #512
         f4_dim = self.key_encoder.model.f4_dim #256
+        
+        self.value_encoder = ValueEncoder(value_backbone, pretrained, key_dim=f16_dim, out_dim=f8_dim) 
 
         # Projection from f16 feature space to key space
         self.key_proj = KeyProjection(f16_dim, keydim=64)
@@ -67,9 +67,8 @@ class STCNEval(nn.Module):
 
     def segment_with_query(self, mem_bank, qf8, qf4, qk16, qv16): 
         k = mem_bank.num_objects
-
         readout_mem = mem_bank.match_memory(qk16)
         qv16 = qv16.expand(k, -1, -1, -1)
         qv16 = torch.cat([readout_mem, qv16], 1)
-
+        
         return torch.sigmoid(self.decoder(qv16, qf8, qf4))

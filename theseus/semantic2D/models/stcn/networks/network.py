@@ -84,12 +84,12 @@ class STCNTrain(nn.Module):
 
         self.key_encoder = KeyEncoder(key_backbone, pretrained)
         f16_dim = self.key_encoder.model.f16_dim #1024
-        if single_object:
-            self.value_encoder = ValueEncoderSO(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
-        else:
-            self.value_encoder = ValueEncoder(value_backbone, pretrained, key_dim=f16_dim, out_dim=f16_dim//2) 
-
         f8_dim = self.key_encoder.model.f8_dim #512
+        if single_object:
+            self.value_encoder = ValueEncoderSO(value_backbone, pretrained, key_dim=f16_dim, out_dim=f8_dim) 
+        else:
+            self.value_encoder = ValueEncoder(value_backbone, pretrained, key_dim=f16_dim, out_dim=f8_dim) 
+
         f4_dim = self.key_encoder.model.f4_dim #256
 
         # Projection from f16 feature space to key space
