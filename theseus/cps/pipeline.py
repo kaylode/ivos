@@ -119,7 +119,7 @@ class Pipeline(BasePipeline):
             self.model.model.model1.model = load_state_dict(self.model.model.model1.model, state_dict, 'model1')
             self.model.model.model2.model = load_state_dict(self.model.model.model2.model, state_dict, 'model2')
             self.optimizers[0] = load_state_dict(self.optimizers[0], state_dict, 'optimizer1')
-            self.optimizers[1] = load_state_dict(self.optimizers[0], state_dict, 'optimizer2')
+            self.optimizers[1] = load_state_dict(self.optimizers[1], state_dict, 'optimizer2')
             iters = load_state_dict(None, state_dict, 'iters')
             self.last_epoch = iters//len(self.train_dataloader) - 1
 

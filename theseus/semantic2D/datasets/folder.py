@@ -27,6 +27,24 @@ class VolumeFolderDataset(data.Dataset):
         self.sample_fp = sample_fp
         self.max_frames = max_frames
         self.transform = transform
+
+        self.classnames = [
+            "background",
+            "liver", 
+            "kidney_r",
+            "spleen",
+            "pancreas",
+            "aorta",
+            "IVC",
+            "RAG",
+            "LAG",
+            "gallbladder",
+            "esophagus",
+            "stomach",
+            "duodenum",
+            "kidney_l",
+        ]
+
         self.load_data()
 
     def load_data(self):
@@ -60,6 +78,8 @@ class VolumeFolderDataset(data.Dataset):
         image_path = os.path.join(self.root_dir, image_name)
         item_dict = self._load_item(image_path)
         image = item_dict['image']
+        affine = item_dict['affine']
+        spacing = item_dict['spacing']
 
         width, height, num_slices = image.shape
         frames_idx = sampling_frames(
@@ -78,7 +98,9 @@ class VolumeFolderDataset(data.Dataset):
         return {
             "input": images, 
             "img_name": image_name,
-            'ori_size': [width, height, num_slices]
+            'ori_size': [width, height, num_slices],
+            'affine': affine,
+            'spacing': spacing
         }
 
     def __len__(self):
@@ -88,10 +110,13 @@ class VolumeFolderDataset(data.Dataset):
         imgs = torch.cat([i['input'] for i in batch], dim=0)
         img_names = [i['img_name'] for i in batch]
         ori_sizes = [i['ori_size'] for i in batch]
+        affines = [i['affine'] for i in batch]
+        spacings = [i['spacing'] for i in batch]
         
-        masks = self._encode_masks(masks)
         return {
             'inputs': imgs,
             'img_names': img_names,
-            'ori_sizes': ori_sizes
+            'ori_sizes': ori_sizes,
+            'affines': affines,
+            'spacings': spacings,
         }

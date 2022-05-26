@@ -36,6 +36,9 @@ class TestPipeline(BaseTestPipeline):
 
     def init_globals(self):
         super().init_globals()
+        self.save_csv = self.opt['global']['save_csv']
+        self.save_binary = self.opt['global']['save_binary']
+        self.use_uncertainty = self.opt['global']['use_uncertainty']
         self.save_visualization = self.opt['global']['save_visualization']
 
         if self.save_visualization:
@@ -110,7 +113,6 @@ class TestPipeline(BaseTestPipeline):
                 # FIRST STAGE: Get reference frames
                 process_begin = time.time()
 
-
                 custom_batch = []
                 out_masks = []
                 inputs = data['inputs']
@@ -136,10 +138,25 @@ class TestPipeline(BaseTestPipeline):
                 total_frames += out_masks.shape[0]
 
                 out_masks = out_masks.transpose(1,2,0) # H, W, T
-                
-                ni_img = nib.Nifti1Image(out_masks, affine)
-                this_out_path = osp.join(savedir, str(name))
-                nib.save(ni_img, this_out_path)
+                if self.save_binary:
+                    labels = np.unique(out_masks)
+                    for label in labels:
+                        if label == 0:
+                            continue
+                        tmp_mask = (out_masks == label).astype(np.uint8)
+                        ni_img = nib.Nifti1Image(tmp_mask, affine)
+                        this_out_path = osp.join(savedir, self.classnames[label],str(name))
+                        os.makedirs(osp.join(savedir, self.classnames[label]), exist_ok=True)
+                        nib.save(ni_img, this_out_path)
+                        df_dict['image'].append(name)
+                        df_dict['label'].append(osp.join('masks', self.classnames[label], name))
+                else:
+                    ni_img = nib.Nifti1Image(out_masks, affine)
+                    this_out_path = osp.join(savedir, str(name))
+                    nib.save(ni_img, this_out_path)
+
+                    df_dict['image'].append(name)
+                    df_dict['label'].append(osp.join('masks', name))
 
             if self.save_visualization:
                 gif_name = str(name).split('.')[0]
@@ -148,7 +165,8 @@ class TestPipeline(BaseTestPipeline):
                 self.save_gif(data['inputs'].numpy(), out_masks, visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
-        pd.DataFrame(df_dict).to_csv(osp.join(self.savedir, 'pseudo.csv'), index=False)
+        if self.save_csv:
+            pd.DataFrame(df_dict).to_csv(osp.join(self.savedir, 'pseudo.csv'), index=False)
 
         self.logger.text(f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO)
         self.logger.text(f"Number of processed volumes: {len(self.dataloader)}", level=LoggerObserver.INFO)
