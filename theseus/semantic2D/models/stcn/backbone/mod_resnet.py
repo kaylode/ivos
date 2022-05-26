@@ -30,7 +30,10 @@ def load_weights_sequential(target, source_state, extra_chan=1):
 
                 new_dict[k1] = tar_v
 
-    target.load_state_dict(new_dict, strict=False)
+    try:
+        target.load_state_dict(new_dict, strict=False)
+    except:
+        pass
 
 
 model_urls = {
@@ -119,7 +122,7 @@ class ResNet(nn.Module):
     def __init__(self, block, layers=(3, 4, 23, 3), extra_chan=1):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3+extra_chan, 64, kernel_size=7, stride=2, padding=3)
+        self.conv1 = nn.Conv2d(1+extra_chan, 64, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -165,3 +168,55 @@ def resnet50(pretrained=True, extra_chan=0):
         load_weights_sequential(model, model_zoo.load_url(model_urls['resnet50']), extra_chan)
     return model
 
+from torchvision import models
+
+class ResNetBackbone(nn.Module):
+    def __init__(self, name:str, pretrained:bool, **kwargs) -> None:
+        super().__init__()
+
+        if name == 'resnet50':
+            model = models.resnet50(pretrained=pretrained, **kwargs)
+            self.f16_dim = 1024
+            self.f8_dim = 512
+            self.f4_dim =  256
+
+        if name == 'resnet18-mod':
+            model = resnet18(pretrained=pretrained, **kwargs)
+            self.f16_dim = 256
+            self.f8_dim = 128
+            self.f4_dim =  64
+
+        if name == 'resnet50-mod':
+            model = resnet50(pretrained=pretrained, **kwargs)
+            self.f16_dim = 1024
+            self.f8_dim = 512
+            self.f4_dim =  256
+
+        if name == 'resnet18':
+            model = models.resnet18(pretrained=pretrained, **kwargs)
+            self.f16_dim = 256
+            self.f8_dim = 128
+            self.f4_dim =  64
+
+        self.conv1 = model.conv1
+        self.bn1 = model.bn1
+        self.relu = model.relu  # 1/2, 64
+        self.maxpool = model.maxpool
+
+        self.layer1 = model.layer1 # 1/4, 64
+        self.layer2 = model.layer2 # 1/8, 128
+        self.layer3 = model.layer3 # 1/16, 256
+
+    def forward(self, x, return_more=False):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)   # 1/2, 64
+        x = self.maxpool(x)  # 1/4, 64
+        f4 = self.layer1(x)   # 1/4, 64
+        f8 = self.layer2(f4) # 1/8, 128
+        f16 = self.layer3(f8) # 1/16, 256
+
+        if return_more:
+            return f16, f8, f4
+        else:
+            return f16

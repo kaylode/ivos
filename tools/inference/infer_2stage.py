@@ -1,4 +1,5 @@
 from typing import List, Optional, Tuple
+from xml.etree.ElementInclude import include
 
 import matplotlib as mpl
 mpl.use("Agg")
@@ -36,9 +37,9 @@ class TestPipeline(BaseTestPipeline):
 
     def init_globals(self):
         super().init_globals()
-        self.reference_strategy = self.opt['global']['strategy']
-        self.top_k = self.opt['global']['top_k']
-        self.mem_every = self.opt['global']['mem_every']
+        self.reference_strategy = self.opt['global']['ref_strategy']
+        self.propagation_strategy = self.opt['global']['prop_strategy']
+        self.prop_config = self.opt['prop_model']
         self.save_visualization = self.opt['global']['save_visualization']
 
         if self.save_visualization:
@@ -56,7 +57,11 @@ class TestPipeline(BaseTestPipeline):
 
     def init_model(self):
         # Load our checkpoint
-        self.prop_model = STCNEval().to(self.device).eval()
+        self.prop_model = STCNEval(
+            key_backbone = self.prop_config['key_backbone'],
+            value_backbone = self.prop_config['value_backbone'],
+            pretrained=False
+        ).to(self.device).eval()
 
         self.classnames = self.dataset.classnames
         self.ref_model = get_instance(
@@ -213,8 +218,11 @@ class TestPipeline(BaseTestPipeline):
 
                 processor = InferenceCore(
                     self.prop_model, rgb, k, 
-                    top_k=self.top_k, 
-                    mem_every=self.mem_every)
+                    top_k=self.prop_config['top_k'], 
+                    mem_every=self.prop_config['mem_every'],
+                    include_last=self.prop_config['include_last'])
+                    device=self.device)
+
                 
                 with torch.no_grad():
                     out_masks = processor.get_prediction({

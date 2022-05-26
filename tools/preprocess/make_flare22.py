@@ -1,21 +1,20 @@
-import shutil
+import argparse
 import os
 import os.path as osp
-import numpy as np
-import argparse
 import random
+import shutil
+
 import numpy as np
-import SimpleITK as sitk
-from tqdm import tqdm
 import pandas as pd
-from theseus.semantic3D.augmentations.monai_tf import (
-    PercentileClip,
-    IntensityClip,
-    NormalizeIntensityd,
-    Compose
-)
-from theseus.semantic3D.utilities.preprocess.resampler import ItkResample, ScipyResample
-from theseus.semantic3D.utilities.preprocess.loading import save_ct_from_npy, load_ct_info, change_axes_of_image
+import SimpleITK as sitk
+from theseus.semantic3D.augmentations.monai_tf import (Compose, IntensityClip,
+                                                       NormalizeIntensityd,
+                                                       PercentileClip)
+from theseus.semantic3D.utilities.preprocess.loading import (
+    change_axes_of_image, load_ct_info, save_ct_from_npy)
+from theseus.semantic3D.utilities.preprocess.resampler import (ItkResample,
+                                                               ScipyResample)
+from tqdm import tqdm
 
 SEED = 0
 random.seed(SEED)
@@ -68,7 +67,7 @@ CLASSNAMES = [
     "kidney_l",
 ]
 
-def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=True, binary=False):
+def convert_2_npy(vol_path, pbar, gt_path=None, target_size=(160,160,160), normalize=True, binary=False):
     image_dict = load_ct_info(vol_path)
 
     if target_size[0] == -1:
@@ -89,13 +88,13 @@ def convert_2_npy(vol_path, gt_path=None, target_size=(160,160,160), normalize=T
 
     npy_image, zoom_factor = ScipyResample.resample_to_size(image_dict['npy_image'], target_size)
     
-    print(f"Convert {vol_path} from {image_dict['npy_image'].shape} to {npy_image.shape}")
+    pbar.set_postfix_str(f"Convert {vol_path} from {image_dict['npy_image'].shape} to {npy_image.shape}")
 
     if gt_path:
         npy_mask, _ = ScipyResample.resample_mask_to_size(
             mask_dict['npy_image'], target_size, num_label=NUM_LABELS
         )
-        print(f"Convert {gt_path} from {mask_dict['npy_image'].shape} to {npy_mask.shape}")
+        pbar.set_postfix_str(f"Convert {gt_path} from {mask_dict['npy_image'].shape} to {npy_mask.shape}")
 
     if normalize:
         if gt_path:
@@ -154,10 +153,12 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     }
 
     print("Processing train files")
-    for train_filename, train_maskname in tqdm(zip(train_filenames, train_masknames)):
+    pbar = tqdm(zip(train_filenames, train_masknames), total=len(train_filenames))
+    tbar = tqdm(bar_format='{desc}{postfix}')
+    for train_filename, train_maskname in pbar:
         image_path = osp.join(root_dir, 'TrainImage', train_filename)
         gt_path = osp.join(root_dir, 'TrainMask', train_maskname)
-        image_dict = convert_2_npy(image_path, gt_path, target_size=TARGET_TRAIN_SIZE[:], normalize=True)
+        image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=gt_path, target_size=TARGET_TRAIN_SIZE[:], normalize=True)
         
         dest_image_path = osp.join(target_imagesTr, train_filename)
 
@@ -184,7 +185,7 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
                     df_dict['train']['image'].append(osp.join("TrainImage", train_filename))
                     df_dict['train']['label'].append(osp.join("TrainMask", CLASSNAMES[label], train_maskname))
                     save_ct_from_npy(
-                        npy_image=tmp_mask,
+                        npy_image=tmp_mask.astype(np.uint8),
                         save_path=dest_gt_path,
                         origin=image_dict['origin'],
                         spacing=image_dict['spacing'],
@@ -205,11 +206,13 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
                 )
 
     print("Processing val files")
-    for val_filename, val_maskname in tqdm(zip(val_filenames, val_masknames)):
+    pbar = tqdm(zip(val_filenames, val_masknames), total=len(val_filenames))
+    tbar = tqdm(bar_format='{desc}{postfix}')
+    for val_filename, val_maskname in pbar:
         image_path = osp.join(root_dir, 'TrainImage', val_filename)
         gt_path = osp.join(root_dir, 'TrainMask', val_maskname)
 
-        image_dict = convert_2_npy(image_path, gt_path, target_size=TARGET_TRAIN_SIZE[:], normalize=True)
+        image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=gt_path, target_size=TARGET_TRAIN_SIZE[:], normalize=True)
 
         dest_image_path = osp.join(target_imagesVl, val_filename)
         dest_gt_path = osp.join(target_labelsVl, val_maskname)
@@ -240,9 +243,11 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     pd.DataFrame(df_dict['val']).to_csv(osp.join(out_dir, 'val.csv'), index=False)
     
     print("Processing test files")
-    for test_filename in tqdm(test_filenames):
+    pbar = tqdm(test_filenames, total=len(test_filenames))
+    tbar = tqdm(bar_format='{desc}{postfix}')
+    for test_filename in pbar:
         image_path = osp.join(root_dir, 'Validation', test_filename)
-        image_dict = convert_2_npy(image_path, gt_path=None, target_size=TARGET_TEST_SIZE[:], normalize=True)
+        image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=None, target_size=TARGET_TEST_SIZE[:], normalize=True)
 
         dest_image_path = osp.join(target_imagesTs, test_filename)
 

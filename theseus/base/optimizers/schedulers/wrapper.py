@@ -1,6 +1,6 @@
 import math
 from torch.optim.lr_scheduler import (
-    StepLR, CosineAnnealingLR, LambdaLR, 
+    StepLR, CosineAnnealingLR, LambdaLR, MultiStepLR,
     ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts)
 from .cosine import CosineWithRestarts
 
@@ -29,7 +29,14 @@ class SchedulerWrapper():
                 anneal_strategy='cos', 
                 final_div_factor=10**5)
             step_per_epoch = False
-            
+
+        elif scheduler_name == 'multistep':
+            scheduler = MultiStepLR(
+                optimizer,
+                milestones=kwargs['milestones'],
+                gamma=kwargs['gamma'], 
+                last_epoch=kwargs['last_epoch'])
+            step_per_epoch = True
 
         elif scheduler_name == 'plateau':
             scheduler = ReduceLROnPlateau(
