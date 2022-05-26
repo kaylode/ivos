@@ -1,3 +1,5 @@
+from typing import Dict, List
+from theseus.utilities.cuda import move_to
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -36,9 +38,15 @@ class ABL(nn.Module):
     """
 
     def __init__(
-        self, ce_loss, isdetach=True, max_N_ratio=1 / 100, max_clip_dist=20.0,
+        self,
+        ce_loss,
+        isdetach=True,
+        max_N_ratio=1 / 100,
+        max_clip_dist=20.0,
+        ignore_label: int = 255,
     ):
         super(ABL, self).__init__()
+        self.ignore_label = ignore_label
         self.isdetach = isdetach
         self.max_N_ratio = max_N_ratio
 
@@ -187,7 +195,10 @@ class ABL(nn.Module):
 
         return out
 
-    def forward(self, logits, target):
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device):
+        logits = outputs["outputs"]
+        target = move_to(batch["targets"], device)
+        target = torch.argmax(target, dim=1)
         eps = 1e-10
         ph, pw = logits.size(2), logits.size(3)
         h, w = target.size(1), target.size(2)
@@ -212,9 +223,14 @@ class ABL(nn.Module):
         )  # NHW,NHW,NCHW
 
         # direction_pred [K,8], direction_gt [K]
-        loss, _ = self.criterion(direction_pred, direction_gt)  # careful
+        loss, _ = self.criterion(
+            outputs={"outputs": direction_pred},
+            batch={"targets": direction_gt},
+            device=device,
+        )
 
         weight_ce = self.weight_func(weight_ce)
         loss = (loss * weight_ce).mean()  # add distance weight
 
-        return loss
+        return loss, {"ABL": loss.item(),}
+

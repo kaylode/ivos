@@ -2,7 +2,7 @@
 Lovasz-Softmax and Jaccard hinge loss in PyTorch
 Maxim Berman 2018 ESAT-PSI KU Leuven (MIT License)
 """
-
+from typing import Dict, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -71,7 +71,9 @@ class LovaszSoftmax(nn.Module):
         self.ignore_index = ignore_index
         self.only_present = only_present
 
-    def forward(self, predict, batch, device):
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device):
+        predict = outputs["outputs"]
+
         targets = move_to(batch["targets"], device)
         targets = torch.argmax(targets, dim=1)
 
