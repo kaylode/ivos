@@ -11,26 +11,13 @@ ARG INSTALL_CHANNEL=pytorch
 
 # Setup workdir and non-root user
 
-<<<<<<< HEAD
 ARG USERNAME=root
-=======
-ARG USERNAME=hcmus
->>>>>>> 33e9846fdc1d57d4a62a4fda2f5df7fc4137e2ce
 WORKDIR /home/$USERNAME/workspace/
 
 RUN apt-get update &&\
     apt-get install -y --no-install-recommends curl git sudo &&\
-<<<<<<< HEAD
     rm -rf /var/lib/apt/lists/*
 
-=======
-    useradd --create-home --shell /bin/bash $USERNAME &&\
-    echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME &&\
-    chmod 0440 /etc/sudoers.d/$USERNAME &&\
-    rm -rf /var/lib/apt/lists/*
-
-RUN chown -R $USERNAME:$USERNAME /home/$USERNAME/
->>>>>>> 33e9846fdc1d57d4a62a4fda2f5df7fc4137e2ce
 
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
     apt-get -qq update && apt-get install -y --no-install-recommends \
