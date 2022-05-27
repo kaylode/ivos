@@ -39,6 +39,7 @@ class FLARE22SlicesDataset(FLARE22SlicesBaseCSVDataset):
 
         super().__init__(root_dir, csv_path, transform)
         self.max_jump = max_jump
+        self._load_data()
 
     def wrap_item(self, images, masks):
 
@@ -192,6 +193,7 @@ class FLARE22SlicesNormalDataset(FLARE22SlicesBaseCSVDataset):
         self.root_dir = root_dir
         self.csv_path = csv_path
         self.transform = transform
+        self._load_data()
 
     def __getitem__(self, idx):
         return self.load_image_and_mask(idx)
@@ -228,6 +230,7 @@ class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
         super().__init__(root_dir, transform)
         self.root_dir = root_dir
         self.transform = transform
+        self._load_data()
 
     def _load_data(self):
         filenames = os.listdir(self.root_dir)

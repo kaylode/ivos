@@ -2,7 +2,7 @@ global:
   exp_name: flare22-normal
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22/transform2.yaml
+  cfg_transform: configs/semantic2D/flare22/transform_slices.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
@@ -35,7 +35,7 @@ model:
     model_name: unetplusplus
     encoder_name : efficientnet-b2
     in_channels: 1
-    pretrained: True
+    pretrained: False
 loss:
   name: MultiLoss
   args:
@@ -70,13 +70,13 @@ data:
     train:
       name: FLARE22SlicesNormalDataset
       args:
-        root_dir: /content/data/flare2022/labelled-slices/
-        csv_path: /content/data/flare2022/labelled-slices/train.csv
+        root_dir: /content/data/flare2022-slices/
+        csv_path: /content/data/flare2022-slices/train.csv
     val:
       name: FLARE22SlicesNormalDataset
       args:
-        root_dir: /content/data/flare2022/labelled-slices/
-        csv_path: /content/data/flare2022/labelled-slices/val.csv
+        root_dir: /content/data/flare2022-slices/
+        csv_path: /content/data/flare2022-slices/val.csv
   dataloader:
     train:
       name: DataLoaderWithCollator

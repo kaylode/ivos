@@ -36,7 +36,6 @@ class SemanticDataset(torch.utils.data.Dataset):
         self.image_dir = None
         self.mask_dir = None
         self.fns = []
-        self._load_data()
 
     def _load_data(self):
         raise NotImplementedError
@@ -76,7 +75,7 @@ class FLARE22SlicesBaseDataset(SemanticDataset):
     """
 
     def __init__(self, root_dir: str, transform=None, **kwargs):
-
+        super().__init__()
         self.root_dir = root_dir
         self.transform = transform
         self.classnames = [
