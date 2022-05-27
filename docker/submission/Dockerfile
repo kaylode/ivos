@@ -11,7 +11,7 @@ ARG INSTALL_CHANNEL=pytorch
 
 # Setup workdir and non-root user
 
-ARG USERNAME=root
+ARG USERNAME=hcmus
 WORKDIR /home/$USERNAME/workspace/
 
 RUN apt-get update &&\
@@ -56,13 +56,14 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 ENV PYTORCH_VERSION ${PYTORCH_VERSION}
 
 # # # Install repo dependencies 
-COPY ./* $WORKDIR
-RUN chown -R $USERNAME:$USERNAME /home/
+COPY ./ $WORKDIR
+RUN chown -R $USERNAME:$USERNAME /home/$USERNAME/
+
 SHELL ["/bin/bash","-c"]
 RUN conda init bash && source ~/.bashrc && \
-    python -m pip install -r requirements.txt && \
     python -m pip install git+https://github.com/cheind/py-thin-plate-spline && \
     python -m pip install -e .
 
-# USER $USERNAME
+USER $USERNAME
 RUN conda init bash 
+ENTRYPOINT ["sh", "run.sh"]
