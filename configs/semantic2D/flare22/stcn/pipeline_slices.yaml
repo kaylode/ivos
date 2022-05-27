@@ -1,5 +1,5 @@
 global:
-  exp_name: flare22-normal
+  exp_name: flare22-stcn
   exist_ok: False
   debug: true
   cfg_transform: configs/semantic2D/flare22/transform_slices.yaml
@@ -7,7 +7,7 @@ global:
   device: cuda:0
   pretrained: null
   resume: null
-  stage: reference
+  stage: refine
 trainer:
   name: SupervisedTrainer
   args:
@@ -20,15 +20,19 @@ trainer:
 callbacks:
   - name: LoggerCallbacks
     args: null 
+  - name: STCNCallbacks
+    args: 
+      skip_values: [2, 3, 5, 7, 5]  
+      increase_skip_fraction: [0.1, 0.2, 0.3, 0.4, 0.9, 1.0] 
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
-  - name: NormalVisualizerCallbacks
-    args: null
-  #- name: WandbCallbacks
-   # args: 
-    #  username: kaylode
-     # project_name: flare22
+  # - name: VolumeVisualizerCallbacks
+  #   args: null
+  # - name: WandbCallbacks
+  #   args: 
+  #     username: kaylode
+  #     project_name: flare22
 model:
   name: BaseSegModel
   args:
@@ -37,7 +41,7 @@ model:
     in_channels: 1
     pretrained: False
 loss:
-  name: MultiLoss
+  name: STCNLossV2
   args:
     weights: null
     losses:
@@ -68,25 +72,26 @@ scheduler:
 data:
   dataset:
     train:
-      name: FLARE22SlicesNormalDataset
+      name: FLARE22SlicesDataset
       args:
         root_dir: /content/data/flare2022-slices/
         csv_path: /content/data/flare2022-slices/train.csv
+        max_jump: 3 #initial
     val:
-      name: FLARE22SlicesNormalDataset
+      name: FLARE22ValDataset
       args:
-        root_dir: /content/data/flare2022-slices/
-        csv_path: /content/data/flare2022-slices/val.csv
+        root_dir: /content/data/flare2022/labelled-processed320clip/
+        csv_path: /content/data/flare2022/labelled-processed320clip/val.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 16
-        drop_last: false
+        batch_size: 8
+        drop_last: true
         shuffle: true
     val:
-      name: DataLoaderWithCollator
+      name: DataLoader
       args:
-        batch_size: 16
+        batch_size: 1
         drop_last: false
-        shuffle: true
+        shuffle: false
