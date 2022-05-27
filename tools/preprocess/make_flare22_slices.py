@@ -118,6 +118,7 @@ def convert_2_npy(
 
 
 def save_npy_volume_mask(
+    root_dir,
     save_image_dir,
     save_mask_dir,
     fileid,
@@ -132,17 +133,17 @@ def save_npy_volume_mask(
     for i, (vol, mask) in enumerate(zip(npy_volume, npy_mask)):
         tmp_name = osp.join(fileid, fileid + f"_{str(i).zfill(4)}.npy")
         if np.sum(mask) > 0:
-            filename = osp.join(save_image_dir, tmp_name)
-            os.makedirs(osp.join(save_image_dir, fileid), exist_ok=True)
+            filename = osp.join(root_dir, save_image_dir, tmp_name)
+            os.makedirs(osp.join(root_dir, save_image_dir, fileid), exist_ok=True)
 
-            maskname = osp.join(save_mask_dir, tmp_name)
-            os.makedirs(osp.join(save_mask_dir, fileid), exist_ok=True)
+            maskname = osp.join(root_dir, save_mask_dir, tmp_name)
+            os.makedirs(osp.join(root_dir, save_mask_dir, fileid), exist_ok=True)
 
             np.save(maskname, mask)
             np.save(filename, vol)
 
-            filenames.append(tmp_name)
-            masknames.append(tmp_name)
+            filenames.append(osp.join(save_image_dir, tmp_name))
+            masknames.append(osp.join(save_mask_dir, tmp_name))
 
     if return_filenames:
         return filenames, masknames
@@ -202,8 +203,9 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         if image_dict["mask"] is not None:
             train_fileid = train_filename.split(".nii.gz")[0]
             imagenames, masknames = save_npy_volume_mask(
-                save_image_dir=target_imagesTr,
-                save_mask_dir=target_labelsTr,
+                root_dir=out_dir,
+                save_image_dir="TrainImage",
+                save_mask_dir="TrainMask",
                 fileid=train_fileid,
                 npy_volume=image_dict["image"].astype(np.float32),
                 npy_mask=image_dict["mask"].astype(np.uint8),
@@ -226,8 +228,9 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         if image_dict["mask"] is not None:
             val_fileid = val_filename.split(".nii.gz")[0]
             imagenames, masknames = save_npy_volume_mask(
-                save_image_dir=target_imagesVl,
-                save_mask_dir=target_labelsVl,
+                root_dir=out_dir,
+                save_image_dir="ValImage",
+                save_mask_dir="ValMask",
                 fileid=val_fileid,
                 npy_volume=image_dict["image"].astype(np.float32),
                 npy_mask=image_dict["mask"].astype(np.uint8),

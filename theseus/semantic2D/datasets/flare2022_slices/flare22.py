@@ -1,11 +1,12 @@
 from typing import Union, Optional, List, Dict
+import os
 import os.path as osp
 import torch
 import numpy as np
 import pandas as pd
 from theseus.semantic2D.datasets.flare2022_slices import (
     FLARE22SlicesBaseCSVDataset,
-    all_to_onehot,
+    FLARE22SlicesBaseDataset,
 )
 from theseus.utilities.loggers.observer import LoggerObserver
 
@@ -191,7 +192,6 @@ class FLARE22SlicesNormalDataset(FLARE22SlicesBaseCSVDataset):
         self.root_dir = root_dir
         self.csv_path = csv_path
         self.transform = transform
-        self._load_data()
 
     def __getitem__(self, idx):
         return self.load_image_and_mask(idx)
@@ -210,3 +210,51 @@ class FLARE22SlicesNormalDataset(FLARE22SlicesBaseCSVDataset):
             "ori_sizes": ori_sizes,
         }
 
+
+# SIMPLE SEGMENTATION DATASET
+class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
+    r"""CSVDataset multi-labels segmentation dataset
+
+    image_dir: `str`
+        path to directory contains images
+    mask_dir: `str`
+        path to directory contains masks
+    transform: Optional[List]
+        transformatin functions
+        
+    """
+
+    def __init__(self, root_dir: str, transform: Optional[List] = None, **kwargs):
+        super().__init__(root_dir, transform)
+        self.root_dir = root_dir
+        self.transform = transform
+
+    def _load_data(self):
+        filenames = os.listdir(self.root_dir)
+        self.fns = []
+        for image_name in filenames:
+            id = osp.splitext(image_name)[0]  # FLARE22_Tr_0001_0000_0009
+            sid = int(id.split("_")[-1])
+            pid = "_".join(id.split("_")[:-1])
+            self.fns.append({"pid": pid, "image": image_name, "sid": sid})
+
+    def __getitem__(self, idx):
+        item = self.fns[idx]
+        image = np.load(item["image"])
+        width, height = image.shape
+        return {
+            "image": image,
+            "pid": item["pid"],
+            "ori_size": [width, height],
+        }
+
+    def collate_fn(self, batch):
+        imgs = torch.stack([i["image"] for i in batch])
+        pids = [i["pid"] for i in batch]
+        ori_sizes = [i["ori_size"] for i in batch]
+
+        return {
+            "inputs": imgs,
+            "pids": pids,
+            "ori_sizes": ori_sizes,
+        }

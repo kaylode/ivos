@@ -36,6 +36,7 @@ class SemanticDataset(torch.utils.data.Dataset):
         self.image_dir = None
         self.mask_dir = None
         self.fns = []
+        self._load_data()
 
     def _load_data(self):
         raise NotImplementedError
@@ -108,9 +109,8 @@ class FLARE22SlicesBaseCSVDataset(FLARE22SlicesBaseDataset):
 
         super().__init__(root_dir, transform)
         self.csv_path = csv_path
-        self.load_data()
 
-    def load_data(self):
+    def _load_data(self):
         df = pd.read_csv(self.csv_path)
         self.fns = []
         self.volume_range = {}
@@ -130,8 +130,8 @@ class FLARE22SlicesBaseCSVDataset(FLARE22SlicesBaseDataset):
 
     def load_image_and_mask(self, idx):
         patient_item = self.fns[idx]
-        img_path = osp.join(self.image_dir, patient_item["image"])
-        label_path = osp.join(self.mask_dir, patient_item["label"])
+        img_path = osp.join(self.root_dir, patient_item["image"])
+        label_path = osp.join(self.root_dir, patient_item["label"])
         img = np.load(img_path)
         width, height = img.shape
         mask = self._load_mask(label_path)
