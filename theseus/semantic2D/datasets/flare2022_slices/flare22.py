@@ -47,6 +47,7 @@ class FLARE22SlicesDataset(FLARE22SlicesBaseCSVDataset):
         images = torch.stack(images, 0).unsqueeze(1)
         labels = np.unique(masks[0])
         masks = np.stack(masks, 0)
+
         # Remove background
         labels = labels[labels != 0]
 
@@ -110,8 +111,8 @@ class FLARE22SlicesDataset(FLARE22SlicesBaseCSVDataset):
             id = pid + "_" + str(f_sid).zfill(4)
             f_idx = self.ids_to_indices[id]
             item = self.load_image_and_mask(f_idx)
-            images.append(item["image"])
-            masks.append(item["mask"])
+            images.append(item["image"].squeeze())
+            masks.append(item["mask"].squeeze())
             ids.append(f_idx)
 
         return images, masks, ids
@@ -133,6 +134,7 @@ class FLARE22SlicesDataset(FLARE22SlicesBaseCSVDataset):
         pid = item["pid"]
         images, masks, frames_idx = self.sampling_near_frames(item)
         images, tar_masks, sec_masks, cls_gt, selector = self.wrap_item(images, masks)
+
         data = {
             "input": images,  # normalized image, torch.Tensor (T, C, H, W)
             "target": tar_masks,  # target mask, numpy (T, 1, H, W) , values 1 at primary class
