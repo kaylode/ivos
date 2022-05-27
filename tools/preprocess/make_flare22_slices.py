@@ -125,6 +125,7 @@ def save_npy_volume_mask(
     npy_volume,
     npy_mask,
     return_filenames: bool = False,
+    non_negative_only: bool = False,
 ):
     # npy_volume dim: [T, H, W]
     filenames = []
@@ -132,18 +133,19 @@ def save_npy_volume_mask(
 
     for i, (vol, mask) in enumerate(zip(npy_volume, npy_mask)):
         tmp_name = osp.join(fileid, fileid + f"_{str(i).zfill(4)}.npy")
-        if np.sum(mask) > 0:
-            filename = osp.join(root_dir, save_image_dir, tmp_name)
-            os.makedirs(osp.join(root_dir, save_image_dir, fileid), exist_ok=True)
+        if non_negative_only and np.sum(mask) == 0:
+            continue
+        filename = osp.join(root_dir, save_image_dir, tmp_name)
+        os.makedirs(osp.join(root_dir, save_image_dir, fileid), exist_ok=True)
 
-            maskname = osp.join(root_dir, save_mask_dir, tmp_name)
-            os.makedirs(osp.join(root_dir, save_mask_dir, fileid), exist_ok=True)
+        maskname = osp.join(root_dir, save_mask_dir, tmp_name)
+        os.makedirs(osp.join(root_dir, save_mask_dir, fileid), exist_ok=True)
 
-            np.save(maskname, mask)
-            np.save(filename, vol)
+        np.save(maskname, mask)
+        np.save(filename, vol)
 
-            filenames.append(osp.join(save_image_dir, tmp_name))
-            masknames.append(osp.join(save_mask_dir, tmp_name))
+        filenames.append(osp.join(save_image_dir, tmp_name))
+        masknames.append(osp.join(save_mask_dir, tmp_name))
 
     if return_filenames:
         return filenames, masknames
