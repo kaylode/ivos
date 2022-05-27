@@ -117,22 +117,52 @@ def convert_2_npy(
     }
 
 
-def save_npy_volume(save_dir, fileid, npy_volume, return_filenames: bool = False):
+def save_npy_volume_mask(
+    save_image_dir,
+    save_mask_dir,
+    fileid,
+    npy_volume,
+    npy_mask,
+    return_filenames: bool = False,
+):
     # npy_volume dim: [T, H, W]
     filenames = []
+    masknames = []
+
+    for i, (vol, mask) in enumerate(zip(npy_volume, npy_mask)):
+        tmp_name = osp.join(fileid, fileid + f"_{str(i).zfill(4)}.npy")
+        if np.sum(mask) > 0:
+            filename = osp.join(save_image_dir, tmp_name)
+            os.makedirs(osp.join(save_image_dir, fileid), exist_ok=True)
+
+            maskname = osp.join(save_mask_dir, tmp_name)
+            os.makedirs(osp.join(save_mask_dir, fileid), exist_ok=True)
+
+            np.save(maskname, mask)
+            np.save(filename, vol)
+
+            filenames.append(tmp_name)
+            masknames.append(tmp_name)
+
+    if return_filenames:
+        return filenames, masknames
+
+
+def save_npy_volume(
+    save_image_dir, fileid, npy_volume, return_filenames: bool = False,
+):
+    # npy_volume dim: [T, H, W]
+    filenames = []
+
     for i, vol in enumerate(npy_volume):
         tmp_name = osp.join(fileid, fileid + f"_{str(i).zfill(4)}.npy")
-        filename = osp.join(save_dir, tmp_name)
-        os.makedirs(osp.join(save_dir, fileid), exist_ok=True)
+        filename = osp.join(save_image_dir, tmp_name)
+        os.makedirs(osp.join(save_image_dir, fileid), exist_ok=True)
         np.save(filename, vol)
         filenames.append(tmp_name)
 
     if return_filenames:
         return filenames
-
-
-def check_non_negative(mask):
-    return np.sum(mask) > 0
 
 
 def split_train_val(root_dir, out_dir, ratio=0.9):
@@ -169,25 +199,18 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         image_dict = convert_2_npy(
             image_path, pbar=tbar, gt_path=gt_path, normalize=True,
         )
-        train_fileid = train_filename.split(".nii.gz")[0]
         if image_dict["mask"] is not None:
-            mask = image_dict["mask"].astype(np.uint8)
-            if check_non_negative(mask):
-                masknames = save_npy_volume(
-                    save_dir=target_labelsTr,
-                    fileid=train_fileid,
-                    npy_volume=mask,
-                    return_filenames=True,
-                )
-                df_dict["train"]["label"] += masknames
-
-                imagenames = save_npy_volume(
-                    save_dir=target_imagesTr,
-                    fileid=train_fileid,
-                    npy_volume=image_dict["image"].astype(np.float32),
-                    return_filenames=True,
-                )
-                df_dict["train"]["image"] += imagenames
+            train_fileid = train_filename.split(".nii.gz")[0]
+            imagenames, masknames = save_npy_volume_mask(
+                save_image_dir=target_imagesTr,
+                save_mask_dir=target_labelsTr,
+                fileid=train_fileid,
+                npy_volume=image_dict["image"].astype(np.float32),
+                npy_mask=image_dict["mask"].astype(np.uint8),
+                return_filenames=True,
+            )
+            df_dict["train"]["label"] += masknames
+            df_dict["train"]["image"] += imagenames
 
     pd.DataFrame(df_dict["train"]).to_csv(osp.join(out_dir, "train.csv"), index=False)
 
@@ -200,50 +223,45 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
         image_dict = convert_2_npy(
             image_path, pbar=tbar, gt_path=gt_path, normalize=True,
         )
-
-        val_fileid = val_filename.split(".nii.gz")[0]
-
         if image_dict["mask"] is not None:
-            mask = image_dict["mask"].astype(np.uint8)
-            if check_non_negative(mask):
-                masknames = save_npy_volume(
-                    save_dir=target_labelsVl,
-                    fileid=val_fileid,
-                    npy_volume=mask,
-                    return_filenames=True,
-                )
-                df_dict["val"]["label"] += masknames
+            val_fileid = val_filename.split(".nii.gz")[0]
+            imagenames, masknames = save_npy_volume_mask(
+                save_image_dir=target_imagesVl,
+                save_mask_dir=target_labelsVl,
+                fileid=val_fileid,
+                npy_volume=image_dict["image"].astype(np.float32),
+                npy_mask=image_dict["mask"].astype(np.uint8),
+                return_filenames=True,
+            )
 
-                imagenames = save_npy_volume(
-                    save_dir=target_imagesVl,
-                    fileid=val_fileid,
-                    npy_volume=image_dict["image"].astype(np.float32),
-                    return_filenames=True,
-                )
-                df_dict["val"]["image"] += imagenames
+            df_dict["val"]["label"] += masknames
+            df_dict["val"]["image"] += imagenames
 
     pd.DataFrame(df_dict["val"]).to_csv(osp.join(out_dir, "val.csv"), index=False)
 
 
 def process_unlabelled(root_dir, out_dir):
     print("Processing test files")
+
+    root_dir = osp.join(root_dir, "Validation")
+    out_dir = osp.join(out_dir, "Validation")
     test_filenames = os.listdir(root_dir)
     pbar = tqdm(test_filenames, total=len(test_filenames))
     tbar = tqdm(bar_format="{desc}{postfix}")
-    test_fileid = test_filename.split(".nii.gz")[0]
 
     for test_filename in pbar:
+        test_fileid = test_filename.split(".nii.gz")[0]
         image_path = osp.join(root_dir, test_filename)
         image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=None, normalize=True)
-
         save_npy_volume(
-            save_dir=out_dir,
+            save_image_dir=out_dir,
             fileid=test_fileid,
             npy_volume=image_dict["image"].astype(np.float32),
             return_filenames=False,
         )
 
+
 if __name__ == "__main__":
     args = parser.parse_args()
     split_train_val(args.input_dir, args.out_dir, args.ratio)
-    # process_unlabelled(args.input_dir, args.out_dir)
+    process_unlabelled(args.input_dir, args.out_dir)
