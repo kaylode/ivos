@@ -2,7 +2,7 @@ global:
   exp_name: flare22-stcn
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22/transform_slices.yaml
+  cfg_transform: configs/semantic2D/flare22/stcn/transform_slices.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
@@ -27,19 +27,23 @@ callbacks:
   - name: CheckpointCallbacks
     args:
       best_key: dice-avg
-  # - name: VolumeVisualizerCallbacks
-  #   args: null
-  # - name: WandbCallbacks
-  #   args: 
-  #     username: kaylode
-  #     project_name: flare22
+  - name: VolumeVisualizerCallbacks
+    args: null
+  - name: WandbCallbacks
+    args: 
+      username: kaylode
+      project_name: flare22
 model:
-  name: BaseSegModel
+  name: STCNModel
   args:
-    model_name: unetplusplus
-    encoder_name : efficientnet-b2
-    in_channels: 1
-    pretrained: False
+    single_object: False
+    key_backbone: resnet50-mod
+    value_backbone: resnet18-mod
+    pretrained_backbone: True
+    top_k_eval: 20
+    mem_every_eval: 5
+    include_last_val: True # whether to use last frame to retrieve current
+    pretrained: True
 loss:
   name: STCNLossV2
   args:
