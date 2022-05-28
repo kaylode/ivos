@@ -198,20 +198,29 @@ class FLARE22SlicesNormalDataset(FLARE22SlicesBaseCSVDataset):
         self._load_data()
 
     def __getitem__(self, idx):
-        return self.load_image_and_mask(idx)
+        item = self.load_image_and_mask(idx)
+        return {
+            "input": item['image'],
+            "target": item['mask'],
+            "pid": item["pid"],
+            "ori_size": item["ori_size"],
+            "img_name": item['img_name'],
+        }
 
     def collate_fn(self, batch):
-        imgs = torch.stack([i["image"] for i in batch])
-        masks = torch.stack([i["mask"] for i in batch])
+        imgs = torch.stack([i["input"] for i in batch])
+        masks = torch.stack([i["target"] for i in batch])
         pids = [i["pid"] for i in batch]
         ori_sizes = [i["ori_size"] for i in batch]
-
+        img_names = [i["img_name"] for i in batch]
+        
         masks = self._encode_masks(masks)
         return {
             "inputs": imgs,
             "targets": masks,
             "pids": pids,
             "ori_sizes": ori_sizes,
+            "img_names": img_names,
         }
 
 
@@ -249,20 +258,29 @@ class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
     def __getitem__(self, idx):
         item = self.fns[idx]
         image = np.load(osp.join(self.root_dir, item["image"]))
-        width, height = image.shape
+        image_name = osp.basename(item["image"])
+
+        if self.transform is not None:
+            tf_item = self.transform(image=image)
+            image = tf_item["image"]
+
+        _, width, height = image.shape
         return {
-            "image": image,
+            "input": image,
             "pid": item["pid"],
             "ori_size": [width, height],
+            'img_name': image_name
         }
 
     def collate_fn(self, batch):
-        imgs = torch.stack([i["image"] for i in batch])
+        imgs = torch.stack([i["input"] for i in batch])
         pids = [i["pid"] for i in batch]
         ori_sizes = [i["ori_size"] for i in batch]
+        img_names = [i["img_name"] for i in batch]
 
         return {
             "inputs": imgs,
             "pids": pids,
             "ori_sizes": ori_sizes,
+            "img_names": img_names,
         }

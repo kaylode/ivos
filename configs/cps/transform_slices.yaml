@@ -1,9 +1,19 @@
-train:
+sup_train:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbToTensorV2
+unsup_train:
   name: AlbCompose
   args:
     transforms:
       - name: AlbToTensorV2
 val:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbToTensorV2
+test:
   name: AlbCompose
   args:
     transforms:

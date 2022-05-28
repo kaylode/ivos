@@ -144,6 +144,7 @@ class FLARE22SlicesBaseCSVDataset(FLARE22SlicesBaseDataset):
             "mask": mask,
             "pid": patient_item["pid"],
             "ori_size": [width, height],
+            "img_name": osp.basename(img_path),
         }
 
     def _load_mask(self, label_path):
