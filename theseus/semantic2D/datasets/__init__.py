@@ -28,10 +28,12 @@ from .flare2022 import (
     FLARE22NormalDataset,
     FLARE22NormalValDataset,
     FLARE22TestDataset,
+    FLARE22NumpyValDataset,
 )
 
 DATASET_REGISTRY.register(FLARE22TrainDataset)
 DATASET_REGISTRY.register(FLARE22ValDataset)
+DATASET_REGISTRY.register(FLARE22NumpyValDataset)
 DATASET_REGISTRY.register(FLARE22NormalValDataset)
 DATASET_REGISTRY.register(FLARE22NormalDataset)
 DATASET_REGISTRY.register(FLARE22TestDataset)
@@ -43,7 +45,9 @@ DATASET_REGISTRY.register(VolumeFolderDataset)
 from .flare2022_slices import (
     FLARE22SlicesDataset,
     FLARE22SlicesNormalDataset,
+    FLARE22SlicesFolderDataset,
 )
 
 DATASET_REGISTRY.register(FLARE22SlicesDataset)
+DATASET_REGISTRY.register(FLARE22SlicesFolderDataset)
 DATASET_REGISTRY.register(FLARE22SlicesNormalDataset)

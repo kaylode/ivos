@@ -1,0 +1,10 @@
+train:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbToTensorV2
+val:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbToTensorV2

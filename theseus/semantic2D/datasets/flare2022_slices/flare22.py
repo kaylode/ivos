@@ -235,17 +235,20 @@ class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
         self._load_data()
 
     def _load_data(self):
-        filenames = os.listdir(self.root_dir)
+        volnames = os.listdir(self.root_dir)
         self.fns = []
-        for image_name in filenames:
-            id = osp.splitext(image_name)[0]  # FLARE22_Tr_0001_0000_0009
-            sid = int(id.split("_")[-1])
-            pid = "_".join(id.split("_")[:-1])
-            self.fns.append({"pid": pid, "image": image_name, "sid": sid})
+        for volname in volnames:
+            volpath = osp.join(self.root_dir, volname)
+            filenames = os.listdir(volpath)
+            for image_name in filenames:
+                id = osp.splitext(image_name)[0]  # FLARE22_Tr_0001_0000_0009
+                sid = int(id.split("_")[-1])
+                pid = "_".join(id.split("_")[:-1])
+                self.fns.append({"pid": pid, "image": osp.join(volname, image_name), "sid": sid})
 
     def __getitem__(self, idx):
         item = self.fns[idx]
-        image = np.load(item["image"])
+        image = np.load(osp.join(self.root_dir, item["image"]))
         width, height = image.shape
         return {
             "image": image,
