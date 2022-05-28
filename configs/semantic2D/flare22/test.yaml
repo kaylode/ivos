@@ -2,7 +2,7 @@ global:
   exp_name: null
   exist_ok: False
   debug: True
-  cfg_transform: /content/main/configs/semantic2D/flare22/transform.yaml
+  cfg_transform: ../main/configs/semantic2D/flare22/transform.yaml
   save_dir: runs
   device: cuda:0
   ref_weights: null
@@ -40,7 +40,7 @@ data:
   dataset:
     name: FLARE22TestDataset
     args:
-      root_dir: /content/data/flare2022/labelled-processed320clip/Validation
+      root_dir: ../data/flare2022-processed/TestImage
       max_ref_frames: 64
       sample_fp: 5
   dataloader:

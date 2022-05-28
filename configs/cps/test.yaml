@@ -32,7 +32,7 @@ data:
   dataset:
     name: VolumeFolderDataset
     args:  
-      root_dir: /content/data/flare2022/TrainUnlabelledImage-processed-part1
+      root_dir: ../data/flare2022/TrainUnlabelledImage-processed-part1
       sample_fp: 1 #steps between samples
       max_frames: -1
   dataloader:
