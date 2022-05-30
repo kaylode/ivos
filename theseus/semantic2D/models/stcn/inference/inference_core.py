@@ -124,8 +124,10 @@ class InferenceCore:
 
         # iter through all reference images and register into memory
         prop_range = REFERENCER.find_propagation_range(
-            guide_indices, length=msk.shape[0]
+            guide_indices, length=msk.shape[1]
         )
+        print(prop_range)
+
         for prange in prop_range:
             start_idx, end_idx = prange
             self.interact(msk[:, start_idx], start_idx, end_idx)
@@ -134,7 +136,7 @@ class InferenceCore:
         if adict.get("bidirectional", None):
             self.flush_memory(self.top_k)  # clear memory
             rev_prop_range = REFERENCER.find_propagation_range(
-                list(reversed(guide_indices)), length=msk.shape[0]
+                list(reversed(guide_indices)), length=msk.shape[1]
             )
             # iter through all reference images and register into memory
             for prange in rev_prop_range:

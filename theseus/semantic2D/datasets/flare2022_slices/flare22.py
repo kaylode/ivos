@@ -260,11 +260,11 @@ class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
         image = np.load(osp.join(self.root_dir, item["image"]))
         image_name = osp.basename(item["image"])
 
+        width, height = image.shape
         if self.transform is not None:
             tf_item = self.transform(image=image)
             image = tf_item["image"]
 
-        _, width, height = image.shape
         return {
             "input": image,
             "pid": item["pid"],
