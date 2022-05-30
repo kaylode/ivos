@@ -36,7 +36,7 @@ class SchedulerWrapper():
                 milestones=kwargs['milestones'],
                 gamma=kwargs['gamma'], 
                 last_epoch=kwargs['last_epoch'])
-            step_per_epoch = True
+            step_per_epoch = False
 
         elif scheduler_name == 'plateau':
             scheduler = ReduceLROnPlateau(
