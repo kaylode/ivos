@@ -26,23 +26,31 @@ parser.add_argument(
     "-p", "--pred_dir", type=str, help="Volume directory contains prediction images"
 )
 parser.add_argument(
-    "-g", "--gt_dir", type=str, help="Volume directory contains raw images"
+    "-w", "--weight", type=str, help="Path to weight.txt"
 )
 parser.add_argument("-o", "--out_dir", type=str, help="Output directory")
 
 NUM_LABELS = 14
 
+"""
+FLARE22
+    ├── run1
+    │   └── <file1>.nii.gz 
+    │   ├── <file2>.nii.gz 
+    ....
+    ├── run2
+    │   └── <file1>.nii.gz
+"""
 
-def convert_2_npy(vol_path, target_size=(160, 160, 160)):
+
+def convert_2_npy(vol_path):
     image_dict = load_ct_info(vol_path)
     raw_spacing = image_dict["spacing"]
     image_direction = image_dict["direction"]
     origin = image_dict["origin"]
 
     npy_mask = image_dict["npy_image"]
-    # npy_mask, _ = ScipyResample.resample_mask_to_size(
-    #     image_dict["npy_image"], target_size, num_label=NUM_LABELS
-    # )
+
     print(
         f"Convert {vol_path} from {image_dict['npy_image'].shape} to {npy_mask.shape}"
     )
@@ -53,27 +61,54 @@ def convert_2_npy(vol_path, target_size=(160, 160, 160)):
         "origin": origin,
     }
 
+def ensemble(list_of_dicts):
+    masks = []
+    for i, fdict in enumerate(list_of_dicts):
+        mask = fdict["mask"] # (T,H,W)
+        if i == 0:
+            origin = fdict["origin"]
+            spacing = fdict["spacing"]
+            direction = fdict["direction"]
+        masks.append(mask)
 
-def postprocess(pred_dir, gt_dir, out_dir):
-    filenames = os.listdir(gt_dir)
+    masks = np.stack(masks, axis=0).transpose(1,0,2,3) # (N,T,H,W)
+
+    N, T, H, W = masks.shape
+    results = []
+    for mask in masks:
+        tmp_mask = mask.reshape(N, H*W)
+        
+
+
+    masks = np.
+
+    return {
+        'mask': masks,
+        'origin': origin,
+        'spacing': spacing,
+        'direction': direction
+    }
+
+        
+
+
+
+
+def postprocess(pred_dir, out_dir):
     os.makedirs(out_dir, exist_ok=True)
+
+    run_names = os.listdir(pred_dir)
+    filenames = os.listdir(osp.join(pred_dir, run_names[0]))
 
     print("Processing prediction files")
     for test_filename in tqdm(filenames):
-        raw_image_path = osp.join(gt_dir, test_filename)
-        test_filename = test_filename.replace('_0000.nii.gz', '.nii.gz')
-        pred_image_path = osp.join(pred_dir, test_filename)
-        assert osp.isfile(pred_image_path), f"Missing {pred_image_path}"
+        pred_list = []
+        for run_name in run_names:
+            test_filepath = osp.join(pred_dir, run_name, test_filename)
+            pred_image_dict = convert_2_npy(test_filepath)
+            pred_list.append(pred_image_dict)
+        result = ensemble(pred_list)
 
-        raw_image_dict = load_ct_info(raw_image_path)
-        pred_image_dict = convert_2_npy(
-            pred_image_path, target_size=raw_image_dict["npy_image"].shape
-        )
-        pred_image_dict["mask"] = change_axes_of_image(
-            pred_image_dict["mask"], raw_image_dict["subdirection"]
-        )
-
-        test_filename = test_filename.split(".")[0] + ".nii.gz"
         dest_image_path = osp.join(out_dir, test_filename)
 
         save_ct_from_npy(
