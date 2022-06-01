@@ -2,7 +2,7 @@ global:
   exp_name: flare22-stcn
   exist_ok: False
   debug: true
-  cfg_transform: configs/cps/transform.yaml
+  cfg_transform: configs/cps/transform_slices.yaml
   save_dir: runs
   device: cuda:0
   pretrained1: null
@@ -13,7 +13,7 @@ trainer:
   name: SemiSupervisedTrainer
   args:
     use_fp16: true
-    num_iterations: 10000
+    num_iterations: 5000
     clip_grad:  10.0
     evaluate_interval: 1
     print_interval: 20
@@ -39,18 +39,18 @@ model:
       name: BaseSegModel
       args:
         model_name: unetplusplus
-        encoder_name: efficientnet-b0
+        encoder_name: efficientnet-b2
         in_channels: 1
-        pretrained: True
+        pretrained: false
     model2:
       name: BaseSegModel
       args:
         model_name: deeplabv3plus
-        encoder_name: efficientnet-b0
+        encoder_name: efficientnet-b2
         in_channels: 1
-        pretrained: True
+        pretrained: false
 loss:
-  name: UncertaintyCPSLoss
+  name: CPSLoss
   args:
     sup_criterion:
       name: MultiLoss
@@ -84,40 +84,57 @@ scheduler:
   name: SchedulerWrapper
   args:
     scheduler_name: multistep
-    milestones: [500, 1000, 1500]
+    milestones: [1000, 3000, 4000]
     gamma: 0.1
 data:
   dataset:
     train:
-      name: FLARE22NormalDataset
+      name: FLARE22SlicesNormalDataset
       args:
-        root_dir: ../data/flare2022/labelled-processed320clip/
-        csv_path: ../data/flare2022/labelled-processed320clip/train.csv
-        sample_fp: 5 #steps between samples
-        max_frames: 27
+        root_dir: ../data/slices/flare2022-slices/
+        csv_path: ../data/slices/flare2022-slices/train.csv
     unsup_train:
-      name: VolumeFolderDataset
-      args:  
-        root_dir: ../data/flare2022/TrainUnlabelledImage-processed-part1
-        sample_fp: 5 #steps between samples
-        max_frames: 5
-    val:
-      name: FLARE22NormalValDataset
+      name: ConcatDataset
       args:
-        root_dir: ../data/flare2022/labelled-processed320clip/
-        csv_path: ../data/flare2022/labelled-processed320clip/val.csv
-        sample_fp: 2 #steps between samples
-        max_frames: -1 #maximum 
+        datasets:
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part1
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part2
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part3
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part4
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part5
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part6
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part7
+    val:
+      name: FLARE22SlicesNormalDataset
+      args:
+        root_dir: ../data/slices/flare2022-slices/
+        csv_path: ../data/slices/flare2022-slices/val.csv
   dataloader:
     train:
       name: TwoStreamDataLoader
       args:
-        batch_sizes: [1,1]
+        batch_sizes:
+        - 6
+        - 6
         drop_last: false
         shuffle: false
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 1
+        batch_size: 16
         drop_last: false
         shuffle: false

@@ -46,13 +46,14 @@ class TwoStreamDataLoader(torch.utils.data.DataLoader):
         """
         Mutual collate
         """
-        imgs = torch.cat([i['input'] for i in batch], dim=0)
-        masks = torch.cat([i['target'] for i in batch if 'target' in i], dim=0)
+
+        imgs = torch.stack([i['input'] for i in batch], dim=0)
+        masks = torch.stack([i['target'] for i in batch if 'target' in i], dim=0)
         img_names = [i['img_name'] for i in batch]
         ori_sizes = [i['ori_size'] for i in batch]
-
         
         masks = self._encode_masks(masks)
+ 
         return {
             'inputs': imgs,
             'targets': masks,

@@ -21,3 +21,4 @@ opencv-python
 setuptools==59.5.0
 imageio
 nibabel
+moviepy

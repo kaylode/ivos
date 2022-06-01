@@ -1,0 +1,30 @@
+train:
+  name: AlbCompose
+  args:
+    transforms:
+      - name: AlbToTensorV2
+val:
+  name: MonaiCompose
+  args:
+    transforms:
+      - name: MonaiLoadImaged
+        args:
+          keys: [image, label]
+      - name: MonaiUnsqueezeOnAxisd
+        args:
+          keys: [label]
+          axis: 0
+      - name: MonaiToTensord
+        args:
+          keys: [image, label]
+
+test:
+  name: MonaiCompose
+  args:
+    transforms:
+      - name: MonaiLoadImaged
+        args:
+          keys: [image]
+      - name: MonaiToTensord
+        args:
+          keys: [image]
