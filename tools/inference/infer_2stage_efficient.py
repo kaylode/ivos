@@ -3,7 +3,7 @@ from theseus.utilities.loading import load_state_dict
 from theseus.base.pipeline import BaseTestPipeline
 from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
+from theseus.semantic2D.models.stcn.inference.inference_core_efficient import InferenceCore
 from theseus.utilities.loggers import LoggerObserver
 from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
@@ -176,12 +176,10 @@ class TestPipeline(BaseTestPipeline):
                     pad_length=full_images.shape[1],
                     strategy=self.reference_strategy,
                 )
-           
+
                 # SECOND STAGE: Full images
                 rgb = full_images.float()
-                msk = self._encode_masks(ref_frames)
                 k = self.num_classes
-                msk = msk.permute(1, 0, 2, 3).unsqueeze(2)
                 info = data["infos"][0]
                 name = info["img_name"]
                 affine = info["affine"]
@@ -203,12 +201,12 @@ class TestPipeline(BaseTestPipeline):
                     out_masks = processor.get_prediction(
                         {
                             "rgb": rgb,
-                            "msk": msk[1:, ...],
+                            "msk": ref_frames,
                             "guide_indices": ref_indices,
                             "bidirectional": True,
                         }
                     )["masks"]
-                
+
                 out_masks = np.flip(out_masks, axis=-1)
                 out_masks = np.rot90(out_masks, 1, axes=(-2,-1))
 
@@ -224,7 +222,6 @@ class TestPipeline(BaseTestPipeline):
                 nib.save(ni_img, this_out_path)
 
             del rgb
-            del msk
             del processor
 
             if self.save_visualization:

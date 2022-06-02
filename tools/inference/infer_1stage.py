@@ -136,6 +136,7 @@ class TestPipeline(BaseTestPipeline):
                 total_frames += out_masks.shape[0]
 
                 out_masks = out_masks.transpose(1,2,0) # H, W, T
+                out_masks = out_masks.astype(np.uint8)
                 
                 ni_img = nib.Nifti1Image(out_masks, affine)
                 this_out_path = osp.join(savedir, str(name))

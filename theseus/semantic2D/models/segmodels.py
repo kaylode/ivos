@@ -67,7 +67,13 @@ class BaseSegModel(nn.Module):
             current device 
         """
         outputs = self.forward(adict, device)['outputs']
+        outputs = torch.softmax(outputs, dim=1) # B, C, H, W
 
+        if 'weights' in adict.keys():
+            weights = adict['weights'] # C
+            for i, weight in enumerate(weights):
+                outputs[:, i] *= weight
+                
         if self.num_classes == 1:
             thresh = adict['thresh']
             predicts = (outputs > thresh).float()

@@ -76,7 +76,6 @@ class LovaszSoftmax(nn.Module):
 
         targets = move_to(batch["targets"], device)
         targets = torch.argmax(targets, dim=1)
-
         probas = F.softmax(predict, dim=1)
         total_loss = 0
         batch_size = predict.shape[0]

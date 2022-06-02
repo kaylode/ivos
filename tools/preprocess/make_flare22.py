@@ -49,8 +49,8 @@ flare22
 """
 
 NUM_LABELS = 14
-TARGET_TRAIN_SIZE = [320, 320, 320]
-TARGET_TEST_SIZE = [320, 320, 320]
+TARGET_TRAIN_SIZE = [-1, 512, 512]
+TARGET_TEST_SIZE = [-1, 512, 512]
 TRANSFORM = Compose(
     [
         # PercentileClip(keys=['image'],min_pct=2, max_pct=98), or

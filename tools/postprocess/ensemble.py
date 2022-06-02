@@ -32,7 +32,7 @@ def efficient_ensemble(list_of_masks, num_partritions=3):
     list_of_masks = torch.from_numpy(list_of_masks)
 
     # Split along time dimension to avoid memory overload
-    masks_splits = torch.split(list_of_masks, T//num_partritions, dim=1)
+    masks_splits = torch.split(list_of_masks, num_partritions, dim=1)
 
     result = []
     for m_split in masks_splits:
@@ -42,7 +42,7 @@ def efficient_ensemble(list_of_masks, num_partritions=3):
         ensembled = ensembled.permute(1,2,0)
         result.append(ensembled)
     result = torch.cat(result, dim=-1)
-
+    result = result.permute(2,0,1)
     return result.numpy().astype(np.uint8)
 
 def gallery(array, ncols=3):
@@ -66,24 +66,23 @@ def visualize(list_of_masks, savedir, filename):
         for mask in list_of_masks:
             gt_mask = visualizer.decode_segmap(mask[i, :, :], NUM_CLASSESS)
             vis_images.append(gt_mask)
-        image_show = gallery(np.stack(vis_images, axis=0), ncols=3)
+        image_show = gallery(np.stack(vis_images, axis=0), ncols=7)
         norm_images.append(image_show)
     norm_images = np.stack(norm_images, axis=0)
     imageio.mimsave(osp.join(savedir, f'{filename}.gif'), norm_images.astype(np.uint8))
 
 if __name__ == "__main__":
-
     PRED_DIR = "runs/test_infer/"
     GT_DIR = "../data/nib_normalized/Validation"
-    OUT_DIR = "runs/ensemble/"
-
+    OUT_DIR = "runs/ensemble/new"
     os.makedirs(OUT_DIR, exist_ok=True)
-    OUT_MASK_DIR = "runs/ensemble/masks"
-    OUT_VIS_DIR = "runs/ensemble/vis"
+    OUT_MASK_DIR = "runs/ensemble/new/masks"
+    OUT_VIS_DIR = "runs/ensemble/new/vis"   
     os.makedirs(OUT_MASK_DIR, exist_ok=True)
     os.makedirs(OUT_VIS_DIR, exist_ok=True)
-
     run_names = os.listdir(PRED_DIR)
+    for run_name in run_names:
+        print(run_name)
     filenames = os.listdir(GT_DIR)
     for filename in tqdm(filenames):
         filename = filename.replace("_0000.nii.gz", ".nii.gz")
@@ -100,9 +99,10 @@ if __name__ == "__main__":
         dest_image_path = osp.join(OUT_MASK_DIR, filename)
         ensembled = efficient_ensemble(stacked_masks)
 
-        masks.append(ensembled.transpose(2,0,1))
+        masks.append(ensembled)
 
         visualize(masks, OUT_VIS_DIR, osp.splitext(filename)[0])
+        
         save_ct_from_npy(
             npy_image=ensembled,
             save_path=dest_image_path,

@@ -21,4 +21,8 @@ test:
   name: AlbCompose
   args:
     transforms:
+      - name: AlbResize
+        args:
+          width: 512
+          height: 512
       - name: AlbToTensorV2

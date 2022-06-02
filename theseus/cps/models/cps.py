@@ -73,6 +73,17 @@ class CrossPseudoSupervision(nn.Module):
         outputs2 = self.model2(adict, device)['outputs']
 
         probs = self.ensemble_learning(outputs1, outputs2, reduction=self.reduction)
+        probs = torch.softmax(probs, dim=1) # B, C, H, W
+
+        if 'weights' in adict.keys():
+            weights = adict['weights'] # C
+            for i, weight in enumerate(weights):
+                probs[:, i] *= weight
+
+        if 'thresh' in adict.keys():
+            thresh = adict['thresh']
+            probs = (probs > thresh).float()
+
         predict = torch.argmax(probs, dim=1)
 
         predict = predict.detach().cpu().squeeze().numpy()

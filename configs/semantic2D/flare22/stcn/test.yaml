@@ -25,14 +25,14 @@ ref_model:
       name: BaseSegModel
       args:
         model_name: unetplusplus
-        encoder_name: efficientnet-b0
+        encoder_name: efficientnet-b2
         in_channels: 1
         pretrained: True
     model2:
       name: BaseSegModel
       args:
         model_name: deeplabv3plus
-        encoder_name: efficientnet-b0
+        encoder_name: efficientnet-b2
         in_channels: 1
         pretrained: True
 
