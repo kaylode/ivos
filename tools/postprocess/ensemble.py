@@ -1,126 +1,113 @@
-import shutil
+import nibabel as nib
+import numpy as np
+import matplotlib.pyplot as plt
 import os
-import os.path as osp
-import numpy as np
-import argparse
-import random
-import numpy as np
 import SimpleITK as sitk
+import os.path as osp
+import imageio
 from tqdm import tqdm
-import pandas as pd
-from theseus.semantic3D.utilities.preprocess.resampler import ItkResample, ScipyResample
+from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.semantic3D.utilities.preprocess.loading import (
     save_ct_from_npy,
     load_ct_info,
-    change_axes_of_image,
 )
+import torch
 
-SEED = 0
-random.seed(SEED)
-np.random.seed(SEED)
+NUM_CLASSESS = 14
 
-parser = argparse.ArgumentParser(
-    "PostProcess volume CT, resize to original size for submission"
-)
-parser.add_argument(
-    "-p", "--pred_dir", type=str, help="Volume directory contains prediction images"
-)
-parser.add_argument(
-    "-w", "--weight", type=str, help="Path to weight.txt"
-)
-parser.add_argument("-o", "--out_dir", type=str, help="Output directory")
+def encode_masks(masks):
+    """
+    Input masks from _load_mask(), but in shape [B, H, W]
+    Output should be one-hot encoding of segmentation masks [B, NC, H, W]
+    """
 
-NUM_LABELS = 14
-
-"""
-FLARE22
-    ├── run1
-    │   └── <file1>.nii.gz 
-    │   ├── <file2>.nii.gz 
-    ....
-    ├── run2
-    │   └── <file1>.nii.gz
-"""
+    one_hot = torch.nn.functional.one_hot(
+        masks.long(), num_classes=NUM_CLASSESS
+    )  # (B,H,W,NC)
+    return one_hot.float()
 
 
-def convert_2_npy(vol_path):
-    image_dict = load_ct_info(vol_path)
-    raw_spacing = image_dict["spacing"]
-    image_direction = image_dict["direction"]
-    origin = image_dict["origin"]
+def efficient_ensemble(list_of_masks, num_partritions=3):
+    N, T, H, W = list_of_masks.shape
+    list_of_masks = torch.from_numpy(list_of_masks)
 
-    npy_mask = image_dict["npy_image"]
+    # Split along time dimension to avoid memory overload
+    masks_splits = torch.split(list_of_masks, num_partritions, dim=1)
 
-    print(
-        f"Convert {vol_path} from {image_dict['npy_image'].shape} to {npy_mask.shape}"
-    )
-    return {
-        "mask": npy_mask,
-        "spacing": raw_spacing,
-        "direction": image_direction,
-        "origin": origin,
-    }
+    result = []
+    for m_split in masks_splits:
+        one_hot_mask = encode_masks(m_split)
+        one_hot_mask = torch.sum(one_hot_mask, dim=0)
+        ensembled = torch.argmax(one_hot_mask, dim=-1)
+        ensembled = ensembled.permute(1,2,0)
+        result.append(ensembled)
+    result = torch.cat(result, dim=-1)
+    result = result.permute(2,0,1)
+    return result.numpy().astype(np.uint8)
 
-def ensemble(list_of_dicts):
-    masks = []
-    for i, fdict in enumerate(list_of_dicts):
-        mask = fdict["mask"] # (T,H,W)
-        if i == 0:
-            origin = fdict["origin"]
-            spacing = fdict["spacing"]
-            direction = fdict["direction"]
-        masks.append(mask)
+def gallery(array, ncols=3):
+    nindex, height, width, intensity = array.shape
+    nrows = nindex//ncols
+    assert nindex == nrows*ncols, f"{nindex} != {nrows} * {ncols}"
+    # want result.shape = (height*nrows, width*ncols, intensity)
+    result = (array.reshape(nrows, ncols, height, width, intensity)
+              .swapaxes(1,2)
+              .reshape(height*nrows, width*ncols, intensity))
+    return result
 
-    masks = np.stack(masks, axis=0).transpose(1,0,2,3) # (N,T,H,W)
+visualizer = Visualizer()
+def visualize(list_of_masks, savedir, filename):    
+    N = len(list_of_masks)
+    T, H, W = list_of_masks[0].shape
 
-    N, T, H, W = masks.shape
-    results = []
-    for mask in masks:
-        tmp_mask = mask.reshape(N, H*W)
-        
-
-
-    masks = np.
-
-    return {
-        'mask': masks,
-        'origin': origin,
-        'spacing': spacing,
-        'direction': direction
-    }
-
-        
-
-
-
-
-def postprocess(pred_dir, out_dir):
-    os.makedirs(out_dir, exist_ok=True)
-
-    run_names = os.listdir(pred_dir)
-    filenames = os.listdir(osp.join(pred_dir, run_names[0]))
-
-    print("Processing prediction files")
-    for test_filename in tqdm(filenames):
-        pred_list = []
-        for run_name in run_names:
-            test_filepath = osp.join(pred_dir, run_name, test_filename)
-            pred_image_dict = convert_2_npy(test_filepath)
-            pred_list.append(pred_image_dict)
-        result = ensemble(pred_list)
-
-        dest_image_path = osp.join(out_dir, test_filename)
-
-        save_ct_from_npy(
-            npy_image=pred_image_dict["mask"],
-            save_path=dest_image_path,
-            origin=raw_image_dict["origin"],
-            spacing=raw_image_dict["spacing"],
-            direction=raw_image_dict["direction"],
-            sitk_type=sitk.sitkUInt8,
-        )
-
+    norm_images = []
+    for i in range(T):
+        vis_images = []
+        for mask in list_of_masks:
+            gt_mask = visualizer.decode_segmap(mask[i, :, :], NUM_CLASSESS)
+            vis_images.append(gt_mask)
+        image_show = gallery(np.stack(vis_images, axis=0), ncols=7)
+        norm_images.append(image_show)
+    norm_images = np.stack(norm_images, axis=0)
+    imageio.mimsave(osp.join(savedir, f'{filename}.gif'), norm_images.astype(np.uint8))
 
 if __name__ == "__main__":
-    args = parser.parse_args()
-    postprocess(args.pred_dir, args.gt_dir, args.out_dir)
+    PRED_DIR = "runs/test_infer/"
+    GT_DIR = "../data/nib_normalized/Validation"
+    OUT_DIR = "runs/ensemble/new"
+    os.makedirs(OUT_DIR, exist_ok=True)
+    OUT_MASK_DIR = "runs/ensemble/new/masks"
+    OUT_VIS_DIR = "runs/ensemble/new/vis"   
+    os.makedirs(OUT_MASK_DIR, exist_ok=True)
+    os.makedirs(OUT_VIS_DIR, exist_ok=True)
+    run_names = os.listdir(PRED_DIR)
+    for run_name in run_names:
+        print(run_name)
+    filenames = os.listdir(GT_DIR)
+    for filename in tqdm(filenames):
+        filename = filename.replace("_0000.nii.gz", ".nii.gz")
+        masks = []
+        for i, run_name in enumerate(run_names):
+            nib_path = osp.join(PRED_DIR, run_name, 'test/masks', filename)
+            image_dict = load_ct_info(nib_path)
+            masks.append(image_dict['npy_image'])
+            if i == 0:
+                origin = image_dict["origin"]
+                spacing = image_dict["spacing"]
+                direction = image_dict["direction"]
+        stacked_masks = np.stack(masks, axis=0)
+        dest_image_path = osp.join(OUT_MASK_DIR, filename)
+        ensembled = efficient_ensemble(stacked_masks)
+
+        masks.append(ensembled)
+
+        visualize(masks, OUT_VIS_DIR, osp.splitext(filename)[0])
+        
+        save_ct_from_npy(
+            npy_image=ensembled,
+            save_path=dest_image_path,
+            origin=image_dict["origin"],
+            spacing=image_dict["spacing"],
+            direction=image_dict["direction"],
+            sitk_type=sitk.sitkUInt8,
+        )
