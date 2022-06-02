@@ -53,8 +53,7 @@ def make_frames(image_path, mask_path=None):
         norm_image = normalize_min_max(image[:, :, i])
         norm_image = np.stack([norm_image, norm_image, norm_image], axis=2)
         if mask_path is not None:
-            norm_mask = VISUALIZER.decode_segmap(mask[:, :, i], NUM_CLASSES)
-            
+            norm_mask = VISUALIZER.decode_segmap(mask[i, :, :], NUM_CLASSES)
             norm_image = np.concatenate([norm_image, norm_mask[:,:,::-1]], axis=1)
         
         images.append(norm_image)

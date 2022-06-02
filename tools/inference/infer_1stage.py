@@ -64,8 +64,7 @@ class TestPipeline(BaseTestPipeline):
         self.weights = self.opt['global']['weights']
         if self.weights:
             state_dict = torch.load(self.weights)
-            self.model.model1.model = load_state_dict(self.model.model1.model, state_dict, 'model1')
-            self.model.model2.model = load_state_dict(self.model.model2.model, state_dict, 'model2')
+            self.model.model = load_state_dict(self.model.model, state_dict, 'model')
 
     def save_gif(self, images, masks, save_dir, outname):
         # images: (T, C, H, W)
@@ -123,6 +122,8 @@ class TestPipeline(BaseTestPipeline):
                               'inputs': torch.stack(custom_batch, dim=0)
                             }, self.device)['masks']
                             custom_batch = []
+                        if len(batch_preds.shape) == 2:
+                            batch_preds = np.expand_dims(batch_preds, axis=0)
                         out_masks.append(batch_preds)
                     else:
                         custom_batch.append(inp)
@@ -139,7 +140,7 @@ class TestPipeline(BaseTestPipeline):
                 out_masks = out_masks.astype(np.uint8)
                 
                 ni_img = nib.Nifti1Image(out_masks, affine)
-                this_out_path = osp.join(savedir, str(name))
+                this_out_path = osp.join(savedir, str(name).replace('_0000.nii.gz', '.nii.gz'))
                 nib.save(ni_img, this_out_path)
 
             if self.save_visualization:
