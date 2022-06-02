@@ -50,7 +50,7 @@ model:
         in_channels: 1
         pretrained: True
 loss:
-  name: UncertaintyCPSLoss
+  name: CPSLoss
   args:
     sup_criterion:
       name: MultiLoss
