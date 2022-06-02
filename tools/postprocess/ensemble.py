@@ -42,7 +42,7 @@ def efficient_ensemble(list_of_masks, num_partritions=3):
         ensembled = ensembled.permute(1,2,0)
         result.append(ensembled)
     result = torch.cat(result, dim=-1)
-
+    result = result.permute(2,0,1)
     return result.numpy().astype(np.uint8)
 
 def gallery(array, ncols=3):
@@ -99,15 +99,10 @@ if __name__ == "__main__":
         dest_image_path = osp.join(OUT_MASK_DIR, filename)
         ensembled = efficient_ensemble(stacked_masks)
 
-        masks.append(ensembled.transpose(2,0,1))
+        masks.append(ensembled)
 
         visualize(masks, OUT_VIS_DIR, osp.splitext(filename)[0])
         
-        # nib_label = nib.load(nib_path)
-        # affine = nib_label.affine
-        # ni_img = nib.Nifti1Image(ensembled, affine)
-        # nib.save(ni_img, dest_image_path)
-
         save_ct_from_npy(
             npy_image=ensembled,
             save_path=dest_image_path,
@@ -116,4 +111,3 @@ if __name__ == "__main__":
             direction=image_dict["direction"],
             sitk_type=sitk.sitkUInt8,
         )
-        break
