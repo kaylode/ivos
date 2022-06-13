@@ -1,11 +1,7 @@
 import torch
 import numpy as np
 from typing import Dict
-<<<<<<< Updated upstream
-from theseus.semantic2D.models.stcn.inference.inference_memory_bank_efficient import MemoryBank
-=======
 from theseus.semantic2D.models.stcn.inference.inference_memory_bank_efficient import MemoryBankWithFlush
->>>>>>> Stashed changes
 from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
 from theseus.semantic2D.models.stcn.utilities.aggregate import aggregate
 from theseus.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by
@@ -27,6 +23,7 @@ class InferenceCore:
         images,
         num_objects,
         top_k=20,
+        max_k=50,
         mem_every=5,
         include_last=False,
         device="cuda",
@@ -59,17 +56,10 @@ class InferenceCore:
         self.kw = self.nw // 16
         self.top_k = top_k
 
-<<<<<<< Updated upstream
-        self.flush_memory(top_k)
-
-    def flush_memory(self, top_k):
-        self.mem_bank = MemoryBank(k=self.k - 1, top_k=top_k)
-=======
-        self.mem_bank = MemoryBankWithFlush(k=self.k - 1, top_k=top_k, max_k=50)
+        self.mem_bank = MemoryBankWithFlush(k=self.k - 1, top_k=top_k, max_k=max_k)
 
     def flush_memory(self, top_k):
         self.mem_bank.flush()
->>>>>>> Stashed changes
 
     def encode_key(self, idx):
         result = self.prop_net.encode_key(self.images[:, idx].to(self.device))

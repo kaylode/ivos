@@ -14,13 +14,8 @@ def softmax_w_top(x, top):
     return x
 
 
-<<<<<<< Updated upstream
-class MemoryBank:
-    def __init__(self, k, top_k=20):
-=======
 class MemoryBankWithFlush:
     def __init__(self, k, top_k=20, max_k=None):
->>>>>>> Stashed changes
         self.top_k = top_k
 
         self.CK = None
@@ -29,12 +24,9 @@ class MemoryBankWithFlush:
         self.mem_k = None
         self.mem_v = None
 
-<<<<<<< Updated upstream
-=======
         self.cur_k = 0
         self.max_k = max_k
 
->>>>>>> Stashed changes
         self.num_objects = k
 
     def _global_matching(self, mk, qk):
@@ -80,12 +72,9 @@ class MemoryBankWithFlush:
         key = key.flatten(start_dim=2)
         value = value.flatten(start_dim=2)
 
-<<<<<<< Updated upstream
-=======
         if self.cur_k >= self.max_k:
             self.flush()
 
->>>>>>> Stashed changes
         if self.mem_k is None:
             # First frame, just shove it in
             self.mem_k = key.cpu()
@@ -98,17 +87,11 @@ class MemoryBankWithFlush:
                 self.temp_v = value.cpu()
             else:
                 self.mem_k = torch.cat([self.mem_k, key.cpu()], 2)
-<<<<<<< Updated upstream
                 self.mem_v = torch.cat([self.mem_v, value.cpu()], 2)
-=======
-                self.mem_v = torch.cat([self.mem_v, value.cpu()], 2)
-
-                print("mem_k", self.mem_k.shape)
-                print("mem_v", self.mem_v.shape)
 
         self.cur_k += 1
 
     def flush(self):
         self.mem_k = None
         self.mem_v = None
->>>>>>> Stashed changes
+        self.cur_k = 0
