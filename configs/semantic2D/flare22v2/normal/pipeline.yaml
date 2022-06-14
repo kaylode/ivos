@@ -1,0 +1,96 @@
+global:
+  exp_name: flare22-normal
+  exist_ok: False
+  debug: true
+  cfg_transform: configs/semantic2D/flare22/transform.yaml
+  save_dir: runs
+  device: cuda:0
+  pretrained: null
+  resume: null
+  stage: reference
+trainer:
+  name: SupervisedTrainer
+  args:
+    use_fp16: true
+    num_iterations: 10000
+    clip_grad:  10.0
+    evaluate_interval: 1
+    print_interval: 20
+    save_interval: 1000
+callbacks:
+  - name: LoggerCallbacks
+    args: null 
+  - name: CheckpointCallbacks
+    args:
+      best_key: dice-avg
+  - name: NormalVisualizerCallbacks
+    args: null
+  - name: WandbCallbacks
+    args: 
+      username: kaylode
+      project_name: flare22
+model:
+  name: BaseSegModel
+  args:
+    model_name: unetplusplus
+    encoder_name : efficientnet-b0
+    in_channels: 1
+    pretrained: False
+loss:
+  name: MultiLoss
+  args:
+    weights: null
+    losses:
+      - name: CELoss
+        args: {}
+      - name: DiceLoss
+        args: {}
+metrics:
+- name: mIOU
+  args:
+- name: DiceScore
+  args:
+    calc_each_class: True
+optimizer:
+  name: AdamW
+  args:
+    lr: 0.0001
+    weight_decay: 0.0000001
+    betas:
+    - 0.937
+    - 0.999
+scheduler:
+  name: SchedulerWrapper
+  args:
+    scheduler_name: multistep
+    milestones: [500, 1000, 1500]
+    gamma: 0.1
+data:
+  dataset:
+    train:
+      name: FLARE22NormalDataset
+      args:
+        root_dir: /content/data/flare2022-processed/labelled/labelled-processed320clip/
+        csv_path: /content/data/flare2022-processed/labelled/labelled-processed320clip/train.csv
+        sample_fp: 5 #steps between samples
+        max_frames: 40  
+    val:
+      name: FLARE22NormalValDataset
+      args:
+        root_dir: /content/data/flare2022-processed/labelled/labelled-processed320clip/
+        csv_path: /content/data/flare2022-processed/labelled/labelled-processed320clip/val.csv
+        sample_fp: 2 #steps between samples
+        max_frames: -1 #maximum 
+  dataloader:
+    train:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 1
+        drop_last: false
+        shuffle: false
+    val:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 1
+        drop_last: false
+        shuffle: false

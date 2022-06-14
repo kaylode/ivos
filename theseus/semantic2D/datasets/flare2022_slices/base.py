@@ -8,6 +8,25 @@ from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
 
+import cv2
+import random 
+
+def random_augment(img, mask):
+    kernel = np.ones((5,5),np.uint8)
+    if random.random() <= 0.3:
+        img = cv2.erode(img,kernel,iterations = 1)
+    elif random.random() <= 0.3:
+        img = cv2.dilate(img,kernel,iterations = 1)
+
+    if random.random() <= 0.3:
+        img = cv2.flip(img, 0)
+        mask = cv2.flip(mask, 0)
+
+    if random.random() <= 0.3:
+        img = cv2.flip(img, 1)
+        mask = cv2.flip(mask, 1)
+
+    return img, mask
 
 def all_to_onehot(masks, labels):
     if len(masks.shape) == 3:

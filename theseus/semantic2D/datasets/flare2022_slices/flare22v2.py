@@ -3,16 +3,95 @@ import os
 import os.path as osp
 import torch
 import numpy as np
+import pandas as pd
 from theseus.semantic2D.datasets.flare2022_slices import (
-    FLARE22SlicesBaseCSVDataset,
     FLARE22SlicesBaseDataset,
 )
+import cv2
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
+class FLARE22SlicesBaseCSVDatasetV2(FLARE22SlicesBaseDataset):
+    """
+    Load in csv
+    """
+
+    def __init__(self, root_dir: str, csv_path: str, transform=None, **kwargs):
+
+        super().__init__(root_dir, transform)
+        self.csv_path = csv_path
+
+    def _load_data(self):
+        df = pd.read_csv(self.csv_path)
+        self.fns = []
+        self.volume_range = {}
+        self.ids_to_indices = {}
+        for _, row in df.iterrows():
+            image_name1, image_name2, image_name3, mask_name = row
+            id = osp.splitext(image_name1)[0]  # FLARE22_Tr_0001_0000_0009
+            sid = int(id.split("_")[-1])
+            pid = "_".join(id.split("_")[:-1])
+            self.fns.append(
+                {
+                    "pid": pid, 
+                    "image1": image_name1, 
+                    "image2": image_name2, 
+                    "image3": image_name3, 
+                    "label": mask_name, 
+                    "sid": sid}
+            )
+            if pid not in self.volume_range.keys():
+                self.volume_range[pid] = []
+            self.volume_range[pid].append(sid)
+            self.ids_to_indices[id] = len(self.fns) - 1
+
+    def load_image_and_mask(self, idx):
+        patient_item = self.fns[idx]
+        img_path1 = osp.join(self.root_dir, patient_item["image1"])
+        img_path2 = osp.join(self.root_dir, patient_item["image2"])
+        img_path3 = osp.join(self.root_dir, patient_item["image3"])
+        label_path = osp.join(self.root_dir, patient_item["label"])
+        img1 = cv2.imread(img_path1, 0)
+        img2 = cv2.imread(img_path2, 0)
+        img3 = cv2.imread(img_path3, 0)
+
+        img = np.stack([img1, img2, img3], axis=-1)
+        img = img / 255.0
+        img = img.astype(np.float32)
+
+        width, height = img1.shape
+        mask = self._load_mask(label_path)
+
+        if self.transform is not None:
+            item = self.transform(image=img, mask=mask)
+            img, mask = item["image"], item["mask"]
+        
+        return {
+            "image": img,
+            "mask": mask,
+            "pid": patient_item["pid"],
+            "ori_size": [width, height],
+            "img_name": osp.basename(img_path1),
+        }
+
+    def _load_mask(self, label_path):
+        mask = np.load(label_path)  # (H,W) with each pixel value represent one class
+        return mask
+
+    def _encode_masks(self, masks):
+        """
+        Input masks from _load_mask(), but in shape [B, H, W]
+        Output should be one-hot encoding of segmentation masks [B, NC, H, W]
+        """
+
+        one_hot = torch.nn.functional.one_hot(
+            masks.long(), num_classes=self.num_classes
+        )  # (B,H,W,NC)
+        one_hot = one_hot.permute(0, 3, 1, 2)  # (B,NC,H,W)
+        return one_hot.float()
 
 
-class FLARE22SlicesDataset(FLARE22SlicesBaseCSVDataset):
+class FLARE22SlicesDatasetV2(FLARE22SlicesBaseCSVDatasetV2):
     """
     Generate pseudo VOS data by applying random transforms on static images.
 
@@ -170,7 +249,7 @@ class FLARE22SlicesDataset(FLARE22SlicesBaseCSVDataset):
 
 
 # SIMPLE SEGMENTATION DATASET
-class FLARE22SlicesNormalDataset(FLARE22SlicesBaseCSVDataset):
+class FLARE22SlicesNormalDatasetV2(FLARE22SlicesBaseCSVDatasetV2):
     r"""CSVDataset multi-labels segmentation dataset
 
     Reads in .csv file with structure below:
@@ -224,7 +303,7 @@ class FLARE22SlicesNormalDataset(FLARE22SlicesBaseCSVDataset):
 
 
 # SIMPLE SEGMENTATION DATASET
-class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
+class FLARE22SlicesFolderDatasetV2(FLARE22SlicesBaseDataset):
     r"""CSVDataset multi-labels segmentation dataset
 
     image_dir: `str`
@@ -243,16 +322,7 @@ class FLARE22SlicesFolderDataset(FLARE22SlicesBaseDataset):
         self._load_data()
 
     def _load_data(self):
-        volnames = os.listdir(self.root_dir)
-        self.fns = []
-        for volname in volnames:
-            volpath = osp.join(self.root_dir, volname)
-            filenames = os.listdir(volpath)
-            for image_name in filenames:
-                id = osp.splitext(image_name)[0]  # FLARE22_Tr_0001_0000_0009
-                sid = int(id.split("_")[-1])
-                pid = "_".join(id.split("_")[:-1])
-                self.fns.append({"pid": pid, "image": osp.join(volname, image_name), "sid": sid})
+        raise NotImplementedError
 
     def __getitem__(self, idx):
         item = self.fns[idx]

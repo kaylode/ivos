@@ -46,8 +46,15 @@ from .flare2022_slices import (
     FLARE22SlicesDataset,
     FLARE22SlicesNormalDataset,
     FLARE22SlicesFolderDataset,
+    FLARE22SlicesDatasetV2,
+    FLARE22SlicesNormalDatasetV2, 
+    FLARE22SlicesFolderDatasetV2
 )
 
 DATASET_REGISTRY.register(FLARE22SlicesDataset)
 DATASET_REGISTRY.register(FLARE22SlicesFolderDataset)
 DATASET_REGISTRY.register(FLARE22SlicesNormalDataset)
+
+DATASET_REGISTRY.register(FLARE22SlicesDatasetV2)
+DATASET_REGISTRY.register(FLARE22SlicesFolderDatasetV2)
+DATASET_REGISTRY.register(FLARE22SlicesNormalDatasetV2)
