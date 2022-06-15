@@ -1,0 +1,145 @@
+global:
+  exp_name: flare22-stcn
+  exist_ok: False
+  debug: true
+  cfg_transform: configs/cps/transform_slices.yaml
+  save_dir: runs
+  device: cuda:0
+  pretrained1: null
+  pretrained2: null
+  resume: null
+  stage: reference
+trainer:
+  name: SemiSupervisedTrainer
+  args:
+    use_fp16: true
+    num_iterations: 20000
+    clip_grad:  10.0
+    evaluate_interval: 1
+    print_interval: 20
+    save_interval: 1000
+callbacks:
+  - name: CPSCallbacks
+    args: null
+  - name: LoggerCallbacks
+    args: null 
+  - name: TwoStreamCheckpointCallbacks
+    args:
+      best_key: dice-avg
+  - name: TwoStreamVisualizerCallbacks
+    args: null
+  - name: WandbCallbacks
+    args: 
+      username: kaylode
+      project_name: flare22
+model:
+  name: CrossPseudoSupervision
+  args:
+    model1:
+      name: BaseSegModel
+      args:
+        model_name: unetplusplus
+        encoder_name: efficientnet-b4
+        in_channels: 1
+        pretrained: true
+    model2:
+      name: BaseSegModel
+      args:
+        model_name: unetplusplus
+        encoder_name: se_resnet50
+        in_channels: 1
+        pretrained: true
+loss:
+  name: CPSLoss
+  args:
+    sup_criterion:
+      name: MultiLoss
+      args:
+        weights: null
+        losses:
+          - name: ABL
+            args: 
+              ce_loss: 
+                name: CELoss
+                args: {}
+              max_N_ratio: 0.01
+              max_clip_dist: 20.0
+          - name: LovaszSoftmax
+            args: {}
+    unsup_criterion:
+      name: LovaszSoftmax
+      args: {}
+    consistency: 0.1
+    consistency_rampup: 200.0
+metrics:
+- name: mIOU
+  args:
+- name: DiceScore
+  args:
+    calc_each_class: True
+optimizer:
+  name: AdamW
+  args:
+    lr: 0.0001
+    weight_decay: 0.0000001
+    betas:
+    - 0.937
+    - 0.999
+scheduler:
+  name: SchedulerWrapper
+  args:
+    scheduler_name: multistep
+    milestones: [10000, 15000, 20000]
+    gamma: 0.1
+data:
+  dataset:
+    train:
+      name: FLARE22SlicesNormalDataset
+      args:
+        root_dir: ../data/slices/flare2022-slices/
+        csv_path: ../data/slices/flare2022-slices/train.csv
+    unsup_train:
+      name: ConcatDataset
+      args:
+        datasets:
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part1
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part2
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part3
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part4
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part5
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part6
+        - name: FLARE22SlicesFolderDataset
+          args:
+            root_dir: ../data/slices/unlabelled/unlabelled_part7
+    val:
+      name: FLARE22SlicesNormalDataset
+      args:
+        root_dir: ../data/slices/flare2022-slices/
+        csv_path: ../data/slices/flare2022-slices/val.csv
+  dataloader:
+    train:
+      name: TwoStreamDataLoader
+      args:
+        batch_sizes:
+        - 4
+        - 4
+        drop_last: false
+        shuffle: false
+    val:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 8
+        drop_last: false
+        shuffle: false

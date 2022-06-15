@@ -1,0 +1,43 @@
+global:
+  exp_name: flare22-stcn
+  exist_ok: False
+  debug: true
+  cfg_transform: configs/cps/transform.yaml
+  save_dir: runs
+  device: cuda:0
+  weights: null
+  stage: reference
+  save_csv: True
+  save_binary: True
+  save_visualization: True
+  use_uncertainty: False
+model:
+  name: CrossPseudoSupervision
+  args:
+    model1:
+      name: BaseSegModel
+      args:
+        model_name: unetplusplus
+        encoder_name: efficientnet-b2
+        in_channels: 1
+        pretrained: false
+    model2:
+      name: BaseSegModel
+      args:
+        model_name: deeplabv3plus
+        encoder_name: efficientnet-b2
+        in_channels: 1
+        pretrained: false
+data: 
+  dataset:
+    name: VolumeFolderDataset
+    args:  
+      root_dir: ../data/nib_normalized/ValImage
+      sample_fp: 1 #steps between samples
+      max_frames: -1
+  dataloader:
+    name: DataLoaderWithCollator
+    args:
+      batch_size: 1
+      drop_last: False
+      shuffle: False

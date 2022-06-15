@@ -52,7 +52,7 @@ model:
     value_backbone: resnet18-mod
     pretrained_backbone: true
     top_k_eval: 20
-    max_k: 100
+    max_k: 200
     mem_every_eval: 5
     include_last_val: true
     pretrained: true
@@ -93,16 +93,16 @@ scheduler:
 data:
   dataset:
     train:
-      name: FLARE22SlicesDataset
+      name: FLARE22SlicesDatasetV2
       args:
-        root_dir: ../data/slices/flare2022-slices/
-        csv_path: ../data/slices/flare2022-slices/train.csv
+        root_dir: ../data/slices_raw
+        csv_path: ../data/slices_raw/train.csv
         max_jump: 3
     val:
       name: FLARE22NumpyValDataset
       args:
         root_dir: ../data/npy_normalized/
-        csv_path: ../data/npy_normalized/val.csv
+        csv_path: ../data/npy_normalized/val_npy.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
