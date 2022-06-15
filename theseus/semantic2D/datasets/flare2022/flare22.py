@@ -338,7 +338,14 @@ class FLARE22NumpyValDataset(FLARE22BaseCSVDataset):
         item_dict = self._load_item(
             patient_item
         )  # torch.Size([C, H, W, T]), torch.Size([1, H, W, T])
-        images = item_dict["image"].unsqueeze(1)
+        images = item_dict["image"]
+        
+        if len(images.shape) == 3:
+            images = images.unsqueeze(1)
+        else:
+            images = images / 255.0
+            images = images.float()
+
         ori_vol = item_dict["label"]
 
         # Choose a reference frame
@@ -369,6 +376,7 @@ class FLARE22NumpyValDataset(FLARE22BaseCSVDataset):
             masks = torch.from_numpy(all_to_onehot(masks, labels)).float()
 
         masks = masks.unsqueeze(2)
+        
         data = {
             "inputs": images,  # (num_slices, C, H, W)
             "gt": masks,  # (C, num_slices, 1, H, W)

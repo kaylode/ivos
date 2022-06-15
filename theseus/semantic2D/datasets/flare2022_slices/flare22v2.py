@@ -8,6 +8,7 @@ from theseus.semantic2D.datasets.flare2022_slices import (
     FLARE22SlicesBaseDataset,
 )
 import cv2
+import random
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
@@ -112,17 +113,41 @@ class FLARE22SlicesDatasetV2(FLARE22SlicesBaseCSVDatasetV2):
     """
 
     def __init__(
-        self, root_dir: str, csv_path: str, max_jump: int = 25, transform=None, **kwargs
+        self, root_dir: str, csv_path: str, max_jump: int = 25, use_aug:bool=True, transform=None, **kwargs
     ):
 
         super().__init__(root_dir, csv_path, transform)
         self.max_jump = max_jump
+        self.use_aug = use_aug
         self._load_data()
 
-    def wrap_item(self, images, masks):
+    def random_augment(self, images, masks):
+        if random.random() < 0.3:
+            images = [torch.flip(i, (1,)) for i in images]
+            masks = [torch.flip(i, (0,)) for i in masks]
+        
+        if random.random() < 0.3:
+            images = [torch.flip(i, (2,)) for i in images]
+            masks = [torch.flip(i, (1,)) for i in masks]
 
-        h, w = images[0].shape
-        images = torch.stack(images, 0).unsqueeze(1)
+        # Only degrade the first mask
+        if random.random() < 0.3:
+            first_mask = masks[0].clone().numpy()
+            kernel = np.ones((5,5), np.uint8)
+            first_mask = cv2.erode(first_mask, kernel, iterations=1)
+            masks[0] = torch.from_numpy(first_mask)
+
+        elif random.random() < 0.3:
+            first_mask = masks[0].clone().numpy()
+            kernel = np.ones((5,5), np.uint8)
+            first_mask = cv2.dilate(first_mask, kernel, iterations=1)
+            masks[0] = torch.from_numpy(first_mask)
+
+        return images, masks
+
+    def wrap_item(self, images, masks):
+        c, h, w = images[0].shape
+        images = torch.stack(images, 0)
         labels = np.unique(masks[0])
         masks = np.stack(masks, 0)
 
@@ -211,6 +236,10 @@ class FLARE22SlicesDatasetV2(FLARE22SlicesBaseCSVDatasetV2):
         item = self.fns[idx]
         pid = item["pid"]
         images, masks, frames_idx = self.sampling_near_frames(item)
+
+        if self.use_aug:
+            images, masks = self.random_augment(images,masks)
+
         images, tar_masks, sec_masks, cls_gt, selector = self.wrap_item(images, masks)
 
         data = {
@@ -315,30 +344,66 @@ class FLARE22SlicesFolderDatasetV2(FLARE22SlicesBaseDataset):
         
     """
 
-    def __init__(self, root_dir: str, transform: Optional[List] = None, **kwargs):
+    def __init__(self, root_dir: str, csv_path: str, transform=None, **kwargs):
         super().__init__(root_dir, transform)
-        self.root_dir = root_dir
-        self.transform = transform
-        self._load_data()
+        self.csv_path = csv_path
 
     def _load_data(self):
-        raise NotImplementedError
+        df = pd.read_csv(self.csv_path)
+        self.fns = []
+        self.volume_range = {}
+        self.ids_to_indices = {}
+        for _, row in df.iterrows():
+            image_name1, image_name2, image_name3 = row
+            id = osp.splitext(image_name1)[0]  # FLARE22_Tr_0001_0000_0009
+            sid = int(id.split("_")[-1])
+            pid = "_".join(id.split("_")[:-1])
+            self.fns.append(
+                {
+                    "pid": pid, 
+                    "image1": image_name1, 
+                    "image2": image_name2, 
+                    "image3": image_name3, 
+                    "sid": sid}
+            )
+            if pid not in self.volume_range.keys():
+                self.volume_range[pid] = []
+            self.volume_range[pid].append(sid)
+            self.ids_to_indices[id] = len(self.fns) - 1
+
+    def load_image_and_mask(self, idx):
+        patient_item = self.fns[idx]
+        img_path1 = osp.join(self.root_dir, patient_item["image1"])
+        img_path2 = osp.join(self.root_dir, patient_item["image2"])
+        img_path3 = osp.join(self.root_dir, patient_item["image3"])
+        img1 = cv2.imread(img_path1, 0)
+        img2 = cv2.imread(img_path2, 0)
+        img3 = cv2.imread(img_path3, 0)
+
+        img = np.stack([img1, img2, img3], axis=-1)
+        img = img / 255.0
+        img = img.astype(np.float32)
+
+        width, height = img1.shape
+
+        if self.transform is not None:
+            item = self.transform(image=img)
+            img = item["image"]
+        
+        return {
+            "image": img,
+            "pid": patient_item["pid"],
+            "ori_size": [width, height],
+            "img_name": osp.basename(img_path1),
+        }
 
     def __getitem__(self, idx):
-        item = self.fns[idx]
-        image = np.load(osp.join(self.root_dir, item["image"]))
-        image_name = osp.basename(item["image"])
-
-        width, height = image.shape
-        if self.transform is not None:
-            tf_item = self.transform(image=image)
-            image = tf_item["image"]
-
+        item = self.load_image_and_mask(idx)
         return {
-            "input": image,
+            "input": item['image'],
             "pid": item["pid"],
-            "ori_size": [width, height],
-            'img_name': image_name
+            "ori_size": item["ori_size"],
+            "img_name": item['img_name'],
         }
 
     def collate_fn(self, batch):
