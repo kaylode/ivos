@@ -12,7 +12,7 @@ from theseus.semantic2D.utilities.referencer import Referencer
 REFERENCER = Referencer()
 
 
-class InferenceCore:
+class InferenceCoreV2:
     """
     Inference module, which performs iterative propagation
     """
@@ -65,7 +65,16 @@ class InferenceCore:
         result = self.prop_net.encode_key(self.images[:, idx].to(self.device))
         return result
 
-    def do_pass(self, key_k, key_v, idx, end_idx):
+    def filter_mask(self, mask, current_class_id):
+        tmp_out_mask = mask.clone()
+        tmp_out_mask[1:current_class_id,...] = 0
+
+        if current_class_id+1 < tmp_out_mask.shape[0]:
+            tmp_out_mask[current_class_id+1:,...] = 0
+        
+        return tmp_out_mask
+
+    def do_pass(self, key_k, key_v, idx, end_idx, current_class_id):
         self.mem_bank.add_memory(key_k, key_v)
 
         # Note that we never reach closest_ti, just the frame before it
@@ -84,13 +93,15 @@ class InferenceCore:
                 self.mem_bank, qf8, qf4, k16, qv16
             )
             out_mask = aggregate(out_mask, keep_bg=True)
-            self.prob[:, ti] += move_to(out_mask, torch.device("cpu"))
+
+            tmp_out_mask = self.filter_mask(out_mask, current_class_id)
+            self.prob[:, ti] += move_to(tmp_out_mask, torch.device("cpu"))
 
             if ti != end:
                 is_mem_frame = (ti % self.mem_every) == 0
                 if self.include_last or is_mem_frame:
                     prev_value = self.prop_net.encode_value(
-                        self.images[:, ti].to(self.device), qf16, self.prob[1:, ti].to(self.device)
+                        self.images[:, ti].to(self.device), qf16, out_mask[1:]
                     )
                     prev_key = k16.unsqueeze(2)
                     self.mem_bank.add_memory(
@@ -99,10 +110,13 @@ class InferenceCore:
 
         return closest_ti
 
-    def interact(self, mask, frame_idx, end_idx):
+    def interact(self, mask, frame_idx, end_idx, current_class_id):
         mask, _ = pad_divide_by(mask.cuda(), 16)
+        mask = aggregate(mask, keep_bg=True)
+        tmp_mask = self.filter_mask(mask, current_class_id)
+
         self.prob[:, frame_idx] += move_to(
-            aggregate(mask, keep_bg=True), torch.device("cpu")
+            tmp_mask, torch.device("cpu")
         )
 
         # KV pair for the interacting frame
@@ -110,12 +124,12 @@ class InferenceCore:
         key_v = self.prop_net.encode_value(
             self.images[:, frame_idx].to(self.device),
             qf16,
-            self.prob[1:, frame_idx].to(self.device),
+            mask[1:].to(self.device),
         )
         key_k = key_k.unsqueeze(2)
 
         # Propagate
-        self.do_pass(key_k, key_v, frame_idx, end_idx)
+        self.do_pass(key_k, key_v, frame_idx, end_idx, current_class_id=current_class_id)
 
     def _encode_masks(self, masks):
         """
@@ -134,6 +148,25 @@ class InferenceCore:
         msk = msk[1:].unsqueeze(1)
         return msk
 
+    def aggregate_masks(self, prob, strategy='argmax'):
+        # Do unpad -> upsample to original size
+        out_masks = torch.zeros((self.t, 1, self.h, self.w), dtype=torch.float32)
+
+        if strategy == 'argmax':
+            for ti in range(self.t):
+                prob = self.prob[:, ti].detach()
+
+                if self.pad[2] + self.pad[3] > 0:
+                    prob = prob[:, :, self.pad[2] : -self.pad[3], :]
+                if self.pad[0] + self.pad[1] > 0:
+                    prob = prob[:, :, :, self.pad[0] : -self.pad[1]]
+
+                out_masks[ti] = torch.argmax(prob, dim=0)
+
+
+        out_masks = (out_masks.numpy()[:, 0]).astype(np.uint8)  # (T, H, W)
+        return out_masks
+
     def get_prediction(self, adict: Dict):
 
         msk = adict["msk"]  # NC, B, 1 , H, W
@@ -141,41 +174,21 @@ class InferenceCore:
         guide_indices = adict["guide_indices"]
 
         # iter through all reference images and register into memory
-        prop_range = REFERENCER.find_propagation_range(
-            guide_indices, length=msk.shape[0]
-        )
+        prop_range = {
+            k: REFERENCER.find_propagation_range(
+                [v], 
+                length=msk.shape[0]
+            ) for k, v in guide_indices.items()
+        }
+        
         print(prop_range)
-        for prange in prop_range:
-            start_idx, end_idx = prange
-            tmp_msk = self.efficient_encode(msk[start_idx])  # NC, B, 1 , H, W -> NC, 1 , H, W 
-            self.interact(tmp_msk, start_idx, end_idx)
-            self.flush_memory(self.top_k)
-
-        # reverse backprop
-        if adict.get("bidirectional", None):
-            self.flush_memory(self.top_k)  # clear memory
-            rev_prop_range = REFERENCER.find_propagation_range(
-                list(reversed(guide_indices)), length=msk.shape[0]
-            )
-            # iter through all reference images and register into memory
-            for prange in rev_prop_range:
+        for current_class_id, pranges in prop_range.items():
+            for prange in pranges:
                 start_idx, end_idx = prange
-                tmp_msk = self.efficient_encode(msk[start_idx])
-                self.interact(tmp_msk, start_idx, end_idx)
+                tmp_msk = self.efficient_encode(msk[start_idx])  # NC, B, 1 , H, W -> NC, 1 , H, W 
+                self.interact(tmp_msk, start_idx, end_idx, current_class_id)
                 self.flush_memory(self.top_k)
 
-        # Do unpad -> upsample to original size
-        out_masks = torch.zeros((self.t, 1, *rgb.shape[-2:]), dtype=torch.float32)
-        for ti in range(self.t):
-            prob = self.prob[:, ti].detach()
-
-            if self.pad[2] + self.pad[3] > 0:
-                prob = prob[:, :, self.pad[2] : -self.pad[3], :]
-            if self.pad[0] + self.pad[1] > 0:
-                prob = prob[:, :, :, self.pad[0] : -self.pad[1]]
-
-            out_masks[ti] = torch.argmax(prob, dim=0)
-
-        out_masks = (out_masks.numpy()[:, 0]).astype(np.uint8)  # (T, H, W)
+        out_masks = self.aggregate_masks(self.prob, strategy='argmax')
 
         return {"masks": out_masks}

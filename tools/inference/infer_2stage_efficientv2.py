@@ -3,8 +3,8 @@ from theseus.utilities.loading import load_state_dict
 from theseus.base.pipeline import BaseTestPipeline
 from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic2D.models.stcn.inference.inference_core_efficient import (
-    InferenceCore,
+from theseus.semantic2D.models.stcn.inference.inference_core_efficientv2 import (
+    InferenceCoreV2,
 )
 from theseus.utilities.loggers import LoggerObserver
 from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
@@ -107,7 +107,7 @@ class TestPipeline(BaseTestPipeline):
         pad_length: int, return reference masks in targeted length with padding
         """
 
-        masks, indices = REFERENCER.search_reference_and_pack(
+        masks, indices = REFERENCER.search_reference_and_packv2(
             vol_mask, global_indices, pad_length, strategy=strategy
         )
 
@@ -186,7 +186,7 @@ class TestPipeline(BaseTestPipeline):
                 torch.cuda.synchronize()
                 process_begin = time.time()
 
-                processor = InferenceCore(
+                processor = InferenceCoreV2(
                     self.prop_model,
                     rgb,
                     k,

@@ -9,7 +9,8 @@ from SurfaceDice import (
     compute_dice_coefficient,
 )
 from tabulate import tabulate
-
+import pandas as pd
+from datetime import datetime
 import argparse
 
 parser = argparse.ArgumentParser("Official evaluation code from FLARE")
@@ -17,6 +18,9 @@ parser.add_argument("-g", "--gt_dir", type=str, help="Ground Truth directory")
 parser.add_argument("-p", "--pred_dir", type=str, help="Prediction directory")
 
 NUM_CLASSES = 13
+
+LOG = "runs/val_infer/vallog.csv"
+df = pd.read_csv(LOG)
 
 
 def eval(args):
@@ -69,9 +73,15 @@ def eval(args):
         seg_metrics["DSC_mean"][-1] /= NUM_CLASSES
         seg_metrics["NSD-1mm_mean"][-1] /= NUM_CLASSES
 
+    df_dict = {}
+
     seg_metrics["Name"].insert(0, "All")
     seg_metrics["DSC_mean"].insert(0, np.mean(seg_metrics["DSC_mean"]))
     seg_metrics["NSD-1mm_mean"].insert(0, np.mean(seg_metrics["NSD-1mm_mean"]))
+
+    df_dict['DSC_mean'] = seg_metrics["DSC_mean"][0]
+    df_dict['NSD-1mm_mean'] = seg_metrics["NSD-1mm_mean"][0]
+
     for i in range(1, NUM_CLASSES + 1):
         seg_metrics["DSC_{}".format(i)].insert(
             0, np.mean(seg_metrics["DSC_{}".format(i)])
@@ -79,6 +89,12 @@ def eval(args):
         seg_metrics["NSD-1mm_{}".format(i)].insert(
             0, np.mean(seg_metrics["NSD-1mm_{}".format(i)])
         )
+        df_dict["DSC_{}".format(i)] = seg_metrics["DSC_{}".format(i)][0]
+        df_dict["NSD-1mm_{}".format(i)] = seg_metrics["NSD-1mm_{}".format(i)][0]
+
+    date=datetime.now()
+    df2 = pd.DataFrame([[date] + list(df_dict.values())], columns=["Date"] + list(df_dict.keys()))
+    pd.concat([df, df2]).to_csv(LOG, index=False)
 
     # Print table
     table = tabulate(seg_metrics, headers="keys", tablefmt="fancy_grid")

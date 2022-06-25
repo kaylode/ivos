@@ -5,10 +5,9 @@ global:
   cfg_transform: ../main/configs/semantic2D/flare22v2/stcn/transform.yaml
   save_dir: runs
   device: cuda:0
-  ref_weights: null
   prop_weights: null
   save_visualization: True
-  ref_strategy: largest-areav2 # strategy for choosing reference images
+  ref_strategy: largest-area # strategy for choosing reference images
   prop_strategy: all # strategy for propagating images
 
 prop_model:
@@ -20,29 +19,12 @@ prop_model:
   include_last: True # whether to use last frame to retrieve current
   bidirectional: True
 
-ref_model:
-  name: CrossPseudoSupervision
-  args:
-    model1:
-      name: BaseSegModel
-      args:
-        model_name: unetplusplus
-        encoder_name: efficientnet-b3
-        in_channels: 3
-        pretrained: True
-    model2:
-      name: BaseSegModel
-      args:
-        model_name: deeplabv3plus
-        encoder_name: efficientnet-b2
-        in_channels: 3
-        pretrained: True
-
 data: 
   dataset:
-    name: FLARE22V2TestDataset
+    name: FLARE22V2CoarseMaskTestDataset
     args:
       root_dir: ../data/flare2022-processed/TestImage
+      mask_dir: null
       max_ref_frames: 64
       sample_fp: 5
   dataloader:

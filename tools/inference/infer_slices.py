@@ -73,6 +73,10 @@ class TestPipeline(BaseTestPipeline):
                 self.model.model2.model, state_dict, "model2"
             )
 
+            # self.model.model = load_state_dict(
+            #     self.model.model, state_dict, "model"
+            # )
+
     def load_class_weights(self):
         with open(self.class_weights, 'r') as f:
             class_weights = f.read().splitlines()
@@ -99,6 +103,23 @@ class TestPipeline(BaseTestPipeline):
 
         for idx, batch in enumerate(self.dataloader):
             inputs = batch['inputs']
+            
+            # row_size= inputs.shape[-2]
+            # col_size = inputs.shape[-1]
+            # middle = inputs[:, :, int(col_size/5):int(col_size/5*4),int(row_size/5):int(row_size/5*4)] 
+
+            # mean = middle.mean(axis=(-1,-2))
+            # max, _ = torch.max(middle.reshape(middle.shape[0], middle.shape[1], middle.shape[2]*middle.shape[3]),  dim=-1)
+            # min, _ = torch.min(middle.reshape(middle.shape[0], middle.shape[1], middle.shape[2]*middle.shape[3]),  dim=-1)
+            
+            # # To improve threshold finding, I'm moving the 
+            # # underflow and overflow on the pixel spectrum
+            # print((inputs==max).shape)
+            # asd
+            # inputs[inputs==max]=mean
+            # inputs[inputs==min]=mean
+            # asd
+
             img_names = batch['img_names']
             ori_sizes = batch['ori_sizes']
 
@@ -110,7 +131,6 @@ class TestPipeline(BaseTestPipeline):
             end_time = time.time()
             total_process_time += end_time - start_time
             preds = outputs['masks']
-
             for (inpt, pred, filename, ori_size) in zip(inputs, preds, img_names, ori_sizes):
                 resized_pred = cv2.resize(pred, tuple(ori_size))
 

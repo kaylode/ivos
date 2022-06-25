@@ -11,7 +11,6 @@ from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
 from theseus.cps.models import MODEL_REGISTRY
 from theseus.opt import Config
-import nibabel as nib
 import imageio
 import torch
 from tqdm import tqdm
@@ -29,7 +28,6 @@ mpl.use("Agg")
 from theseus.semantic2D.utilities.referencer import Referencer
 
 REFERENCER = Referencer()
-
 
 class TestPipeline(BaseTestPipeline):
     def __init__(self, opt: Config):
@@ -67,18 +65,10 @@ class TestPipeline(BaseTestPipeline):
         )
 
         self.classnames = self.dataset.classnames
-        self.ref_model = get_instance_recursively(
-            self.opt["ref_model"],
-            registry=self.model_registry,
-            num_classes=len(self.classnames),
-            classnames=self.classnames,
-        )
-
         self.num_classes = len(self.classnames)
 
     def init_loading(self):
         self.prop_weights = self.opt["global"]["prop_weights"]
-        self.ref_weights = self.opt["global"]["ref_weights"]
 
         # Performs input mapping such that stage 0 model can be loaded
         prop_saved = torch.load(self.prop_weights)["model"]
@@ -88,18 +78,6 @@ class TestPipeline(BaseTestPipeline):
                     pads = torch.zeros((64, 1, 7, 7), device=prop_saved[k].device)
                     prop_saved[k] = torch.cat([prop_saved[k], pads], 1)
         self.prop_model.load_state_dict(prop_saved)
-
-        # Load reference model
-        ref_state_dict = torch.load(self.ref_weights)
-
-        self.ref_model.model1.model = load_state_dict(
-            self.ref_model.model1.model, ref_state_dict, "model1"
-        )
-        self.ref_model.model2.model = load_state_dict(
-            self.ref_model.model2.model, ref_state_dict, "model2"
-        )
-        self.ref_model = self.ref_model.to(self.device)
-        self.ref_model.eval()
 
     def search_reference(self, vol_mask, global_indices, pad_length, strategy="all"):
         """
@@ -126,7 +104,7 @@ class TestPipeline(BaseTestPipeline):
         one_hot = one_hot.permute(0, 3, 1, 2)  # (B,NC,H,W)
         return one_hot.float()
 
-    def save_gif(self, images, masks, save_dir, outname):
+    def save_gif(self, images, refine_masks, coarse_masks, save_dir, outname):
         # images: (T, C, H, W)
         # masks: (H, W, T)
 
@@ -134,9 +112,10 @@ class TestPipeline(BaseTestPipeline):
         for i in range(images.shape[0]):
             norm_image = (images[i] - images[i].min()) / images[i].max()
             norm_image = (norm_image * 255).squeeze()
-            norm_mask = self.visualizer.decode_segmap(masks[:, :, i], self.num_classes)
+            norm_refine_mask = self.visualizer.decode_segmap(refine_masks[:, :, i], self.num_classes)
+            norm_coarse_mask = self.visualizer.decode_segmap(coarse_masks[:, :, i], self.num_classes)
             norm_image = norm_image.transpose(1,2,0)
-            image_show = np.concatenate([norm_image, norm_mask], axis=-2)
+            image_show = np.concatenate([norm_image, norm_coarse_mask, norm_refine_mask], axis=-2)
             norm_images.append(image_show)
 
         norm_images = np.stack(norm_images, axis=0)
@@ -162,13 +141,9 @@ class TestPipeline(BaseTestPipeline):
             with torch.cuda.amp.autocast(enabled=False):
                 # FIRST STAGE: Get reference frames
 
-                inputs = data["ref_images"]
                 full_images = data['full_images'][0]
-
-                with torch.no_grad():
-                    candidates = self.ref_model.get_prediction(
-                        {"inputs": inputs}, self.device
-                    )["masks"]
+                full_masks = data['full_masks'][0]
+                candidates = data['ref_masks'].numpy()
 
                 ref_frames, ref_indices = self.search_reference(
                     candidates,
@@ -224,7 +199,7 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split(".")[0]
                 visdir = osp.join(self.savedir, "visualization")
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(data["full_images"][0].numpy(), out_masks, visdir, gif_name)
+                self.save_gif(data["full_images"][0].numpy(), out_masks, full_masks.numpy(), visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
         self.logger.text(

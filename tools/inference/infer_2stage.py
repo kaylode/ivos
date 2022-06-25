@@ -148,7 +148,7 @@ class TestPipeline(BaseTestPipeline):
         self.init_pipeline()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
 
-        savedir = osp.join(self.savedir, "nib")
+        savedir = osp.join(self.savedir, "masks")
         os.makedirs(savedir, exist_ok=True)
         torch.autograd.set_grad_enabled(False)
 
@@ -220,7 +220,7 @@ class TestPipeline(BaseTestPipeline):
                 out_masks = out_masks.astype(np.uint8)
 
                 ni_img = nib.Nifti1Image(out_masks, affine)
-                this_out_path = osp.join(savedir, str(name))
+                this_out_path = osp.join(savedir, str(name).replace('_0000.nii.gz', '.nii.gz'))
                 nib.save(ni_img, this_out_path)
 
             del rgb

@@ -80,7 +80,8 @@ class TestPipeline(BaseTestPipeline):
             norm_image = (images[i] - images[i].min()) / images[i].max()
             norm_image = (norm_image * 255).squeeze()
             norm_mask = self.visualizer.decode_segmap(masks[:, :, i], self.num_classes)
-            norm_image = np.stack([norm_image, norm_image, norm_image], axis=2)
+            # norm_image = np.stack([norm_image, norm_image, norm_image], axis=2)
+            norm_image = norm_image.transpose(1,2,0)
             image_show = np.concatenate([norm_image, norm_mask], axis=-2)
             norm_images.append(image_show)
 
@@ -115,16 +116,10 @@ class TestPipeline(BaseTestPipeline):
 
                 custom_batch = []
                 out_masks = []
-                inputs = data["inputs"]
-                inputs = torch.rot90(inputs, 3, dims=(-2,-1))
-                inputs = torch.flip(inputs, dims=(-1,))
-
-                # import matplotlib.pyplot as plt
-                # plt.imshow(inputs[40].squeeze())
-                # plt.savefig('test')
+                inputs = data["ref_images"]
 
                 for i, inp in enumerate(inputs):
-                    if len(custom_batch) == 0 or i == inputs.shape[0] - 1:
+                    if len(custom_batch) == 31 or i == inputs.shape[0] - 1:
                         custom_batch.append(inp)
                         with torch.no_grad():
                             batch_preds = self.model.get_prediction(
@@ -140,16 +135,7 @@ class TestPipeline(BaseTestPipeline):
                         custom_batch.append(inp)
                 out_masks = np.concatenate(out_masks, axis=0)
 
-                out_masks = np.flip(out_masks, axis=-1)
-                out_masks = np.rot90(out_masks, 1, axes=(-2,-1))
-
-                # import matplotlib.pyplot as plt
-                # plt.imshow(out_masks[40].squeeze())
-                # plt.savefig('pred')
-                # asd
-
-                affine = data["affines"][0]
-                name = data["img_names"][0]
+                name = data["infos"][0]["img_name"]
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
@@ -158,9 +144,8 @@ class TestPipeline(BaseTestPipeline):
                 out_masks = out_masks.transpose(1, 2, 0)  # H, W, T
                 out_masks = out_masks.astype(np.uint8)
 
-                ni_img = nib.Nifti1Image(out_masks, affine)
-                this_out_path = osp.join(savedir, str(name).replace("_0000.nii.gz", ".nii.gz"))
-                nib.save(ni_img, this_out_path)
+                this_out_path = osp.join(savedir, str(name).replace("_0000.nii.gz", ".npy"))
+                np.save(this_out_path, out_masks)
 
                 df_dict["image"].append(name)
                 df_dict["label"].append(osp.join("masks", name))
@@ -169,7 +154,7 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split(".")[0]
                 visdir = osp.join(self.savedir, "visualization")
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(data["inputs"].numpy(), out_masks, visdir, gif_name)
+                self.save_gif(data["ref_images"].numpy(), out_masks, visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
         if self.save_csv:

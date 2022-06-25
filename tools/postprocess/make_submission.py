@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(
     "PostProcess volume CT, resize to original size for submission"
 )
 parser.add_argument(
-    "-p", "--pred_dir", type=str, help="Volume directory contains prediction images"
+    "-p", "--pred_dir", type=str, help="Volume directory contains prediction numpy images"
 )
 parser.add_argument(
     "-g", "--gt_dir", type=str, help="Volume directory contains raw images"
@@ -61,20 +61,24 @@ def postprocess(pred_dir, gt_dir, out_dir):
     print("Processing prediction files")
     for test_filename in tqdm(filenames):
         raw_image_path = osp.join(gt_dir, test_filename)
-        test_filename = test_filename.replace('_0000.nii.gz', '.nii.gz')
-        pred_image_path = osp.join(pred_dir, test_filename)
+        pred_test_filename = test_filename.replace('.nii.gz', '.npy')
+        pred_image_path = osp.join(pred_dir, pred_test_filename)
+
         assert osp.isfile(pred_image_path), f"Missing {pred_image_path}"
 
         raw_image_dict = load_ct_info(raw_image_path)
-        pred_image_dict = convert_2_npy(
-            pred_image_path, target_size=raw_image_dict["npy_image"].shape
-        )
+        pred_image_dict = {
+            'mask': np.load(pred_image_path).transpose(2,0,1)
+        }
+        # convert_2_npy(
+        #     pred_image_path, target_size=raw_image_dict["npy_image"].shape
+        # )
         pred_image_dict["mask"] = change_axes_of_image(
             pred_image_dict["mask"], raw_image_dict["subdirection"]
         )
 
-        test_filename = test_filename.split(".")[0] + ".nii.gz"
-        dest_image_path = osp.join(out_dir, test_filename)
+        out_test_filename = test_filename.replace('_0000.nii.gz', '.nii.gz')
+        dest_image_path = osp.join(out_dir, out_test_filename)
 
         save_ct_from_npy(
             npy_image=pred_image_dict["mask"],
