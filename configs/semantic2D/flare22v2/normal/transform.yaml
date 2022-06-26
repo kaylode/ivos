@@ -6,6 +6,12 @@ train:
         args:
           width: 512
           height: 512
+      - name: AlbHorizontalFlip
+        args:
+      - name: AlbVerticalFlip
+        args:
+      - name: AlbGaussianBlur
+        args:
       - name: AlbToTensorV2
 val:
   name: AlbCompose
