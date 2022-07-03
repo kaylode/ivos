@@ -4,7 +4,7 @@ from typing import Dict
 from theseus.semantic2D.models.stcn.inference.inference_memory_bank_efficient import MemoryBankWithFlush
 from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
 from theseus.semantic2D.models.stcn.utilities.aggregate import aggregate
-from theseus.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by
+from theseus.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by, unpad
 from theseus.utilities.cuda import move_to
 
 from theseus.semantic2D.utilities.referencer import Referencer
@@ -164,8 +164,16 @@ class InferenceCore:
                 self.interact(tmp_msk, start_idx, end_idx)
                 self.flush_memory(self.top_k)
 
+        out_masks = self.smart_aggregate(strategy = 'min-area') 
+        return {"masks": out_masks}
+
+    def smart_aggregate(self, strategy='argmax'):
+
+        assert strategy in ['argmax', 'min-area'], "False strategy"
+
         # Do unpad -> upsample to original size
-        out_masks = torch.zeros((self.t, 1, *rgb.shape[-2:]), dtype=torch.float32)
+        out_masks = torch.zeros((self.t, 1, self.h, self.w), dtype=torch.float32)
+        unpad_prob = []
         for ti in range(self.t):
             prob = self.prob[:, ti].detach()
 
@@ -173,9 +181,42 @@ class InferenceCore:
                 prob = prob[:, :, self.pad[2] : -self.pad[3], :]
             if self.pad[0] + self.pad[1] > 0:
                 prob = prob[:, :, :, self.pad[0] : -self.pad[1]]
+            unpad_prob.append(prob)
 
-            out_masks[ti] = torch.argmax(prob, dim=0)
+        if strategy == 'min-area':
+
+            THRESHOLD = 0.7
+            unpad_prob = torch.stack(unpad_prob, dim=1) # CLS x depth x 1 x width x height
+            unpad_prob[unpad_prob >= THRESHOLD] = 1.0
+
+            # Temporary mapping
+            unpad_prob[unpad_prob < THRESHOLD] = -1.0
+
+            areas = {}
+            for i in range(unpad_prob.shape[0]):
+                area = (unpad_prob[i] == 1.0).sum()
+                areas[i] = area.item()
+            
+            sorted_areas = {k: v for k, v in sorted(areas.items(), key=lambda item: item[1])}
+            priority_lst = list(sorted_areas.keys())
+            priority_mapping = {
+                v:k+1 for k, v in enumerate(priority_lst)
+            }
+
+            for class_id in range(unpad_prob.shape[0]):
+                unpad_prob[class_id] *= priority_mapping[class_id]
+
+            # background assignment
+            unpad_prob[unpad_prob < 0] = priority_mapping[0]
+
+            for ti in range(unpad_prob.shape[1]):
+                prob = unpad_prob[:,ti,...]
+                out_masks[ti] = torch.argmin(prob, dim=0)
+
+        if strategy == 'argmax':
+            for prob in unpad_prob:
+                out_masks[ti] = torch.argmax(prob, dim=0)
 
         out_masks = (out_masks.numpy()[:, 0]).astype(np.uint8)  # (T, H, W)
 
-        return {"masks": out_masks}
+        return out_masks

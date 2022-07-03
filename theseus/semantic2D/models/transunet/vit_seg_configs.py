@@ -1,4 +1,5 @@
 import ml_collections
+from theseus.utilities.download import download_from_drive
 
 def get_b16_config():
     """Returns the ViT-B/16 configuration."""
@@ -135,3 +136,17 @@ CONFIGS = {
     'R50-ViT-L_16': get_r50_l16_config(),
     'testing': get_testing(),
 }
+
+
+PRETRAINED_MODELS = {
+    'R50-ViT-B_16': '1xkpmIMWADxAHC0MIMIiQT2UJXkArWvTk',
+    'ViT-B_16': '1H5RXHj-h0SwDY6KyTfkygUp3sTbR89f_',
+    'ViT-B_32': '17moWZqGamCtnE7Vqtr8Zahamq2eSoxd6',
+    'ViT-L_16': '1-t7A71Row65ZmrnojsqWqf1eCw38oNVy',
+    'ViT-L_32': '1slAvKgoUKUHkPdGm1hx8iBcA5augFb5V',
+}
+
+
+def load_pretrained_model(name:str = 'R50-ViT-B_16'):
+    assert name in PRETRAINED_MODELS, f"Cannot find pretrained for {name}. Available models are: {PRETRAINED_MODELS.keys()}"
+    return download_from_drive(PRETRAINED_MODELS[name], output=None, cache=True) 

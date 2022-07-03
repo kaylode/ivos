@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from scipy import ndimage
-from theseus.semantic2D.models.transunet.vit_seg_configs import CONFIGS
+from theseus.semantic2D.models.transunet.vit_seg_configs import CONFIGS, load_pretrained_model
 from theseus.semantic2D.models.transunet.vit_seg_modeling import (
     Transformer, DecoderCup, SegmentationHead, np2th
 )
@@ -41,6 +41,11 @@ class TransUnet(nn.Module):
             kernel_size=3,
         )
         self.config = config
+
+        if pretrained:
+            ckpt_path = load_pretrained_model(model_name)
+            state_dict = np.load(ckpt_path)
+            self.load_from(weights=state_dict)
 
     def forward(self, batch: Dict, device: torch.device):
         x = move_to(batch['inputs'], device)
