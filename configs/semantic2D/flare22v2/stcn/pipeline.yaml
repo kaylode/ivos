@@ -2,7 +2,7 @@ global:
   exp_name: stcn_r50-flare22slices
   exist_ok: true
   debug: true
-  cfg_transform: configs/semantic2D/flare22/stcn/transform_slices.yaml
+  cfg_transform: configs/semantic2D/flare22v2/stcn/transform.yaml
   save_dir: /content/main/runs
   device: cuda:0
   pretrained: null
@@ -12,7 +12,7 @@ trainer:
   name: SupervisedTrainer
   args:
     use_fp16: true
-    num_iterations: 30000
+    num_iterations: 60000
     clip_grad: 10.0
     evaluate_interval: 1
     print_interval: 100
@@ -23,11 +23,11 @@ callbacks:
 - name: STCNCallbacks
   args:
     skip_values:
-    - 2
     - 3
     - 4
+    - 5
+    - 7
     - 3
-    - 2
     increase_skip_fraction:
     - 0.1
     - 0.2
@@ -48,8 +48,8 @@ model:
   name: STCNModel
   args:
     single_object: false
-    key_backbone: resnet50-mod
-    value_backbone: resnet18-mod
+    key_backbone: swin
+    value_backbone: swin
     pretrained_backbone: true
     top_k_eval: 20
     max_k: 200
@@ -86,29 +86,40 @@ scheduler:
   args:
     scheduler_name: multistep
     milestones:
-    - 15000
-    - 20000
-    - 25000
-    gamma: 0.1
+    - 45000
+    - 55000
+    gamma: 0.5
 data:
   dataset:
     train:
-      name: FLARE22V2STCNTrainDataset
+      name: ConcatDataset
       args:
-        root_dir: ../data/slices_raw
-        csv_path: ../data/slices_raw/train.csv
-        max_jump: 3
-        use_aug: false
+        datasets:
+          - name: FLARE22V2STCNTrainDataset
+            args:
+              root_dir: ../data/slices/processed/train/
+              csv_path: ../data/slices/processed/train/train.csv
+              use_aug: True
+          - name: FLARE22V2STCNTrainDataset
+            args:
+              root_dir: ../data/slices/processed/unlabeled/
+              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled.csv
+              use_aug: True
+          - name: FLARE22V2STCNTrainDataset
+            args:
+              root_dir: ../data/slices/processed/unlabeled/
+              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled2.csv
+              use_aug: True
     val:
       name: FLARE22V2STCNValDataset
       args:
-        root_dir: ../data/npy_normalized/
-        csv_path: ../data/npy_normalized/val_npy.csv
+        root_dir: ../data/npy_normalized/train/
+        csv_path: ../data/npy_normalized/train/val.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 8
+        batch_size: 2
         drop_last: true
         shuffle: true
     val:

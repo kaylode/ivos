@@ -28,10 +28,10 @@ callbacks:
       best_key: dice-avg
   - name: TwoStreamVisualizerCallbacks
     args: null
-  # - name: WandbCallbacks
-  #   args: 
-  #     username: kaylode
-  #     project_name: flare22
+  - name: WandbCallbacks
+    args: 
+      username: kaylode
+      project_name: flare22
 model:
   name: CrossPseudoSupervision
   args:
@@ -41,14 +41,14 @@ model:
         model_name: R50-ViT-B_16
         img_size: 512 
         in_channels: 3
-        pretrained: false
+        pretrained: True
     model2:
-      name: BaseSegModel
+      name: TransUnetPE
       args:
-        model_name: deeplabv3plus
-        encoder_name: efficientnet-b3
+        model_name: R50-ViT-B_32
+        img_size: 512 
         in_channels: 3
-        pretrained: false
+        pretrained: False
 loss:
   name: CPSLoss
   args:
@@ -92,10 +92,10 @@ data:
       name: ConcatDataset
       args:
         datasets:
-          - name: FLARE22V2LabelledCSVPosDataset
+          - name: FLARE22V2LabelledCSVDataset
             args:
-              root_dir: ../data/slices/processed/train/
-              csv_path: ../data/slices/processed/train/train.csv
+              root_dir: ../data/slices/processed/
+              csv_path: ../data/slices/processed/train.csv
           - name: FLARE22V2LabelledCSVPosDataset
             args:
               root_dir: ../data/slices/processed/unlabeled/
@@ -105,22 +105,22 @@ data:
               root_dir: ../data/slices/processed/unlabeled/
               csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled2.csv
     unsup_train:
-      name: FLARE22V2UnlabelledCSVPosDataset
+      name: FLARE22V2UnlabelledCSVDataset
       args:
-        root_dir: ../data/slices/processed/validation
-        csv_path: ../data/slices/processed/validation/validation.csv
+        root_dir: ..//home/nhtlong/flare2022/data/slices/processed/validation
+        csv_path: ..//home/nhtlong/flare2022/data/slices/processed/validation/validation.csv
     val:
-      name: FLARE22V2LabelledCSVPosDataset
+      name: FLARE22V2LabelledCSVDataset
       args:
-        root_dir: ../data/slices/processed/train/
-        csv_path: ../data/slices/processed/train/val.csv
+        root_dir: ../data/slices/processed/
+        csv_path: ../data/slices/processed/val.csv
   dataloader:
     train:
       name: TwoStreamDataLoader
       args:
         batch_sizes:
-        - 2
-        - 2
+        - 6
+        - 12
         drop_last: false
         shuffle: false
     val:

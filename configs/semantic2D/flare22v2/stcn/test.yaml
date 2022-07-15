@@ -8,7 +8,7 @@ global:
   ref_weights: null
   prop_weights: null
   save_visualization: True
-  ref_strategy: largest-areav2 # strategy for choosing reference images
+  ref_strategy: largest-area # strategy for choosing reference images
   prop_strategy: all # strategy for propagating images
 
 prop_model:
@@ -19,24 +19,25 @@ prop_model:
   mem_every: 5 # save frames every k step
   include_last: True # whether to use last frame to retrieve current
   bidirectional: True
+  strategy: argmax # min-area
 
 ref_model:
   name: CrossPseudoSupervision
   args:
     model1:
-      name: BaseSegModel
+      name: TransUnetPE
       args:
-        model_name: unetplusplus
-        encoder_name: efficientnet-b3
+        model_name: R50-ViT-B_16
+        img_size: 512 
         in_channels: 3
-        pretrained: True
+        pretrained: False
     model2:
       name: BaseSegModel
       args:
         model_name: deeplabv3plus
-        encoder_name: efficientnet-b2
+        encoder_name: efficientnet-b3
         in_channels: 3
-        pretrained: True
+        pretrained: False
 
 data: 
   dataset:
