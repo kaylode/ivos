@@ -54,11 +54,13 @@ class Referencer:
         num_slices = mask.shape[0]
 
         available_classes = np.unique(mask)
+        available_classes = available_classes[available_classes > 0]
         class_dict = {
             int(k): [] for k in available_classes
         }
         for frame_idx in range(num_slices):
             current_classes = np.unique(mask[frame_idx, :, :])
+            current_classes = current_classes[current_classes>0]
             for cl in current_classes:
                 class_dict[int(cl)].append({
                     'index': frame_idx,
@@ -178,39 +180,6 @@ class Referencer:
         masks = []
         for local_idx, global_idx in enumerate(range(pad_length)):
             if global_idx in candidates_global_indices:
-                masks.append(vol_mask[global_to_local[global_idx]])
-            else:
-                masks.append(np.zeros_like(vol_mask[0]))
-        
-        # To tensor
-        masks = np.stack(masks, 0)
-        masks = torch.from_numpy(masks)
-
-        return masks, candidates_global_indices
-
-
-    def search_reference_and_packv2(self, vol_mask: np.ndarray, global_indices: List[int], pad_length: int, strategy: str="all"):
-        """
-        vol_mask: argmaxed segmentation mask. (T//sr, H, W)
-        Return
-            pad_length: int, return reference masks in targeted length with padding
-            propagation range
-        """
-        
-        # Generate reference frame, contains most suitable annotation masks 
-        candidates_local_indices = self.search_reference(vol_mask, strategy=strategy)
-        
-        # Convert local to global indexes
-        candidates_global_indices = {k: global_indices[v] for k,v in candidates_local_indices.items()}
-        
-        global_to_local = {
-          candidates_global_indices[k]:candidates_local_indices[k] for k in candidates_global_indices.keys()
-        }
-
-        # Padding
-        masks = []
-        for local_idx, global_idx in enumerate(range(pad_length)):
-            if global_idx in candidates_global_indices.values():
                 masks.append(vol_mask[global_to_local[global_idx]])
             else:
                 masks.append(np.zeros_like(vol_mask[0]))

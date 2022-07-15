@@ -112,16 +112,22 @@ if __name__ == "__main__":
     filenames = os.listdir(osp.join(args.pred_dir, run_name, 'test/masks'))
     for filename in tqdm(filenames):
         masks = []
-        for i, run_name in enumerate(run_names):
-            npy_path = osp.join(args.pred_dir, run_name, 'test/masks', filename)
-            npy_image = np.load(npy_path)
-            masks.append(npy_image)
 
         if args.pgt_dir is not None:
             npy_path = osp.join(args.pgt_dir, filename)
+            if not osp.isfile(npy_path):
+                continue
             target_mask = np.load(npy_path)
         else:
             target_mask = None
+
+        for i, run_name in enumerate(run_names):
+            npy_path = osp.join(args.pred_dir, run_name, 'test/masks', filename)
+            if not osp.isfile(npy_path):
+                continue
+            npy_image = np.load(npy_path)
+            masks.append(npy_image)
+
 
 
         # Perform ensembling

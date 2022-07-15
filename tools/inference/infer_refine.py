@@ -77,7 +77,8 @@ class TestPipeline(BaseTestPipeline):
                 if prop_saved[k].shape[1] == 2:
                     pads = torch.zeros((64, 1, 7, 7), device=prop_saved[k].device)
                     prop_saved[k] = torch.cat([prop_saved[k], pads], 1)
-        self.prop_model.load_state_dict(prop_saved)
+        self.prop_model = load_state_dict(self.prop_model, prop_saved)
+        # self.prop_model.load_state_dict(prop_saved)
 
     def search_reference(self, vol_mask, global_indices, pad_length, strategy="all"):
         """

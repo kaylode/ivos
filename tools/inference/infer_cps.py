@@ -7,6 +7,7 @@ from theseus.opt import Opts
 
 import os
 import os.path as osp
+import cv2
 import time
 import numpy as np
 from tqdm import tqdm
@@ -64,8 +65,8 @@ class TestPipeline(BaseTestPipeline):
         self.weights = self.opt["global"]["weights"]
         if self.weights:
             state_dict = torch.load(self.weights)
-            self.model.model1.model = load_state_dict(
-                self.model.model1.model, state_dict, "model1"
+            self.model.model1 = load_state_dict(
+                self.model.model1, state_dict, "model1"
             )
             self.model.model2.model = load_state_dict(
                 self.model.model2.model, state_dict, "model2"
@@ -117,13 +118,17 @@ class TestPipeline(BaseTestPipeline):
                 custom_batch = []
                 out_masks = []
                 inputs = data["ref_images"]
+                sids = data['sids'][0]
 
-                for i, inp in enumerate(inputs):
+                for i, (inp, sid) in enumerate(zip(inputs, sids)):
                     if len(custom_batch) == 31 or i == inputs.shape[0] - 1:
-                        custom_batch.append(inp)
+                        custom_batch.append((inp, sid))
                         with torch.no_grad():
                             batch_preds = self.model.get_prediction(
-                                {"inputs": torch.stack(custom_batch, dim=0)},
+                                {
+                                    "inputs": torch.stack([i[0] for i in custom_batch], dim=0),
+                                    "sids": [i[1] for i in custom_batch]
+                                },
                                 self.device,
                             )["masks"]
                             custom_batch = []
@@ -132,20 +137,27 @@ class TestPipeline(BaseTestPipeline):
                                 batch_preds = np.expand_dims(batch_preds, axis=0)
                         out_masks.append(batch_preds)
                     else:
-                        custom_batch.append(inp)
+                        custom_batch.append((inp, sid))
                 out_masks = np.concatenate(out_masks, axis=0)
 
                 name = data["infos"][0]["img_name"]
+                ori_h, ori_w = data['infos'][0]['ori_size']
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
-                out_masks = out_masks.transpose(1, 2, 0)  # H, W, T
-                out_masks = out_masks.astype(np.uint8)
+                resized_masks = []
+                for mask in out_masks:
+                    resized = cv2.resize(mask, tuple([ori_h, ori_w]), 0, 0, interpolation = cv2.INTER_NEAREST)
+                    resized_masks.append(resized)
+                resized_masks = np.stack(resized_masks, axis=0)
+
+                resized_masks = resized_masks.transpose(1, 2, 0)  # H, W, T
+                resized_masks = resized_masks.astype(np.uint8)
 
                 this_out_path = osp.join(savedir, str(name).replace("_0000.nii.gz", ".npy"))
-                np.save(this_out_path, out_masks)
+                np.save(this_out_path, resized_masks)
 
                 df_dict["image"].append(name)
                 df_dict["label"].append(osp.join("masks", name))
@@ -154,7 +166,7 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split(".")[0]
                 visdir = osp.join(self.savedir, "visualization")
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(data["ref_images"].numpy(), out_masks, visdir, gif_name)
+                self.save_gif(data["ref_images"].numpy(), out_masks.transpose(1, 2, 0).astype(np.uint8), visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
         if self.save_csv:
