@@ -80,19 +80,25 @@ class FLARE22V2STCNTrainDataset(FLARE22V2BaseCSVDataset):
             masks = [torch.flip(i, (1,)) for i in masks]
 
         # Only degrade the first mask
-        if random.random() < 0.3:
-            first_mask = masks[0].clone().numpy()
-            kernel = np.ones((5,5), np.uint8)
-            first_mask = cv2.erode(first_mask, kernel, iterations=1)
-            masks[0] = torch.from_numpy(first_mask)
+        # if random.random() < 0.3:
+        #     first_mask = masks[0].clone().numpy()
+        #     kernel = np.ones((5,5), np.uint8)
+        #     first_mask = cv2.erode(first_mask, kernel, iterations=1)
+        #     masks[0] = torch.from_numpy(first_mask)
 
-        elif random.random() < 0.3:
-            first_mask = masks[0].clone().numpy()
-            kernel = np.ones((5,5), np.uint8)
-            first_mask = cv2.dilate(first_mask, kernel, iterations=1)
-            masks[0] = torch.from_numpy(first_mask)
+        # elif random.random() < 0.3:
+        #     first_mask = masks[0].clone().numpy()
+        #     kernel = np.ones((5,5), np.uint8)
+        #     first_mask = cv2.dilate(first_mask, kernel, iterations=1)
+        #     masks[0] = torch.from_numpy(first_mask)
 
         return images, masks
+
+    def _load_mask(self, idx):
+        patient_item = self.fns[idx]
+        label_path = osp.join(self.root_dir, patient_item["label"])
+        mask = np.load(label_path)  # (H,W) with each pixel value represent one class
+        return mask
 
     def wrap_item(self, images, masks):
         c, h, w = images[0].shape
