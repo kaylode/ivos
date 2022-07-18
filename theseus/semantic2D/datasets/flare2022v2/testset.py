@@ -32,10 +32,21 @@ class FLARE22V2BaseTestDataset(FLARE22V2BaseDataset):
         patient_item = self.fns[idx]
         vol_path = osp.join(self.root_dir, patient_item['vol'])
         np_vol = np.load(vol_path)
-        tensor_vol = torch.from_numpy(np_vol)
-        tensor_vol = tensor_vol / 255.0
-        tensor_vol = tensor_vol.float()
-        return tensor_vol
+
+        ns, c, h, w = np_vol.shape
+        new_vol = []
+
+        for i in range(ns):
+                # tensor_vol = torch.from_numpy(np_vol[i])
+            tensor_vol = np_vol[i] / 255.0
+            tensor_vol = tensor_vol.transpose(1,2,0)
+            if self.transform is not None:
+                item = self.transform(image=tensor_vol)
+                tensor_vol = item["image"]
+            new_vol.append(tensor_vol)
+        new_vol = torch.stack(new_vol, dim=0)
+        new_vol = new_vol.float()
+        return new_vol, h, w
 
 class FLARE22V2TestDataset(FLARE22V2BaseTestDataset):
     def __init__(
@@ -54,10 +65,10 @@ class FLARE22V2TestDataset(FLARE22V2BaseTestDataset):
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
         patient_id = patient_item["pid"]
-        full_images = self._load_image(idx) # torch.Size([H, W, T])
-
+        full_images, ori_h, ori_w = self._load_image(idx) 
         # Full volume  (NS, C, H, W)
         num_slices, c, width, height = full_images.shape
+        sids = [i/num_slices for i in range(num_slices)]
 
         # Reference frames
         images = []
@@ -67,19 +78,22 @@ class FLARE22V2TestDataset(FLARE22V2BaseTestDataset):
             uniform=True,
             sampling_rate=self.sample_fp,
         )
-
+        
+        sampled_sids = []
         for f_idx in frames_idx:
+            sampled_sids.append(sids[f_idx])
             this_im = full_images[f_idx,...]  # (H, W)
             images.append(this_im)
         images = torch.stack(images, 0)
 
         return {
             "ref_image": images,
+            "sids": sampled_sids,
             "ref_indices": frames_idx,
             "full_image": full_images,
             "info": {
                 "img_name": patient_id,
-                "ori_size": [width, height],
+                "ori_size": [ori_h, ori_w],
             },
         }
 
@@ -87,6 +101,7 @@ class FLARE22V2TestDataset(FLARE22V2BaseTestDataset):
         imgs = torch.cat([i["ref_image"] for i in batch], dim=0)
         full_images = [i["full_image"] for i in batch]
         infos = [i["info"] for i in batch]
+        sids = [i["sids"] for i in batch]
         ref_indices = [i["ref_indices"] for i in batch]
 
         return {
@@ -94,6 +109,7 @@ class FLARE22V2TestDataset(FLARE22V2BaseTestDataset):
             "full_images": full_images,
             "ref_indices": ref_indices,
             "infos": infos,
+            "sids": sids
         }
 
 class FLARE22V2CoarseMaskTestDataset(FLARE22V2TestDataset):
@@ -122,7 +138,7 @@ class FLARE22V2CoarseMaskTestDataset(FLARE22V2TestDataset):
     def __getitem__(self, idx):
         patient_item = self.fns[idx]
         patient_id = patient_item["pid"]
-        full_images = self._load_image(idx) # torch.Size([H, W, T])
+        full_images, ori_h, ori_w = self._load_image(idx) # torch.Size([H, W, T])
         full_masks = self._load_mask(idx)
 
         # Full volume  (NS, C, H, W)
@@ -155,7 +171,7 @@ class FLARE22V2CoarseMaskTestDataset(FLARE22V2TestDataset):
             "full_mask": full_masks,
             "info": {
                 "img_name": patient_id,
-                "ori_size": [width, height],
+                "ori_size": [ori_h, ori_w],
             },
         }
 

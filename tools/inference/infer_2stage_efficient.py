@@ -11,7 +11,6 @@ from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
 from theseus.cps.models import MODEL_REGISTRY
 from theseus.opt import Config
-import nibabel as nib
 import imageio
 import torch
 from tqdm import tqdm
@@ -19,6 +18,7 @@ import numpy as np
 import time
 import os.path as osp
 import os
+import cv2
 from theseus.opt import Opts
 from typing import List, Optional, Tuple
 
@@ -92,8 +92,8 @@ class TestPipeline(BaseTestPipeline):
         # Load reference model
         ref_state_dict = torch.load(self.ref_weights)
 
-        self.ref_model.model1.model = load_state_dict(
-            self.ref_model.model1.model, ref_state_dict, "model1"
+        self.ref_model.model1 = load_state_dict(
+            self.ref_model.model1, ref_state_dict, "model1"
         )
         self.ref_model.model2.model = load_state_dict(
             self.ref_model.model2.model, ref_state_dict, "model2"
@@ -163,12 +163,31 @@ class TestPipeline(BaseTestPipeline):
                 # FIRST STAGE: Get reference frames
 
                 inputs = data["ref_images"]
+                sids = data['sids'][0]
                 full_images = data['full_images'][0]
 
+                custom_batch = []
+                candidates = []
                 with torch.no_grad():
-                    candidates = self.ref_model.get_prediction(
-                        {"inputs": inputs}, self.device
-                    )["masks"]
+                    for i, (inp, sid) in enumerate(zip(inputs, sids)):
+                        if len(custom_batch) == 31 or i == inputs.shape[0] - 1:
+                            custom_batch.append((inp, sid))
+                            with torch.no_grad():
+                                batch_preds = self.ref_model.get_prediction(
+                                    {
+                                        "inputs": torch.stack([i[0] for i in custom_batch], dim=0),
+                                        "sids": [i[1] for i in custom_batch]
+                                    },
+                                    self.device,
+                                )["masks"]
+                                custom_batch = []
+
+                                if len(batch_preds.shape) == 2:
+                                    batch_preds = np.expand_dims(batch_preds, axis=0)
+                            candidates.append(batch_preds)
+                        else:
+                            custom_batch.append((inp, sid))
+                    candidates = np.concatenate(candidates, axis=0)
 
                 ref_frames, ref_indices = self.search_reference(
                     candidates,
@@ -207,15 +226,25 @@ class TestPipeline(BaseTestPipeline):
                         }
                     )["masks"]
 
+
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
-                out_masks = out_masks.transpose(1, 2, 0)  # H, W, T
-                out_masks = out_masks.astype(np.uint8)
+                name = data["infos"][0]["img_name"]
+                ori_h, ori_w = data['infos'][0]['ori_size']
+
+                resized_masks = []
+                for mask in out_masks:
+                    resized = cv2.resize(mask, tuple([ori_h, ori_w]), 0, 0, interpolation = cv2.INTER_NEAREST)
+                    resized_masks.append(resized)
+                resized_masks = np.stack(resized_masks, axis=0)
+
+                resized_masks = resized_masks.transpose(1, 2, 0)  # H, W, T
+                resized_masks = resized_masks.astype(np.uint8)
 
                 this_out_path = osp.join(savedir, str(name).replace("_0000.nii.gz", ".npy"))
-                np.save(this_out_path, out_masks)
+                np.save(this_out_path, resized_masks)
 
             del rgb
             del processor
@@ -224,7 +253,7 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split(".")[0]
                 visdir = osp.join(self.savedir, "visualization")
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(data["full_images"][0].numpy(), out_masks, visdir, gif_name)
+                self.save_gif(data["full_images"][0].numpy(), out_masks.transpose(1, 2, 0).astype(np.uint8), visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
         self.logger.text(

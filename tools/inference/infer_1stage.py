@@ -11,7 +11,7 @@ import numpy as np
 from tqdm import tqdm
 import torch
 import imageio
-import nibabel as nib
+import cv2
 import pandas as pd
 from theseus.opt import Config
 from theseus.utilities.loading import load_state_dict
@@ -63,8 +63,8 @@ class TestPipeline(BaseTestPipeline):
     def init_loading(self):
         self.weights = self.opt['global']['weights']
         if self.weights:
-            state_dict = torch.load(self.weights)
-            self.model.model = load_state_dict(self.model.model, state_dict, 'model')
+            state_dict = torch.load(self.weights)   
+            self.model = load_state_dict(self.model, state_dict, 'model')
 
     def save_gif(self, images, masks, save_dir, outname):
         # images: (T, C, H, W)
@@ -115,13 +115,21 @@ class TestPipeline(BaseTestPipeline):
                 custom_batch = []
                 out_masks = []
                 inputs = data["ref_images"]
+                sids = data['sids'][0]
+                name = data["infos"][0]["img_name"]
+                this_out_path = osp.join(savedir, str(name) + ".npy")
+                if osp.isfile(this_out_path):
+                    continue
 
-                for i, inp in enumerate(inputs):
+                for i, (inp, sid) in enumerate(zip(inputs, sids)):
                     if len(custom_batch) == 31 or i == inputs.shape[0] - 1:
-                        custom_batch.append(inp)
+                        custom_batch.append((inp, sid))
                         with torch.no_grad():
                             batch_preds = self.model.get_prediction(
-                                {"inputs": torch.stack(custom_batch, dim=0)},
+                                {
+                                    "inputs": torch.stack([i[0] for i in custom_batch], dim=0),
+                                    "sids": [i[1] for i in custom_batch]
+                                },
                                 self.device,
                             )["masks"]
                             custom_batch = []
@@ -130,20 +138,25 @@ class TestPipeline(BaseTestPipeline):
                                 batch_preds = np.expand_dims(batch_preds, axis=0)
                         out_masks.append(batch_preds)
                     else:
-                        custom_batch.append(inp)
+                        custom_batch.append((inp, sid))
                 out_masks = np.concatenate(out_masks, axis=0)
 
-                name = data["infos"][0]["img_name"]
+                ori_h, ori_w = data['infos'][0]['ori_size']
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
-                out_masks = out_masks.transpose(1, 2, 0)  # H, W, T
-                out_masks = out_masks.astype(np.uint8)
+                resized_masks = []
+                for mask in out_masks:
+                    resized = cv2.resize(mask, tuple([ori_h, ori_w]), 0, 0, interpolation = cv2.INTER_NEAREST)
+                    resized_masks.append(resized)
+                resized_masks = np.stack(resized_masks, axis=0)
 
-                this_out_path = osp.join(savedir, str(name).replace("_0000.nii.gz", ".npy"))
-                np.save(this_out_path, out_masks)
+                resized_masks = resized_masks.transpose(1, 2, 0)  # H, W, T
+                resized_masks = resized_masks.astype(np.uint8)
+
+                np.save(this_out_path, resized_masks)
 
                 df_dict["image"].append(name)
                 df_dict["label"].append(osp.join("masks", name))
@@ -152,9 +165,8 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split(".")[0]
                 visdir = osp.join(self.savedir, "visualization")
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(data["ref_images"].numpy(), out_masks, visdir, gif_name)
+                self.save_gif(data["ref_images"].numpy(), out_masks.transpose(1, 2, 0).astype(np.uint8), visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
-
         pd.DataFrame(df_dict).to_csv(osp.join(self.savedir, 'pseudo.csv'), index=False)
 
         self.logger.text(f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO)

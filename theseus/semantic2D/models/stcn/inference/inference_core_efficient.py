@@ -26,11 +26,13 @@ class InferenceCore:
         max_k=50,
         mem_every=5,
         include_last=False,
+        strategy='argmax',
         device="cuda",
     ):
         self.prop_net = prop_net
         self.mem_every = mem_every
         self.include_last = include_last
+        self.strategy = strategy
 
         # True dimensions
         t = images.shape[1]
@@ -164,7 +166,7 @@ class InferenceCore:
                 self.interact(tmp_msk, start_idx, end_idx)
                 self.flush_memory(self.top_k)
 
-        out_masks = self.smart_aggregate(strategy = 'min-area') 
+        out_masks = self.smart_aggregate(strategy = self.strategy) 
         return {"masks": out_masks}
 
     def smart_aggregate(self, strategy='argmax'):
@@ -214,7 +216,7 @@ class InferenceCore:
                 out_masks[ti] = torch.argmin(prob, dim=0)
 
         if strategy == 'argmax':
-            for prob in unpad_prob:
+            for ti, prob in enumerate(unpad_prob):
                 out_masks[ti] = torch.argmax(prob, dim=0)
 
         out_masks = (out_masks.numpy()[:, 0]).astype(np.uint8)  # (T, H, W)

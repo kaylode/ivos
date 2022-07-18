@@ -18,6 +18,7 @@ prop_model:
   mem_every: 5 # save frames every k step
   include_last: True # whether to use last frame to retrieve current
   bidirectional: True
+  strategy: argmax # min-area
 
 data: 
   dataset:
@@ -25,8 +26,8 @@ data:
     args:
       root_dir: ../data/flare2022-processed/TestImage
       mask_dir: null
-      max_ref_frames: 64
-      sample_fp: 5
+      sample_fp: 1
+      max_ref_frames: -1
   dataloader:
     name: DataLoaderWithCollator
     args:

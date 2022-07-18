@@ -12,18 +12,17 @@ global:
   use_uncertainty: False
   class_weights: configs/weights.txt
 model:
-  name: BaseSegModel
+  name: TransUnetPE
   args:
-    model_name: deeplabv3plus
-    encoder_name: efficientnet-b2
+    model_name: R50-ViT-B_16
+    img_size: 512 
     in_channels: 3
-    pretrained: false
-
+    pretrained: False
 data: 
   dataset:
     name: FLARE22V2TestDataset
     args:
-      root_dir: ../data/slices/unlabelled/unlabelled_part3
+      root_dir: ../data/npy_normalized/validation/ValidationProcessedNpy
       sample_fp: 1
       max_ref_frames: -1
   dataloader:

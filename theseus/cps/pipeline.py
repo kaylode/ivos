@@ -114,8 +114,8 @@ class Pipeline(BasePipeline):
 
         if self.pretrained1:
             state_dict = torch.load(self.pretrained1)
-            self.model.model.model1.model = load_state_dict(
-                self.model.model.model1.model, state_dict, "model"
+            self.model.model.model1 = load_state_dict(
+                self.model.model.model1, state_dict, "model"
             )
 
         if self.pretrained2:

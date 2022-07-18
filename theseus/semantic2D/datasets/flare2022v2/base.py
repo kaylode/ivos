@@ -138,6 +138,14 @@ class FLARE22V2BaseDataset(SemanticDataset):
     def _load_mask(self, idx):
         raise NotImplementedError
 
+    # def _calculate_classes_dist(self):
+    #     classes_dist = []    
+    #     LOGGER.text("Calculating class frequency...", level=LoggerObserver.DEBUG)
+    #     for idx in range(len(self.fns)):
+    #         mask = self._load_mask(idx)
+
+    #         classes_dist.append()
+
 class FLARE22V2BaseCSVDataset(FLARE22V2BaseDataset):
     """
     Load in csv

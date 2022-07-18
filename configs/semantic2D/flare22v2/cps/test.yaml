@@ -15,19 +15,20 @@ model:
   name: CrossPseudoSupervision
   args:
     model1:
-      name: BaseSegModel
+      name: TransUnetPE
       args:
-        model_name: unetplusplus
-        encoder_name: efficientnet-b3
+        model_name: R50-ViT-B_16
+        img_size: 512 
         in_channels: 3
-        pretrained: false
+        pretrained: False
     model2:
       name: BaseSegModel
       args:
         model_name: deeplabv3plus
-        encoder_name: efficientnet-b2
+        encoder_name: efficientnet-b3
         in_channels: 3
         pretrained: false
+      
 data: 
   dataset:
     name: FLARE22V2TestDataset

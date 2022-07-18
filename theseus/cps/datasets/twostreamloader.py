@@ -51,6 +51,7 @@ class TwoStreamDataLoader(torch.utils.data.DataLoader):
         masks = torch.stack([i['target'] for i in batch if 'target' in i], dim=0)
         img_names = [i['img_name'] for i in batch]
         ori_sizes = [i['ori_size'] for i in batch]
+        sids = [i['sid'] for i in batch if 'sid' in i]
         
         masks = self._encode_masks(masks)
  
@@ -59,6 +60,7 @@ class TwoStreamDataLoader(torch.utils.data.DataLoader):
             'targets': masks,
             'img_names': img_names,
             'ori_sizes': ori_sizes,
-            'split_pos': masks.shape[0]
+            'split_pos': masks.shape[0],
+            'sids': sids
         }
         
