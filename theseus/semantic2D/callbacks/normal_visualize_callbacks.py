@@ -75,9 +75,12 @@ class NormalVisualizerCallbacks(Callbacks):
         batch = []
         for idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = inputs.squeeze().numpy()
-            img_show = self.normalize_min_max(img_show)
+            if len(img_show.shape) == 2:
+                img_show = self.normalize_min_max(img_show)
+                img_show = TFF.to_tensor(img_show).repeat(3,1,1)
+            else:
+                img_show = torch.from_numpy(img_show)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
-            img_show = TFF.to_tensor(img_show).repeat(3,1,1)
             decode_mask = TFF.to_tensor(decode_mask/255.0)
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
@@ -110,9 +113,12 @@ class NormalVisualizerCallbacks(Callbacks):
         batch = []
         for idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = inputs.squeeze().numpy()
-            img_show = self.normalize_min_max(img_show)
+            if len(img_show.shape) == 2:
+                img_show = self.normalize_min_max(img_show)
+                img_show = TFF.to_tensor(img_show).repeat(3,1,1)
+            else:
+                img_show = torch.from_numpy(img_show)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
-            img_show = TFF.to_tensor(img_show).repeat(3,1,1)
             decode_mask = TFF.to_tensor(decode_mask/255.0)
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
@@ -160,9 +166,11 @@ class NormalVisualizerCallbacks(Callbacks):
         vis_inputs = []
         image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
         for image in image_show:
-            image = self.normalize_min_max(image)
-            image = np.stack([image, image, image], axis=-1)
-
+            if len(image.shape) == 2:
+                image = self.normalize_min_max(image)
+                image = np.stack([image, image, image], axis=-1)
+            else:
+                image = image.transpose(1,2,0)
             image = self.visualizer.denormalize(image, mean=[0,0,0], std=[1,1,1])
             image = (image*255).astype(int)
             vis_inputs.append(image)

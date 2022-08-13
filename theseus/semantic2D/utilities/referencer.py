@@ -13,7 +13,7 @@ class Referencer:
         """
         vol_mask: argmaxed segmentation mask. (T, H, W)
         """
-        assert strategy in ['non-empty', 'most-classes', 'random', 'least-uncertainty', 'largest-area'], "Wrong strategy chosen"
+        assert strategy in ['non-empty', 'most-classes', 'random', 'least-uncertainty', 'largest-area', 'largest-areav2'], "Wrong strategy chosen"
 
         if strategy == 'non-empty':
             return self._get_non_empty(mask)
@@ -24,7 +24,9 @@ class Referencer:
         if strategy == 'least-uncertainty':
             return self._get_least_uncertainty(mask)
         if strategy == 'largest-area':
-            return self._get_all_classes(mask)
+            return self._get_largest_area(mask)
+        if strategy == 'largest-areav2':
+            return self._get_largest_areav2(mask)
 
 
     def _get_most_classes(self, mask: np.ndarray):
@@ -44,7 +46,7 @@ class Referencer:
 
         return candidate_indices, max_possible_number_of_classes
 
-    def _get_all_classes(self, mask: np.ndarray):
+    def _get_largest_area(self, mask: np.ndarray):
         """
         Search for guide frames, in which all classes are presented
         """
@@ -52,11 +54,13 @@ class Referencer:
         num_slices = mask.shape[0]
 
         available_classes = np.unique(mask)
+        available_classes = available_classes[available_classes > 0]
         class_dict = {
             int(k): [] for k in available_classes
         }
         for frame_idx in range(num_slices):
             current_classes = np.unique(mask[frame_idx, :, :])
+            current_classes = current_classes[current_classes>0]
             for cl in current_classes:
                 class_dict[int(cl)].append({
                     'index': frame_idx,
@@ -70,6 +74,36 @@ class Referencer:
 
         candidate_indices = list(set(candidate_indices))
         candidate_indices.sort()
+        return candidate_indices
+
+    def _get_largest_areav2(self, mask: np.ndarray):
+        """
+        Search for guide frames, in which all classes are presented
+        """
+
+        num_slices = mask.shape[0]
+
+        available_classes = np.unique(mask)
+        available_classes = available_classes[available_classes>=1]
+        class_dict = {
+            int(k): [] for k in available_classes
+        }
+        for frame_idx in range(num_slices):
+            current_classes = np.unique(mask[frame_idx, :, :])
+            current_classes = current_classes[current_classes>=1]
+            for cl in current_classes:
+                class_dict[int(cl)].append({
+                    'index': frame_idx,
+                    'area': np.sum(mask[frame_idx, :, :] == cl)
+                })
+
+        candidate_indices = {}
+        for k in available_classes:
+            sorted_class_dict_by_class_area = sorted(class_dict[k], key=lambda d: d['area'], reverse=True) 
+            candidate_indices[k] = sorted_class_dict_by_class_area[0]['index']
+
+        # candidate_indices = list(set(candidate_indices))
+        # candidate_indices.sort()
         return candidate_indices
 
     def _get_non_empty(self, mask: np.ndarray):

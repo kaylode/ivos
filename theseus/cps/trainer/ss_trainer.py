@@ -45,8 +45,9 @@ class SemiSupervisedTrainer(BaseTrainer):
         self.valloader = valloader
         self.use_cuda = next(self.model.parameters()).is_cuda
 
-        if len(self.schedulers):
-            self.step_per_epochs = [sched.step_per_epoch for sched in self.schedulers]
+        if schedulers is not None:
+            if len(self.schedulers):
+                self.step_per_epochs = [sched.step_per_epoch for sched in self.schedulers]
 
         # Flags for shutting down training or validation stages
         self.shutdown_training = False

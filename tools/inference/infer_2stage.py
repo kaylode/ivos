@@ -148,7 +148,7 @@ class TestPipeline(BaseTestPipeline):
         self.init_pipeline()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
 
-        savedir = osp.join(self.savedir, "nib")
+        savedir = osp.join(self.savedir, "masks")
         os.makedirs(savedir, exist_ok=True)
         torch.autograd.set_grad_enabled(False)
 
@@ -159,19 +159,24 @@ class TestPipeline(BaseTestPipeline):
 
             with torch.cuda.amp.autocast(enabled=False):
                 # FIRST STAGE: Get reference frames
+
+                inputs = torch.rot90(data["ref_images"], 3, dims=(-2,-1))
+                inputs = torch.flip(inputs, dims=(-1,))
+
                 with torch.no_grad():
                     candidates = self.ref_model.get_prediction(
-                        {"inputs": data["ref_images"]}, self.device
+                        {"inputs": inputs}, self.device
                     )["masks"]
 
-                full_images = data["full_images"]
+                full_images = torch.rot90(data["full_images"], 3, dims=(-2,-1))
+                full_images = torch.flip(full_images, dims=(-1,))
                 ref_frames, ref_indices = self.search_reference(
                     candidates,
                     global_indices=data["ref_indices"][0],
                     pad_length=full_images.shape[1],
                     strategy=self.reference_strategy,
                 )
-
+           
                 # SECOND STAGE: Full images
                 rgb = full_images.float()
                 msk = self._encode_masks(ref_frames)
@@ -203,14 +208,19 @@ class TestPipeline(BaseTestPipeline):
                             "bidirectional": True,
                         }
                     )["masks"]
+                
+                out_masks = np.flip(out_masks, axis=-1)
+                out_masks = np.rot90(out_masks, 1, axes=(-2,-1))
 
                 torch.cuda.synchronize()
                 total_process_time += time.time() - process_begin
                 total_frames += out_masks.shape[0]
 
                 out_masks = out_masks.transpose(1, 2, 0)  # H, W, T
+                out_masks = out_masks.astype(np.uint8)
+
                 ni_img = nib.Nifti1Image(out_masks, affine)
-                this_out_path = osp.join(savedir, str(name))
+                this_out_path = osp.join(savedir, str(name).replace('_0000.nii.gz', '.nii.gz'))
                 nib.save(ni_img, this_out_path)
 
             del rgb
@@ -221,7 +231,7 @@ class TestPipeline(BaseTestPipeline):
                 gif_name = str(name).split(".")[0]
                 visdir = osp.join(self.savedir, "visualization")
                 os.makedirs(visdir, exist_ok=True)
-                self.save_gif(full_images.squeeze(), out_masks, visdir, gif_name)
+                self.save_gif(data["full_images"].squeeze(), out_masks, visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
 
         self.logger.text(

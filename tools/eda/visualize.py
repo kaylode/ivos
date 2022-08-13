@@ -13,7 +13,7 @@ parser.add_argument("-l", "--mask_dir", default=None, type=str, help="Volume dir
 parser.add_argument("-o", "--out_dir", type=str, help="Volume directory")
 
 VISUALIZER = Visualizer()
-NUM_CLASSES = 15    
+NUM_CLASSES = 14    
 class VideoWriter:
     def __init__(self, video_info, saved_path):
         self.video_info = video_info
@@ -39,25 +39,27 @@ class VideoWriter:
 
 
 def normalize_min_max(array):
-    norm_array = (array - np.min(array)) / np.max(array)
+    norm_array = (array - array.min()) / array.max()
     return norm_array
 
 def make_frames(image_path, mask_path=None):
     image = nib.load(image_path).get_fdata()# (H, W, NS)
+
     height, width, depth = image.shape
     if mask_path is not None:
         mask = nib.load(mask_path).get_fdata()# (H, W, NS)
-        
+
     images= []
     for i in range(image.shape[-1]):
         norm_image = normalize_min_max(image[:, :, i])
+        norm_image = (norm_image * 255).astype(np.uint8)
         norm_image = np.stack([norm_image, norm_image, norm_image], axis=2)
         if mask_path is not None:
             norm_mask = VISUALIZER.decode_segmap(mask[:, :, i], NUM_CLASSES)
-            
-            norm_image = np.concatenate([norm_image, norm_mask[:,:,::-1]], axis=1)
+            norm_mask = norm_mask[:,:,::-1]
+            norm_image = np.concatenate([norm_image, norm_mask], axis=1)
         
-        images.append(norm_image)
+        images.append(norm_image.astype(np.uint8))
 
     return images, height, width, depth
 
@@ -79,8 +81,7 @@ def run(args):
         }, args.out_dir)
 
         for frame in frames:
-            writer.write_frame((frame*255).astype(np.uint8))
-
+            writer.write_frame((frame).astype(np.uint8))
 
 if __name__ == '__main__':
     args = parser.parse_args()

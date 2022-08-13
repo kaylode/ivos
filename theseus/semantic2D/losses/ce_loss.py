@@ -6,12 +6,13 @@ from theseus.utilities.cuda import move_to
 class CELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
-    def __init__(self, weight=None, ignore_index=None, **kwargs):
+    def __init__(self, weight=None, ignore_index=None, reduction='mean', **kwargs):
         super(CELoss, self).__init__()
         self.weight = weight
         if self.weight is not None:
             self.weight = torch.FloatTensor(self.weight)
         self.ignore_index = ignore_index
+        self.reduction = reduction
 
     def forward(self, outputs, batch, device):
         pred = outputs["outputs"]
@@ -22,9 +23,9 @@ class CELoss(nn.Module):
 
         if self.ignore_index is not None:
             target = torch.argmax(target, dim=1)
-            loss = nn.functional.cross_entropy(pred, target, weight=self.weight, ignore_index=self.ignore_index)
+            loss = nn.functional.cross_entropy(pred, target, weight=self.weight, ignore_index=self.ignore_index, reduction=self.reduction)
         else:
-            loss = nn.functional.cross_entropy(pred, target, weight=self.weight)
+            loss = nn.functional.cross_entropy(pred, target, weight=self.weight, reduction=self.reduction)
             
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict
