@@ -1,18 +1,8 @@
 from typing import List
 import SimpleITK as sitk
 
-from monai.utils import set_determinism
 from monai.transforms import (
-    Compose,
-    LoadImaged,
-    RandSpatialCropd,
-    RandFlipd,
     MapTransform,
-    NormalizeIntensityd, 
-    RandScaleIntensityd,
-    RandShiftIntensityd,
-    ToTensord,
-    CenterSpatialCropd,
 )
 import numpy as np
 
@@ -31,19 +21,6 @@ class UnsqueezeOnAxisd(MapTransform):
         for key in self.keys:
             d[key] = np.expand_dims(d[key], axis=self.axis)
         return d
-
-from theseus.base.augmentations import TRANSFORM_REGISTRY
-
-TRANSFORM_REGISTRY.register(Compose, prefix='Monai')
-TRANSFORM_REGISTRY.register(LoadImaged, prefix='Monai')
-TRANSFORM_REGISTRY.register(RandSpatialCropd, prefix='Monai')
-TRANSFORM_REGISTRY.register(CenterSpatialCropd, prefix='Monai')
-TRANSFORM_REGISTRY.register(RandFlipd, prefix='Monai')
-TRANSFORM_REGISTRY.register(NormalizeIntensityd, prefix='Monai')
-TRANSFORM_REGISTRY.register(RandScaleIntensityd, prefix='Monai')
-TRANSFORM_REGISTRY.register(RandShiftIntensityd, prefix='Monai')
-TRANSFORM_REGISTRY.register(ToTensord, prefix='Monai')
-TRANSFORM_REGISTRY.register(UnsqueezeOnAxisd, prefix='Monai')
 
 class LoadImageAndResize3D(MapTransform):
     """
@@ -123,5 +100,3 @@ class IntensityClip(MapTransform):
 
         return d
 
-TRANSFORM_REGISTRY.register(LoadImageAndResize3D, prefix='Monai')
-TRANSFORM_REGISTRY.register(PercentileClip, prefix='Monai')

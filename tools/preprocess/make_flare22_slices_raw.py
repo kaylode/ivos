@@ -248,13 +248,13 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
 def process_unlabelled(root_dira, out_dira):
     print("Processing test files")
     names = [ 
-    # 'FLARE22_UnlabeledCase1001-1500',
-    'FLARE22_UnlabeledCase1751-2000',
-    'FLARE22_UnlabeledCase751-1000',
     'FLARE22_UnlabeledCase1-250',
     'FLARE22_UnlabeledCase251-500',
-    'FLARE22_UnlabeledCase1501-1750',
     'FLARE22_UnlabeledCase501-750',
+    'FLARE22_UnlabeledCase751-1000',
+    'FLARE22_UnlabeledCase1001-1500',
+    'FLARE22_UnlabeledCase1501-1750',
+    'FLARE22_UnlabeledCase1751-2000',
     ]
     for name in names:
         root_dir = osp.join(root_dira, name)
