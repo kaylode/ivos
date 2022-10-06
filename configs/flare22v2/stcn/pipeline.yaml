@@ -3,7 +3,7 @@ global:
   exist_ok: true
   debug: true
   cfg_transform: configs/flare22v2/stcn/transform.yaml
-  save_dir: /content/main/runs
+  save_dir: runs
   device: cuda:0
   pretrained: null
   resume: null
@@ -44,8 +44,8 @@ model:
   name: STCNModel
   args:
     single_object: false
-    key_backbone: swin
-    value_backbone: swin
+    key_backbone: resnet50-mod
+    value_backbone: resnet18-mod
     pretrained_backbone: true
     top_k_eval: 20
     max_k: 200
@@ -90,12 +90,12 @@ data:
     train:
       name: FLARE22V2STCNTrainDataset
       args:
-        csv_path: data/flare22/slices/training/train.csv
+        csv_path: data/flare22/slices/train_slices.csv
         use_aug: True
     val:
       name: FLARE22V2STCNValDataset
       args:
-        csv_path: data/flare22/slices/training/val.csv
+        csv_path: data/flare22/npy/val_npy.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
