@@ -2,17 +2,15 @@ import argparse
 import os
 import os.path as osp
 import random
-import shutil
 
 import numpy as np
 import pandas as pd
-import SimpleITK as sitk
-from theseus.semantic3D.augmentations.monai_tf import (
+from source.semantic3D.augmentations.monai_tf import (
     Compose,
     IntensityClip,
     NormalizeIntensityd,
 )
-from theseus.semantic3D.utilities.preprocess.loading import (
+from source.semantic3D.utilities.preprocess.loading import (
     change_axes_of_image,
     load_ct_info,
 )
@@ -92,6 +90,7 @@ def convert_2_npy(
         )
 
     npy_image = image_dict["npy_image"]
+    npy_mask = None
 
     pbar.set_postfix_str(
         f"Convert {vol_path} from {image_dict['npy_image'].shape} to {npy_image.shape}"
@@ -102,7 +101,6 @@ def convert_2_npy(
         pbar.set_postfix_str(
             f"Convert {gt_path} from {mask_dict['npy_image'].shape} to {npy_mask.shape}"
         )
-    npy_mask = None
     if normalize:
         if gt_path:
             out_dict = TRANSFORM({"image": npy_image, "label": npy_mask})
@@ -150,26 +148,8 @@ def save_npy_volume_mask(
     if return_filenames:
         return filenames, masknames
 
-
-def save_npy_volume(
-    save_image_dir, fileid, npy_volume, return_filenames: bool = False,
-):
-    # npy_volume dim: [T, H, W]
-    filenames = []
-
-    for i, vol in enumerate(npy_volume):
-        tmp_name = osp.join(fileid, fileid + f"_{str(i).zfill(4)}.npy")
-        filename = osp.join(save_image_dir, tmp_name)
-        os.makedirs(osp.join(save_image_dir, fileid), exist_ok=True)
-        np.save(filename, vol)
-        filenames.append(tmp_name)
-
-    if return_filenames:
-        return filenames
-
-
 def split_train_val(root_dir, out_dir, ratio=0.9):
-    filenames = os.listdir(osp.join(root_dir, "TrainImage"))
+    filenames = os.listdir(osp.join(root_dir, "images"))
 
     train_filenames = np.random.choice(
         filenames, size=int(ratio * len(filenames)), replace=False
@@ -188,17 +168,14 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     os.makedirs(target_imagesVl, exist_ok=True)
     os.makedirs(target_labelsVl, exist_ok=True)
 
-    target_imagesTs = osp.join(out_dir, "Validation")
-    os.makedirs(target_imagesTs, exist_ok=True)
-
     df_dict = {"train": {"image": [], "label": []}, "val": {"image": [], "label": []}}
 
     print("Processing train files")
     pbar = tqdm(zip(train_filenames, train_masknames), total=len(train_filenames))
     tbar = tqdm(bar_format="{desc}{postfix}")
     for train_filename, train_maskname in pbar:
-        image_path = osp.join(root_dir, "TrainImage", train_filename)
-        gt_path = osp.join(root_dir, "TrainMask", train_maskname)
+        image_path = osp.join(root_dir, "images", train_filename)
+        gt_path = osp.join(root_dir, "labels", train_maskname)
         image_dict = convert_2_npy(
             image_path, pbar=tbar, gt_path=gt_path, normalize=False,
         )
@@ -222,8 +199,8 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
     pbar = tqdm(zip(val_filenames, val_masknames), total=len(val_filenames))
     tbar = tqdm(bar_format="{desc}{postfix}")
     for val_filename, val_maskname in pbar:
-        image_path = osp.join(root_dir, "TrainImage", val_filename)
-        gt_path = osp.join(root_dir, "TrainMask", val_maskname)
+        image_path = osp.join(root_dir, "images", val_filename)
+        gt_path = osp.join(root_dir, "labels", val_maskname)
         image_dict = convert_2_npy(
             image_path, pbar=tbar, gt_path=gt_path, normalize=False,
         )
@@ -244,38 +221,6 @@ def split_train_val(root_dir, out_dir, ratio=0.9):
 
     pd.DataFrame(df_dict["val"]).to_csv(osp.join(out_dir, "val.csv"), index=False)
 
-
-def process_unlabelled(root_dira, out_dira):
-    print("Processing test files")
-    names = [ 
-    'FLARE22_UnlabeledCase1-250',
-    'FLARE22_UnlabeledCase251-500',
-    'FLARE22_UnlabeledCase501-750',
-    'FLARE22_UnlabeledCase751-1000',
-    'FLARE22_UnlabeledCase1001-1500',
-    'FLARE22_UnlabeledCase1501-1750',
-    'FLARE22_UnlabeledCase1751-2000',
-    ]
-    for name in names:
-        root_dir = osp.join(root_dira, name)
-        out_dir = osp.join(out_dira, name)
-        test_filenames = os.listdir(root_dir)
-        pbar = tqdm(test_filenames, total=len(test_filenames))
-        tbar = tqdm(bar_format="{desc}{postfix}")
-
-        for test_filename in pbar:
-            test_fileid = test_filename.split(".nii.gz")[0]
-            image_path = osp.join(root_dir, test_filename)
-            image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=None, normalize=False)
-            save_npy_volume(
-                save_image_dir=out_dir,
-                fileid=test_fileid,
-                npy_volume=image_dict["image"].astype(np.float32),
-                return_filenames=False,
-            )
-
-
 if __name__ == "__main__":
     args = parser.parse_args()
-    # split_train_val(args.input_dir, args.out_dir, args.ratio)
-    process_unlabelled(args.input_dir, args.out_dir)
+    split_train_val(args.input_dir, args.out_dir, args.ratio)
