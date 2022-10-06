@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser("Process volume CT")
 parser.add_argument("-i", "--input_dir", type=str, help="Volume directory")
 parser.add_argument("-l", "--label_dir", type=str, default=None, help="Volume directory")
 parser.add_argument("-o", "--out_dir", type=str, help="Output directory")
+parser.add_argument("-t", "--type", type=str, help="Folder type")
 
 def save_npy_volume(
     save_image_dir, fileid, npy_volume, return_filenames: bool = False,
@@ -34,7 +35,7 @@ def save_npy_volume(
     if return_filenames:
         return filenames
 
-def process_test(root_dir, out_dir, label_dir=None):
+def process_test(root_dir, out_dir, tag, label_dir=None):
     print("Processing test files")
     test_filenames = os.listdir(root_dir)
     pbar = tqdm(test_filenames, total=len(test_filenames))
@@ -50,8 +51,8 @@ def process_test(root_dir, out_dir, label_dir=None):
                 image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=gt_path, normalize=False)
                 save_npy_volume_mask(
                     root_dir=out_dir,
-                    save_image_dir="ValidationImage",
-                    save_mask_dir="ValidationMask",
+                    save_image_dir=f"{tag}Image",
+                    save_mask_dir=f"{tag}Mask",
                     fileid=test_fileid,
                     npy_volume=image_dict["image"].astype(np.float32),
                     npy_mask=image_dict["mask"].astype(np.uint8),
@@ -61,7 +62,7 @@ def process_test(root_dir, out_dir, label_dir=None):
         
         image_dict = convert_2_npy(image_path, pbar=tbar, gt_path=None, normalize=False)
         save_npy_volume(
-            save_image_dir=out_dir,
+            save_image_dir=osp.join(out_dir,f"{tag}Image"),
             fileid=test_fileid,
             npy_volume=image_dict["image"].astype(np.float32),
             return_filenames=False,
@@ -69,4 +70,4 @@ def process_test(root_dir, out_dir, label_dir=None):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    process_test(args.input_dir, args.out_dir, args.label_dir)
+    process_test(args.input_dir, args.out_dir, tag=args.type, label_dir=args.label_dir)

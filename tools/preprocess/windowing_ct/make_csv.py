@@ -2,18 +2,33 @@ import os
 import os.path as osp
 import pandas as pd
 from tqdm import tqdm
-import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--image_dir', help='Input path to image')
-parser.add_argument('-g', '--gt_dir', default=None, help='Input path to label dir')
-parser.add_argument('-t', '--type', default='slices', help='Process slices or npy')
-parser.add_argument('-o', '--output_csv', help='Output path to save csv file')
+NPY_IMG_TRAIN="data/flare22/npy/training/TrainImage"
+NPY_MSK_TRAIN="data/flare22/npy/training/TrainMask"
+NPY_IMG_VAL="data/flare22/npy/training/ValImage"
+NPY_MSK_VAL="data/flare22/npy/training/ValMask"
+NPY_IMG_VALIDATION="data/flare22/npy/validation/ValidationImage"
+NPY_MSK_VALIDATION="data/flare22/npy/validation/ValidationMask"
+NPY_CSV_TRAIN="data/flare22/npy/train_npy.csv"
+NPY_CSV_VAL="data/flare22/npy/val_npy.csv"
+NPY_CSV_VALIDATION="data/flare22/npy/validation_npy.csv"
 
+SLICES_IMG_TRAIN="data/flare22/slices/training/TrainImage"
+SLICES_MSK_TRAIN="data/flare22/slices/training/TrainMask"
+SLICES_IMG_VAL="data/flare22/slices/training/ValImage"
+SLICES_MSK_VAL="data/flare22/slices/training/ValMask"
+SLICES_IMG_VALIDATION="data/flare22/slices/validation/ValidationImage"
+SLICES_MSK_VALIDATION="data/flare22/slices/validation/ValidationMask"
+SLICES_CSV_TRAIN="data/flare22/slices/train_slices.csv"
+SLICES_CSV_VAL="data/flare22/slices/val_slices.csv"
+SLICES_CSV_VALIDATION="data/flare22/slices/validation_slices.csv"
 
-def run_slices(args):
+TRAIN_FORMAT= "FLARE22_Tr_{pid}_0000_{sid}.jpg"
+VALIDATION_FORMAT= "FLARETs_{pid}_0000_{sid}.jpg"
 
-    if args.gt_dir is not None:
+def run_slices_train(img_dir, gt_dir, out_csv, name_format):
+
+    if gt_dir is not None:
         df = {
             'image1': [],
             'image2': [],
@@ -27,33 +42,41 @@ def run_slices(args):
             'image3': [],
         }
 
-    filenames = os.listdir(args.image_dir)
+    filenames = os.listdir(img_dir)
     for filename in tqdm(filenames):
-        idx = filename.split('_')[2]
+
+        if name_format == TRAIN_FORMAT:
+            idx = filename.split('_')[2]
+        else:
+            idx = filename.split('_')[1]
+
         folder1 = f"abdomen-soft tissues_abdomen-liver"
         folder2 = f"chest-lungs_chest-mediastinum"
         folder3 = f"spine-bone"
-        tmp_path = osp.join(args.image_dir, filename, folder1)
+        tmp_path = osp.join(img_dir, filename, folder1)
         
         sids = len(os.listdir(tmp_path))
         mid_range = [0, sids]
 
         for sid in range(mid_range[0], mid_range[1]):
-            image_name = f"FLARE22_Tr_{str(idx).zfill(4)}_0000_{str(sid).zfill(4)}.jpg"
-            image_path1 = osp.join(args.image_dir, filename, folder1, image_name)
-            image_path2 = osp.join(args.image_dir, filename, folder2, image_name)
-            image_path3 = osp.join(args.image_dir, filename, folder3, image_name)
+            image_name = name_format.format(
+                pid=str(idx).zfill(4),
+                sid=str(sid).zfill(4)
+            )
+            image_path1 = osp.join(img_dir, filename, folder1, image_name)
+            image_path2 = osp.join(img_dir, filename, folder2, image_name)
+            image_path3 = osp.join(img_dir, filename, folder3, image_name)
             df['image1'].append(image_path1)
             df['image2'].append(image_path2)
             df['image3'].append(image_path3)
-            if args.gt_dir is not None:
-                label_path = osp.join(args.gt_dir, filename, image_name[:-4]+'.npy')
+            if gt_dir is not None:
+                label_path = osp.join(gt_dir, filename, image_name[:-4]+'.npy')
                 df['label'].append(label_path)
 
-    pd.DataFrame(df).to_csv(args.output_csv, index=False)
+    pd.DataFrame(df).to_csv(out_csv, index=False)
 
-def run_npy(args):
-    if args.gt_dir is not None:
+def run_npy_train(img_dir, gt_dir, out_csv):
+    if gt_dir is not None:
         df = {
             'image': [],
             'label': []
@@ -63,16 +86,50 @@ def run_npy(args):
             'image': [],
         }
 
-    filenames = os.listdir(args.image_dir)
+    filenames = os.listdir(img_dir)
     for filename in tqdm(filenames):
-        image_name = f"FLARE22_Tr_{str(idx).zfill(4)}_0000_{str(sid).zfill(4)}.jpg"
-        image_path1 = osp.join(args.image_dir, filename, folder1, image_name)
-        df['image1'].append(image_path1)
-        if args.gt_dir is not None:
-            label_path = osp.join(args.gt_dir, filename, image_name[:-4]+'.npy')
+        image_path = osp.join(img_dir, filename)
+        df['image'].append(image_path)
+        if gt_dir is not None:
+            label_path = osp.join(gt_dir, filename[:-4]+'.npy')
             df['label'].append(label_path)
+
+    pd.DataFrame(df).to_csv(out_csv, index=False)
 
 
 if __name__ == '__main__':
-    args = parser.parse_args()
-    run(args)
+    run_slices_train(
+        SLICES_IMG_TRAIN, 
+        SLICES_MSK_TRAIN, 
+        SLICES_CSV_TRAIN,
+        name_format=TRAIN_FORMAT)
+
+    run_slices_train(
+        SLICES_IMG_VAL, 
+        SLICES_MSK_VAL, 
+        SLICES_CSV_VAL,
+        name_format=TRAIN_FORMAT)
+
+    run_slices_train(
+        SLICES_IMG_VALIDATION, 
+        SLICES_MSK_VALIDATION, 
+        SLICES_CSV_VALIDATION,
+        name_format=VALIDATION_FORMAT)
+
+    run_npy_train(
+        NPY_IMG_TRAIN, 
+        NPY_MSK_TRAIN, 
+        NPY_CSV_TRAIN
+    )
+
+    run_npy_train(
+        NPY_IMG_VAL, 
+        NPY_MSK_VAL, 
+        NPY_CSV_VAL
+    )
+
+    run_npy_train(
+        NPY_IMG_VALIDATION, 
+        NPY_MSK_VALIDATION, 
+        NPY_CSV_VALIDATION
+    )
