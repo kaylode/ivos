@@ -2,7 +2,7 @@ global:
   exp_name: flare22-normal
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22v2/normal/transform.yaml
+  cfg_transform: configs/flare22v2/normal/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
@@ -13,9 +13,9 @@ trainer:
   args:
     use_fp16: true
     num_iterations: 80000
-    clip_grad:  10.0
+    clip_grad:  1.0
     evaluate_interval: 1
-    print_interval: 20
+    print_interval: 10
     save_interval: 1000
 callbacks:
   - name: LoggerCallbacks
@@ -25,14 +25,14 @@ callbacks:
       best_key: dice-avg
   - name: NormalVisualizerCallbacks
     args: null
-  - name: WandbCallbacks
-    args: 
-     username: kaylode
-     project_name: flare22
+  # - name: WandbCallbacks
+  #   args: 
+  #    username: kaylode
+  #    project_name: flare22-reproduce
 model:
   name: BaseSegModel
   args:
-    model_name: deeplabv3plus
+    model_name: unetplusplus
     encoder_name : efficientnet-b3
     in_channels: 3
     pretrained: True
@@ -41,10 +41,9 @@ loss:
   args:
     weights: null
     losses:
-    - name: OhemCELoss
+    - name: SemanticCELoss
       args: 
-        thresh: 0.5
-    - name: LovaszSoftmax
+    - name: DiceLoss
       args: {}
 metrics:
 - name: mIOU
@@ -69,36 +68,23 @@ scheduler:
 data:
   dataset:
     train:
-      name: ConcatDataset
+      name: FLARE22V2LabelledCSVPosDataset
       args:
-        datasets:
-          - name: FLARE22V2LabelledCSVDataset
-            args:
-              root_dir: ../data/slices/processed/train/
-              csv_path: ../data/slices/processed/train/train.csv
-          - name: FLARE22V2LabelledCSVDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled.csv
-          - name: FLARE22V2LabelledCSVDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled2.csv
+        csv_path: data/flare22/slices/training/train.csv
     val:
-      name: FLARE22V2LabelledCSVDataset
+      name: FLARE22V2LabelledCSVPosDataset
       args:
-        root_dir: ../data/slices/processed/train/
-        csv_path: ../data/slices/processed/train/val.csv
+        csv_path: data/flare22/slices/training/val.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 16
+        batch_size: 2
         drop_last: false
         shuffle: true
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 16
+        batch_size: 2
         drop_last: false
         shuffle: false

@@ -69,26 +69,13 @@ scheduler:
 data:
   dataset:
     train:
-      name: ConcatDataset
+      name: FLARE22V2LabelledCSVPosDataset
       args:
-        datasets:
-          - name: FLARE22V2LabelledCSVPosDataset
-            args:
-              root_dir: ../data/slices/processed/train/
-              csv_path: ../data/slices/processed/train/train.csv
-          - name: FLARE22V2LabelledCSVPosDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled.csv
-          - name: FLARE22V2LabelledCSVPosDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled2.csv
+        csv_path: data/flare22/slices/training/train.csv
     val:
-        name: FLARE22V2LabelledCSVPosDataset
-        args:
-          root_dir: ../data/slices/processed/train/
-          csv_path: ../data/slices/processed/train/val.csv
+      name: FLARE22V2LabelledCSVPosDataset
+      args:
+        csv_path: data/flare22/slices/training/val.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
@@ -99,6 +86,6 @@ data:
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 16
+        batch_size: 2
         drop_last: false
         shuffle: false

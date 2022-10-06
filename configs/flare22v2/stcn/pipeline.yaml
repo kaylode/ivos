@@ -2,7 +2,7 @@ global:
   exp_name: stcn_r50-flare22slices
   exist_ok: true
   debug: true
-  cfg_transform: configs/semantic2D/flare22v2/stcn/transform.yaml
+  cfg_transform: configs/flare22v2/stcn/transform.yaml
   save_dir: /content/main/runs
   device: cuda:0
   pretrained: null
@@ -40,10 +40,6 @@ callbacks:
     best_key: dice-avg
 - name: VolumeVisualizerCallbacks
   args: null
-- name: WandbCallbacks
-  args:
-    username: kaylode
-    project_name: flare22
 model:
   name: STCNModel
   args:
@@ -92,29 +88,14 @@ scheduler:
 data:
   dataset:
     train:
-      name: ConcatDataset
+      name: FLARE22V2STCNTrainDataset
       args:
-        datasets:
-          - name: FLARE22V2STCNTrainDataset
-            args:
-              root_dir: ../data/slices/processed/train/
-              csv_path: ../data/slices/processed/train/train.csv
-              use_aug: True
-          - name: FLARE22V2STCNTrainDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled.csv
-              use_aug: True
-          - name: FLARE22V2STCNTrainDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled2.csv
-              use_aug: True
+        csv_path: data/flare22/slices/training/train.csv
+        use_aug: True
     val:
       name: FLARE22V2STCNValDataset
       args:
-        root_dir: ../data/npy_normalized/train/
-        csv_path: ../data/npy_normalized/train/val.csv
+        csv_path: data/flare22/slices/training/val.csv
   dataloader:
     train:
       name: DataLoaderWithCollator
