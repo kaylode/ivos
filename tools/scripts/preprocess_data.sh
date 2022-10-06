@@ -32,52 +32,52 @@ NPY_MASK_VALIDATION_PATH="data/flare22/npy/validation/ValidationMask"
 NPY_CSV_TRAIN="data/flare22/train_npy.csv"
 NPY_CSV_VAL="data/flare22/val_npy.csv"
 
-# # Process training data
-# echo "Normalize training and validation"
-# PYTHONPATH=. python tools/preprocess/split_train_val.py \
-#     -i $TRAIN_PATH \
-#     -o $PROCESSED_TRAIN_PATH \
-#     --ratio 0.95
+# Process training data
+echo "Normalize training and validation"
+PYTHONPATH=. python tools/preprocess/split_train_val.py \
+    -i $TRAIN_PATH \
+    -o $PROCESSED_TRAIN_PATH \
+    --ratio 0.9
 
-# #Process validation data
-# echo "Normalize official validation"
-# PYTHONPATH=. python tools/preprocess/process_test.py \
-#     -i $VALIDATION_PATH \
-#     -l $GT_VALIDATION_PATH \
-#     -o $PROCESSED_VALIDATION_PATH \
-    # -t "Validation"
+#Process validation data
+echo "Normalize official validation"
+PYTHONPATH=. python tools/preprocess/process_test.py \
+    -i $VALIDATION_PATH \
+    -l $GT_VALIDATION_PATH \
+    -o $PROCESSED_VALIDATION_PATH \
+    -t "Validation"
 
-# echo "Windowing CT labelled data"
-# python tools/preprocess/windowing_ct/run.py $PROCESSED_IMAGE_TRAIN_PATH $SLICES_IMAGE_TRAIN_PATH
-# python tools/preprocess/windowing_ct/run.py $PROCESSED_IMAGE_VAL_PATH $SLICES_IMAGE_VAL_PATH
-# python tools/preprocess/windowing_ct/run.py $PROCESSED_IMAGE_VALIDATION_PATH $SLICES_IMAGE_VALIDATION_PATH
+echo "Windowing CT labelled data"
+python tools/preprocess/windowing_ct/run.py $PROCESSED_IMAGE_TRAIN_PATH $SLICES_IMAGE_TRAIN_PATH
+python tools/preprocess/windowing_ct/run.py $PROCESSED_IMAGE_VAL_PATH $SLICES_IMAGE_VAL_PATH
+python tools/preprocess/windowing_ct/run.py $PROCESSED_IMAGE_VALIDATION_PATH $SLICES_IMAGE_VALIDATION_PATH
 
-# mv $PROCESSED_MASK_TRAIN_PATH $SLICES_MASK_TRAIN_PATH
-# mv $PROCESSED_MASK_VAL_PATH $SLICES_MASK_VAL_PATH
-# mv $PROCESSED_MASK_VALIDATION_PATH $SLICES_MASK_VALIDATION_PATH
+mv $PROCESSED_MASK_TRAIN_PATH $SLICES_MASK_TRAIN_PATH
+mv $PROCESSED_MASK_VAL_PATH $SLICES_MASK_VAL_PATH
+mv $PROCESSED_MASK_VALIDATION_PATH $SLICES_MASK_VALIDATION_PATH
 
 
-# echo "Numpify labelled data"
-# python tools/preprocess/windowing_ct/numpify.py \
-#     -i $SLICES_IMAGE_TRAIN_PATH \
-#     -g $SLICES_MASK_TRAIN_PATH \
-#     -s $NPY_IMAGE_TRAIN_PATH \
-#     -sg $NPY_MASK_TRAIN_PATH
+echo "Numpify labelled data"
+python tools/preprocess/windowing_ct/numpify.py \
+    -i $SLICES_IMAGE_TRAIN_PATH \
+    -g $SLICES_MASK_TRAIN_PATH \
+    -s $NPY_IMAGE_TRAIN_PATH \
+    -sg $NPY_MASK_TRAIN_PATH
 
-# python tools/preprocess/windowing_ct/numpify.py \
-#     -i $SLICES_IMAGE_VAL_PATH \
-#     -g $SLICES_MASK_VAL_PATH \
-#     -s $NPY_IMAGE_VAL_PATH \
-#     -sg $NPY_MASK_VAL_PATH
+python tools/preprocess/windowing_ct/numpify.py \
+    -i $SLICES_IMAGE_VAL_PATH \
+    -g $SLICES_MASK_VAL_PATH \
+    -s $NPY_IMAGE_VAL_PATH \
+    -sg $NPY_MASK_VAL_PATH
 
-# python tools/preprocess/windowing_ct/numpify.py \
-#     -i $SLICES_IMAGE_VALIDATION_PATH \
-#     -g $SLICES_MASK_VALIDATION_PATH \
-#     -s $NPY_IMAGE_VALIDATION_PATH \
-#     -sg $NPY_MASK_VALIDATION_PATH
+python tools/preprocess/windowing_ct/numpify.py \
+    -i $SLICES_IMAGE_VALIDATION_PATH \
+    -g $SLICES_MASK_VALIDATION_PATH \
+    -s $NPY_IMAGE_VALIDATION_PATH \
+    -sg $NPY_MASK_VALIDATION_PATH
 
-# echo "Make csv file"
-# python tools/preprocess/windowing_ct/make_csv.py
+echo "Make csv file"
+python tools/preprocess/windowing_ct/make_csv.py
 
 
 #Process unlabelled data
