@@ -1,6 +1,6 @@
-from theseus.semantic2D.models.stcn.backbone.mod_resnet import ResNetBackbone
-from theseus.semantic2D.models.stcn.backbone.mod_mbv3 import MobileNetBackbone
-from theseus.semantic2D.models.stcn.backbone.vision_transformer import SwinTransformer
+from source.semantic2D.models.stcn.backbone.mod_resnet import ResNetBackbone
+from source.semantic2D.models.stcn.backbone.mod_mbv3 import MobileNetBackbone
+from source.semantic2D.models.stcn.backbone.vision_transformer import SwinTransformer
 
 def create_model(name, pretrained:bool = True, **kwargs):
 

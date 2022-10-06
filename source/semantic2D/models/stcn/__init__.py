@@ -2,10 +2,10 @@ from typing import Dict, Any
 import torch
 import torch.nn as nn
 from theseus.utilities.loading import load_state_dict
-from theseus.semantic2D.models.stcn.networks.network import STCNTrain
-from theseus.semantic2D.models.stcn.inference.inference_core import InferenceCore
-from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic2D.models.stcn.utilities.loading import load_pretrained_model
+from source.semantic2D.models.stcn.networks.network import STCNTrain
+from source.semantic2D.models.stcn.inference.inference_core import InferenceCore
+from source.semantic2D.models.stcn.networks.eval_network import STCNEval
+from source.semantic2D.models.stcn.utilities.loading import load_pretrained_model
 
 
 class STCNModel():

@@ -8,15 +8,15 @@ from theseus.utilities.loading import load_state_dict
 
 from theseus.opt import Config
 from theseus.base.pipeline import BasePipeline
-from theseus.cps.models import wrapper as refer_model
+from .models import wrapper as refer_model
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
-from theseus.cps.losses import LOSS_REGISTRY
-from theseus.cps.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.cps.trainer import TRAINER_REGISTRY
-from theseus.semantic2D.metrics import METRIC_REGISTRY
-from theseus.cps.models import MODEL_REGISTRY
-from theseus.cps.callbacks import CALLBACKS_REGISTRY
+from theseus.semantic.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic.losses import LOSS_REGISTRY
+from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.semantic.trainer import TRAINER_REGISTRY
+from theseus.semantic.metrics import METRIC_REGISTRY
+from theseus.semantic.models import MODEL_REGISTRY
+from theseus.semantic.callbacks import CALLBACKS_REGISTRY
 from theseus.utilities.loggers import LoggerObserver
 
 

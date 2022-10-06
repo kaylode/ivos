@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from theseus.semantic2D.models.stcn.backbone.factory import create_model
+from source.semantic2D.models.stcn.backbone.factory import create_model
 
 class ResBlock(nn.Module):
     def __init__(self, indim, outdim=None):

@@ -8,16 +8,16 @@ from theseus.utilities.loading import load_state_dict
 
 from theseus.opt import Config
 from theseus.base.pipeline import BasePipeline
-from theseus.semantic2D.models import wrapper as refine_model
+from .models import wrapper as refine_model
 from theseus.base.models import wrapper as refer_model
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic2D.losses import LOSS_REGISTRY
-from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.semantic2D.trainer import TRAINER_REGISTRY
-from theseus.semantic2D.metrics import METRIC_REGISTRY
-from theseus.semantic2D.models import MODEL_REGISTRY
-from theseus.semantic2D.callbacks import CALLBACKS_REGISTRY
+from theseus.semantic.augmentations import TRANSFORM_REGISTRY
+from source.semantic2D.losses import LOSS_REGISTRY
+from source.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from source.semantic2D.trainer import TRAINER_REGISTRY
+from source.semantic2D.metrics import METRIC_REGISTRY
+from source.semantic2D.models import MODEL_REGISTRY
+from source.semantic2D.callbacks import CALLBACKS_REGISTRY
 from theseus.utilities.loggers import LoggerObserver
 
 
@@ -52,9 +52,14 @@ class Pipeline(BasePipeline):
         if self.pretrained:
             state_dict = torch.load(self.pretrained)
             if self.stage == "reference":
-                self.model.model.model = load_state_dict(
-                    self.model.model.model, state_dict, "model"
-                )
+                if hasattr(self.model.model, 'model'):
+                    self.model.model.model = load_state_dict(
+                        self.model.model.model, state_dict, "model"
+                    )
+                else:
+                    self.model.model = load_state_dict(
+                        self.model.model, state_dict, "model"
+                    )
             else:
                 state_dict = torch.load(self.pretrained)
                 self.model.model.load_network(

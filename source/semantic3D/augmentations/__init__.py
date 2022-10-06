@@ -1,16 +1,4 @@
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
-
-from monai.transforms import (
-    Compose,
-    LoadImaged,
-    RandSpatialCropd,
-    RandFlipd,
-    NormalizeIntensityd, 
-    RandScaleIntensityd,
-    RandShiftIntensityd,
-    ToTensord,
-    CenterSpatialCropd,
-)
 from .monai_tf import *
 
 TRANSFORM_REGISTRY.register(Compose, prefix='Monai')

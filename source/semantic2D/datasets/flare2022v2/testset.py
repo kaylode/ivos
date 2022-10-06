@@ -3,8 +3,8 @@ import torch
 import numpy as np
 import os
 import os.path as osp
-from theseus.semantic2D.utilities.sampling import sampling_frames
-from theseus.semantic2D.datasets.flare2022v2.base import FLARE22V2BaseDataset
+from source.semantic2D.utilities.sampling import sampling_frames
+from source.semantic2D.datasets.flare2022v2.base import FLARE22V2BaseDataset
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")

@@ -74,9 +74,8 @@ class FLARE22V2BaseDataset(SemanticDataset):
         path to root_dir
     """
 
-    def __init__(self, root_dir: str, transform=None, **kwargs):
+    def __init__(self, transform=None, **kwargs):
         super().__init__()
-        self.root_dir = root_dir
         self.transform = transform
         self.classnames = [
             "background",
@@ -121,9 +120,10 @@ class FLARE22V2BaseDataset(SemanticDataset):
 
     def _load_image(self, idx):
         patient_item = self.fns[idx]
-        img_path1 = osp.join(self.root_dir, patient_item["image1"])
-        img_path2 = osp.join(self.root_dir, patient_item["image2"])
-        img_path3 = osp.join(self.root_dir, patient_item["image3"])
+        img_path1 = patient_item["image1"]
+        img_path2 = patient_item["image2"]
+        img_path3 = patient_item["image3"]
+
         img1 = cv2.imread(img_path1, 0)
         img2 = cv2.imread(img_path2, 0)
         img3 = cv2.imread(img_path3, 0)
@@ -138,20 +138,12 @@ class FLARE22V2BaseDataset(SemanticDataset):
     def _load_mask(self, idx):
         raise NotImplementedError
 
-    # def _calculate_classes_dist(self):
-    #     classes_dist = []    
-    #     LOGGER.text("Calculating class frequency...", level=LoggerObserver.DEBUG)
-    #     for idx in range(len(self.fns)):
-    #         mask = self._load_mask(idx)
-
-    #         classes_dist.append()
-
 class FLARE22V2BaseCSVDataset(FLARE22V2BaseDataset):
     """
     Load in csv
     """
 
-    def __init__(self, root_dir: str, csv_path: str, transform=None, **kwargs):
-        super().__init__(root_dir, transform)
+    def __init__(self, csv_path: str, transform=None, **kwargs):
+        super().__init__(transform)
         self.csv_path = csv_path
 

@@ -4,7 +4,7 @@ import os.path as osp
 import torch
 import numpy as np
 import pandas as pd
-from theseus.semantic2D.datasets.flare2022v2.base import (
+from source.semantic2D.datasets.flare2022v2.base import (
     FLARE22V2BaseCSVDataset,
 )
 from theseus.utilities.loggers.observer import LoggerObserver
@@ -16,8 +16,8 @@ class FLARE22V2LabelledCSVPosDataset(FLARE22V2BaseCSVDataset):
     Load in csv
     """
 
-    def __init__(self, root_dir: str, csv_path: str, transform=None, **kwargs):
-        super().__init__(root_dir, csv_path, transform)
+    def __init__(self, csv_path: str, transform=None, **kwargs):
+        super().__init__(csv_path, transform)
         self._load_data()
 
     def _load_data(self):
@@ -47,7 +47,7 @@ class FLARE22V2LabelledCSVPosDataset(FLARE22V2BaseCSVDataset):
 
     def _load_mask(self, idx):
         patient_item = self.fns[idx]
-        label_path = osp.join(self.root_dir, patient_item["label"])
+        label_path = patient_item["label"]
         mask = np.load(label_path)  # (H,W) with each pixel value represent one class
         return mask
         

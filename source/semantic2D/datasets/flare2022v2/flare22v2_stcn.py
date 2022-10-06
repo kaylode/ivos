@@ -1,19 +1,17 @@
 from typing import Union, Optional, List, Dict
-import os
 import os.path as osp
 import torch
 import numpy as np
-from theseus.semantic2D.datasets.flare2022v2.base import (
+from source.semantic2D.datasets.flare2022v2.base import (
     FLARE22V2BaseCSVDataset, all_to_onehot
 )
-import cv2
 import pandas as pd
 import random
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
 
-from theseus.semantic2D.utilities.referencer import Referencer
+from source.semantic2D.utilities.referencer import Referencer
 REFERENCER = Referencer()
 
 
@@ -38,10 +36,10 @@ class FLARE22V2STCNTrainDataset(FLARE22V2BaseCSVDataset):
     """
 
     def __init__(
-        self, root_dir: str, csv_path: str, max_jump: int = 25, use_aug:bool=False, transform=None, **kwargs
+        self, csv_path: str, max_jump: int = 25, use_aug:bool=False, transform=None, **kwargs
     ):
 
-        super().__init__(root_dir, csv_path, transform)
+        super().__init__(csv_path, transform)
         self.max_jump = max_jump
         self.use_aug = use_aug
         self._load_data()
@@ -96,7 +94,7 @@ class FLARE22V2STCNTrainDataset(FLARE22V2BaseCSVDataset):
 
     def _load_mask(self, idx):
         patient_item = self.fns[idx]
-        label_path = osp.join(self.root_dir, patient_item["label"])
+        label_path = patient_item["label"]
         mask = np.load(label_path)  # (H,W) with each pixel value represent one class
         return mask
 
@@ -220,8 +218,8 @@ class FLARE22V2STCNTrainDataset(FLARE22V2BaseCSVDataset):
         }
 
 class FLARE22V2STCNValDataset(FLARE22V2BaseCSVDataset):
-    def __init__(self, root_dir: str, csv_path: str, transform=None, **kwargs):
-        super().__init__(root_dir, csv_path, transform)
+    def __init__(self, csv_path: str, transform=None, **kwargs):
+        super().__init__(csv_path, transform)
         self.single_object = False
         self._load_data()
         self.compute_stats()
@@ -251,7 +249,7 @@ class FLARE22V2STCNValDataset(FLARE22V2BaseCSVDataset):
             vol_dict = {
                 "guides": [],
             }
-            gt_path = osp.join(self.root_dir, item["label"])
+            gt_path = item["label"]
             gt_vol = np.load(gt_path)  # (H, W, NS)
             vol_dict["guides"] = REFERENCER.search_reference(
                 gt_vol, strategy="largest-area"
@@ -262,9 +260,9 @@ class FLARE22V2STCNValDataset(FLARE22V2BaseCSVDataset):
         """
         Load volume with Monai transform
         """
-        vol_path = osp.join(self.root_dir, patient_item["vol"])
+        vol_path = patient_item["vol"]
         npy_image = np.load(vol_path)
-        gt_path = osp.join(self.root_dir, patient_item["label"])
+        gt_path = patient_item["label"]
         npy_mask = np.load(gt_path)
         out_dict = {
             "image": torch.from_numpy(npy_image),

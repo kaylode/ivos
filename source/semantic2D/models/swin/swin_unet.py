@@ -7,8 +7,8 @@ import torch.nn as nn
 import copy
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.cuda import move_to, detach
-from theseus.semantic2D.models.swin.swin_module import SwinTransformerSys
-from theseus.semantic2D.models.swin.config import get_config, load_pretrained_model
+from source.semantic2D.models.swin.swin_module import SwinTransformerSys
+from source.semantic2D.models.swin.config import get_config, load_pretrained_model
 
 class SwinUnet(nn.Module):
     """

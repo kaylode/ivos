@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from collections import OrderedDict
 from theseus.base.metrics.metric_template import Metric
-from theseus.semantic2D.metrics.nsd.surface import (
+from source.semantic2D.metrics.nsd.surface import (
     compute_surface_distances, 
     compute_surface_dice_at_tolerance, 
 )

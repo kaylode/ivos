@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from theseus.semantic2D.models.stcn.utilities.loading import load_pretrained_model 
+from source.semantic2D.models.stcn.utilities.loading import load_pretrained_model 
 from theseus.utilities.loading import load_state_dict
 
 __all__ = ['MobileNetV3', 'mobilenetv3']

@@ -1,13 +1,13 @@
 import torch
 import numpy as np
 from typing import Dict
-from theseus.semantic2D.models.stcn.inference.inference_memory_bank import MemoryBank
-from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic2D.models.stcn.utilities.aggregate import aggregate
-from theseus.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by
+from source.semantic2D.models.stcn.inference.inference_memory_bank import MemoryBank
+from source.semantic2D.models.stcn.networks.eval_network import STCNEval
+from source.semantic2D.models.stcn.utilities.aggregate import aggregate
+from source.semantic2D.models.stcn.utilities.tensor_util import pad_divide_by
 from theseus.utilities.cuda import move_to
 
-from theseus.semantic2D.utilities.referencer import Referencer
+from source.semantic2D.utilities.referencer import Referencer
 
 REFERENCER = Referencer()
 

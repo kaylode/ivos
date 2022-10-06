@@ -3,14 +3,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 from scipy import ndimage
-from theseus.semantic2D.models.transunet.vit_seg_configs import CONFIGS, load_pretrained_model
-from theseus.semantic2D.models.transunet.vit_seg_modeling import (
+from source.semantic2D.models.transunet.vit_seg_configs import CONFIGS, load_pretrained_model
+from source.semantic2D.models.transunet.vit_seg_modeling import (
     Transformer, DecoderCup, SegmentationHead, np2th
 )
-import torch.nn.functional as F
-from torch.autograd import Variable
-
-from theseus.utilities.loading import load_state_dict
 from theseus.utilities.cuda import move_to, detach
 
 class TransUnetPE(nn.Module):
@@ -21,6 +17,7 @@ class TransUnetPE(nn.Module):
         img_size: int = 512, 
         in_channels: int = 3,
         pretrained: bool = True,
+        use_positional_encoding: bool = False,
         vis=False,
         **kwargs):
 
@@ -35,11 +32,16 @@ class TransUnetPE(nn.Module):
 
         self.num_classes = num_classes
         self.classifier = config.classifier
+        self.use_positional_encoding = use_positional_encoding
+        if self.use_positional_encoding:
+            extra_layer = 1
+        else:
+            extra_layer = 0
+
         self.transformer = Transformer(config, img_size, vis, in_channels=in_channels)
         self.decoder = DecoderCup(config)
-
         self.segmentation_head = SegmentationHead(
-            in_channels=config['decoder_channels'][-1]+1,
+            in_channels=config['decoder_channels'][-1]+extra_layer,
             out_channels=num_classes,
             kernel_size=3,
         )
@@ -53,21 +55,21 @@ class TransUnetPE(nn.Module):
     def forward(self, batch: Dict, device: torch.device):
         x = move_to(batch['inputs'], device)
 
-        # Labels
-        labels = torch.FloatTensor(batch['sids'])
-        labels = move_to(labels, device)
-        bs, _, w, h = x.shape
-        real_y = torch.ones(bs, 1, w, h)
-        real_y = move_to(real_y, device)
-        labels = labels.view(bs, 1, 1, 1)
-        real_y = real_y*labels
-
         if x.size()[1] == 1:
             x = x.repeat(1,3,1,1)
         x, attn_weights, features = self.transformer(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
         
-        x = torch.cat([x, real_y], dim=1).to(device)
+        if self.use_positional_encoding:
+            # Labels
+            labels = torch.FloatTensor(batch['sids'])
+            labels = move_to(labels, device)
+            bs, _, w, h = x.shape
+            real_y = torch.ones(bs, 1, w, h)
+            real_y = move_to(real_y, device)
+            labels = labels.view(bs, 1, 1, 1)
+            real_y = real_y*labels
+            x = torch.cat([x, real_y], dim=1).to(device)
 
         logits = self.segmentation_head(x)
         return {
