@@ -96,8 +96,8 @@ class FLARE22V2UnlabelledCSVPosDataset(FLARE22V2BaseCSVDataset):
         
     """
 
-    def __init__(self, root_dir: str, csv_path: str, transform=None, **kwargs):
-        super().__init__(root_dir, csv_path, transform)
+    def __init__(self, csv_path: str, transform=None, **kwargs):
+        super().__init__(csv_path, transform)
         self._load_data()
 
     def _load_data(self):
