@@ -85,7 +85,8 @@ UNLABELLED_PATH="data/flare22/raw/unlabelled/images"
 mkdir data/flare22/processed/unlabelled
 mkdir data/flare22/npy/unlabelled
 
-PROCESSED_UNLABELLED_PATH="data/flare22/processed/unlabelled/UnlabelledImage"
+PROCESSED_UNLABELLED_PATH="data/flare22/processed/unlabelled"
+PROCESSED_UNLABELLED_IMAGE_PATH="data/flare22/processed/unlabelled/UnlabelledImage"
 SLICES_UNLABELLED_IMAGE_PATH="data/flare22/slices/unlabelled/UnlabelledImage"
 SLICES_UNLABELLED_NPY_PATH="data/flare22/npy/unlabelled/UnlabelledImage"
 
@@ -96,7 +97,7 @@ PYTHONPATH=. python tools/preprocess/process_test.py \
     -t "Unlabelled"
 
 echo "Windowing CT unlabelled"
-python tools/preprocess/windowing_ct/run.py $PROCESSED_UNLABELLED_PATH $SLICES_UNLABELLED_IMAGE_PATH
+python tools/preprocess/windowing_ct/run.py $PROCESSED_UNLABELLED_IMAGE_PATH $SLICES_UNLABELLED_IMAGE_PATH
 
 python tools/preprocess/windowing_ct/numpify.py \
     -i $SLICES_UNLABELLED_IMAGE_PATH \

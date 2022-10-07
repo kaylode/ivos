@@ -148,15 +148,36 @@ def save_npy_volume_mask(
     if return_filenames:
         return filenames, masknames
 
-def split_train_val(root_dir, out_dir, ratio=0.9):
-    filenames = os.listdir(osp.join(root_dir, "images"))
 
+def random_split(filenames, ratio):
     train_filenames = np.random.choice(
         filenames, size=int(ratio * len(filenames)), replace=False
     )
     train_masknames = [i.replace("_0000.nii.gz", ".nii.gz") for i in train_filenames]
     val_filenames = [i for i in filenames if i not in train_filenames]
     val_masknames = [i.replace("_0000.nii.gz", ".nii.gz") for i in val_filenames]
+
+    return train_filenames, train_masknames, val_filenames, val_masknames
+
+def fixed_split(filenames, ratio):
+
+    val_filenames = [
+        "FLARE22_Tr_0009_0000.nii.gz",
+        "FLARE22_Tr_0012_0000.nii.gz",
+        "FLARE22_Tr_0013_0000.nii.gz",
+        "FLARE22_Tr_0025_0000.nii.gz",
+        "FLARE22_Tr_0035_0000.nii.gz"
+    ]
+    train_filenames = [i for i in filenames if i not in val_filenames]
+    train_masknames = [i.replace("_0000.nii.gz", ".nii.gz") for i in train_filenames]
+    val_masknames = [i.replace("_0000.nii.gz", ".nii.gz") for i in val_filenames]
+
+    return train_filenames, train_masknames, val_filenames, val_masknames
+
+
+def split_train_val(root_dir, out_dir, ratio=0.9):
+    filenames = os.listdir(osp.join(root_dir, "images"))
+    train_filenames, train_masknames, val_filenames, val_masknames = fixed_split(filenames, ratio)
 
     target_imagesTr = osp.join(out_dir, "TrainImage")
     target_labelsTr = osp.join(out_dir, "TrainMask")

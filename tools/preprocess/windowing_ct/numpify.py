@@ -45,9 +45,9 @@ def run(args):
 
     if args.gt_dir is not None:
         os.makedirs(args.save_mask_dir, exist_ok=True)
-        gtname_ls = os.listdir(args.gt_dir)
+        gtname_ls = sorted(os.listdir(args.gt_dir))
         for gtname in tqdm(gtname_ls):
-            filenames = os.listdir(osp.join(args.gt_dir, gtname))
+            filenames = sorted(os.listdir(osp.join(args.gt_dir, gtname)))
             npy_full_image = []
             for filename in filenames:
                 filepath = osp.join(args.gt_dir, gtname, filename)
