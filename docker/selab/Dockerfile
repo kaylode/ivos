@@ -56,8 +56,7 @@ COPY ./ $WORKDIR
 SHELL ["/bin/bash","-c"]
 RUN conda init bash && source ~/.bashrc && \
     python -m pip install -r requirements.txt && \
-    python -m pip install git+https://github.com/cheind/py-thin-plate-spline && \
-    python -m pip install -e .
+    python -m pip install git+https://github.com/cheind/py-thin-plate-spline
 
 # USER $USERNAME
 RUN conda init bash 
