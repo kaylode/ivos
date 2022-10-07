@@ -6,13 +6,18 @@ the previous challenges, it is unlikely for 2D CNNs to be comparable with other 
 We also deploy an annotation tool with user-friendly GUI that is based on this proposed algorithm [here](https://github.com/nhtlongcs/ivos-gui) 
 
 
-# :pencil: Instructions
 
-### **Installation**
+<p align="center">
+<img height="300" alt="screen" src="assets/overall.png">
+<img height="300" alt="screen" src="assets/qualitative.png">
+</p>
+
+
+## **Installation**
 - Go to root folder, run `pip install -r requirements.txt`
 
 
-### **Data Preparation**
+## **Data Preparation**
 
 - We reuploaded the original data from [FLARE22 Challenge](ivos/FLARE22.md) onto Drive, use below scripts to download and preprocess the data before training.
 
@@ -33,9 +38,9 @@ this repo
 ```
 In each of these folder should be subfolders for training/val/validation images and masks. 
 
-### **Training**
+## **Training**
 
-#### Reference module
+### Reference module
 
 - We use Cross Pseudo Supervision (CPS) for the Reference module. Basically, CPS can be trained from scratch but we recommend training each model individually first.
 
@@ -49,7 +54,7 @@ sh tools/scripts/train_normal.sh <run_name> <save_dir>
 sh tools/scripts/train_cps.sh <run_name> <save_dir>
 ```
 
-#### Propagation module
+### Propagation module
 
 - We adapt [STCN](https://github.com/hkchengrex/STCN) as the core algorithm to our problem with adjustments.
 
@@ -58,7 +63,7 @@ sh tools/scripts/train_cps.sh <run_name> <save_dir>
 sh tools/scripts/train_cps.sh <run_name> <save_dir>
 ```
 
-### **Inference**
+## **Inference**
 
 - You can download the checkpoints from wandb by using
 ```
@@ -74,7 +79,7 @@ which will then save the results inside `runs/<model_name>/`. Submission file al
 
 - For other inference settings, some scripts are also provided.
 
-### **Pseudo-labeling with Active Learning**
+## **Pseudo-labeling with Active Learning**
 
 - We use Uncertainty Estimation based on mutual agreement to generate pseudo-labels for retraining. Put all results that are infered using provided inference scripts into the same <prediction_dir> folder. Then run
 
@@ -82,7 +87,7 @@ which will then save the results inside `runs/<model_name>/`. Submission file al
 sh tools/scripts/pseudo_label.sh <prediction_dir> <save_dir>
 ```
 
-### **Evaluation**
+## **Evaluation**
 - Standalone evaluation scripts officially provided by the organizers 
 ```
 python tools/evaluation/DSC_NSD_eval.py \
@@ -90,7 +95,7 @@ python tools/evaluation/DSC_NSD_eval.py \
   -p <prediction mask>
 ```
 
-### **References**
+## **References**
 
 - https://github.com/kaylode/theseus
 - https://github.com/hkchengrex/STCN
