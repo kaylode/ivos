@@ -2,7 +2,7 @@ global:
   exp_name: flare22-cps
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22v2/cps/transform.yaml
+  cfg_transform: configs/flare22v2/cps/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained1: null
@@ -28,10 +28,6 @@ callbacks:
       best_key: dice-avg
   - name: TwoStreamVisualizerCallbacks
     args: null
-  # - name: WandbCallbacks
-  #   args: 
-  #     username: kaylode
-  #     project_name: flare22
 model:
   name: CrossPseudoSupervision
   args:
