@@ -19,7 +19,7 @@ parser.add_argument("-p", "--pred_dir", type=str, help="Prediction directory")
 
 NUM_CLASSES = 13
 
-LOG = "runs/val_infer/vallog.csv"
+LOG = "runs/vallog.csv"
 df = pd.read_csv(LOG)
 
 

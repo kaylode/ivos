@@ -1,14 +1,7 @@
-from collections import defaultdict
-from yaml import parse
-import nibabel as nib
 import numpy as np
-import matplotlib.pyplot as plt
 import os
-import SimpleITK as sitk
 import os.path as osp
-import imageio
 from tqdm import tqdm
-from theseus.utilities.visualization.visualizer import Visualizer
 import torch
 import argparse
 
