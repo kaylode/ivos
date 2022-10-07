@@ -19,12 +19,15 @@ SLICES_IMG_VAL="data/flare22/slices/training/ValImage"
 SLICES_MSK_VAL="data/flare22/slices/training/ValMask"
 SLICES_IMG_VALIDATION="data/flare22/slices/validation/ValidationImage"
 SLICES_MSK_VALIDATION="data/flare22/slices/validation/ValidationMask"
+SLICES_IMG_UNLABELLED="data/flare22/slices/unlabelled/UnlabelledImage"
 SLICES_CSV_TRAIN="data/flare22/slices/train_slices.csv"
 SLICES_CSV_VAL="data/flare22/slices/val_slices.csv"
 SLICES_CSV_VALIDATION="data/flare22/slices/validation_slices.csv"
+SLICES_CSV_UNLABELLED="data/flare22/slices/unlabelled_slices.csv"
 
 TRAIN_FORMAT= "FLARE22_Tr_{pid}_0000_{sid}.jpg"
 VALIDATION_FORMAT= "FLARETs_{pid}_0000_{sid}.jpg"
+UNLABELLED_FORMAT= "Case_{pid}_0000_{sid}.jpg"
 
 def run_slices_train(img_dir, gt_dir, out_csv, name_format):
 
@@ -115,6 +118,12 @@ if __name__ == '__main__':
         SLICES_MSK_VALIDATION, 
         SLICES_CSV_VALIDATION,
         name_format=VALIDATION_FORMAT)
+
+    run_slices_train(
+        SLICES_IMG_UNLABELLED, 
+        gt_dir=None,
+        out_csv=SLICES_CSV_UNLABELLED,
+        name_format=UNLABELLED_FORMAT)
 
     run_npy_train(
         NPY_IMG_TRAIN, 

@@ -76,10 +76,6 @@ python tools/preprocess/windowing_ct/numpify.py \
     -s $NPY_IMAGE_VALIDATION_PATH \
     -sg $NPY_MASK_VALIDATION_PATH
 
-echo "Make csv file"
-python tools/preprocess/windowing_ct/make_csv.py
-
-
 #Process unlabelled data
 UNLABELLED_PATH="data/flare22/raw/unlabelled/images"
 mkdir data/flare22/processed/unlabelled
@@ -102,3 +98,6 @@ python tools/preprocess/windowing_ct/run.py $PROCESSED_UNLABELLED_IMAGE_PATH $SL
 python tools/preprocess/windowing_ct/numpify.py \
     -i $SLICES_UNLABELLED_IMAGE_PATH \
     -s $SLICES_UNLABELLED_NPY_PATH 
+
+echo "Make csv file"
+python tools/preprocess/windowing_ct/make_csv.py
