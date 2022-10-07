@@ -190,11 +190,11 @@ class TwoStreamVisualizerCallbacks(Callbacks):
         preds = torch.argmax(last_outputs, dim=1)
         preds = move_to(preds, torch.device('cpu'))
         masks = last_batch['targets']
-        masks = torch.argmax(masks.squeeze(), dim=1)
-
+        masks = torch.argmax(masks, dim=1)
+        
         # iter through timestamp
         vis_inputs = []
-        image_show = last_batch["inputs"].squeeze().numpy() # (B, T, C, H, W) 
+        image_show = last_batch["inputs"].numpy() # (B, T, C, H, W) 
         for image in image_show:
             if len(image.shape) == 2:
                 image = self.normalize_min_max(image)
@@ -216,7 +216,6 @@ class TwoStreamVisualizerCallbacks(Callbacks):
             decode_preds.append(decode_pred)
         decode_masks = np.stack(decode_masks, axis=0).transpose(0,3,1,2)
         decode_preds = np.stack(decode_preds, axis=0).transpose(0,3,1,2)
-
 
         concated_vis = np.concatenate([vis_inputs, decode_masks, decode_preds], axis=-1) # (T, C, 3H, W)
 

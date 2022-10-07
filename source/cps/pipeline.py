@@ -114,24 +114,49 @@ class Pipeline(BasePipeline):
 
         if self.pretrained1:
             state_dict = torch.load(self.pretrained1)
-            self.model.model.model1 = load_state_dict(
-                self.model.model.model1, state_dict, "model"
-            )
+
+            if hasattr(self.model.model.model1, 'model'):
+                self.model.model.model1.model = load_state_dict(
+                    self.model.model.model1.model, state_dict, "model"
+                )
+            else:
+                self.model.model.model1 = load_state_dict(
+                    self.model.model.model1, state_dict, "model"
+                )
 
         if self.pretrained2:
             state_dict = torch.load(self.pretrained2)
-            self.model.model.model2.model = load_state_dict(
-                self.model.model.model2.model, state_dict, "model"
-            )
+
+            if hasattr(self.model.model.model2, 'model'):
+                self.model.model.model2.model = load_state_dict(
+                    self.model.model.model2.model, state_dict, "model"
+                )
+            else:
+                self.model.model.model2 = load_state_dict(
+                    self.model.model.model2, state_dict, "model"
+                )
 
         if self.resume:
             state_dict = torch.load(self.resume)
-            self.model.model.model1.model = load_state_dict(
-                self.model.model.model1.model, state_dict, "model1"
-            )
-            self.model.model.model2.model = load_state_dict(
-                self.model.model.model2.model, state_dict, "model2"
-            )
+
+            if hasattr(self.model.model.model1, 'model'):
+                self.model.model.model1.model = load_state_dict(
+                    self.model.model.model1.model, state_dict, "model1"
+                )
+            else:
+                self.model.model.model1 = load_state_dict(
+                    self.model.model.model1, state_dict, "model1"
+                )
+
+            if hasattr(self.model.model.model2, 'model'):
+                self.model.model.model2.model = load_state_dict(
+                    self.model.model.model2.model, state_dict, "model2"
+                )
+            else:
+                self.model.model.model2 = load_state_dict(
+                    self.model.model.model2, state_dict, "model2"
+                )
+
             self.optimizers[0] = load_state_dict(
                 self.optimizers[0], state_dict, "optimizer1"
             )
