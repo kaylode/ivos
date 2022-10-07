@@ -2,15 +2,12 @@ global:
   exp_name: flare22-normal
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22v2/normal/transform.yaml
+  cfg_transform: configs/flare22v2/normal/transform.yaml
   save_dir: runs
   device: cuda:0
   weights: null
   stage: reference
-  save_csv: True
   save_visualization: True
-  use_uncertainty: False
-  class_weights: configs/weights.txt
 model:
   name: TransUnetPE
   args:
@@ -18,11 +15,12 @@ model:
     img_size: 512 
     in_channels: 3
     pretrained: False
+    use_positional_encoding: True
 data: 
   dataset:
     name: FLARE22V2TestDataset
     args:
-      root_dir: ../data/npy_normalized/validation/ValidationProcessedNpy
+      root_dir: data/flare22/npy/validation/ValidationImage
       sample_fp: 1
       max_ref_frames: -1
   dataloader:

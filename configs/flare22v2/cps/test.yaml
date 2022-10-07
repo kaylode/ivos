@@ -2,15 +2,12 @@ global:
   exp_name: flare22-stcn
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22v2/cps/transform.yaml
+  cfg_transform: configs/flare22v2/cps/transform.yaml
   save_dir: runs
   device: cuda:0
   weights: null
   stage: reference
-  save_csv: True
   save_visualization: True
-  use_uncertainty: False
-  class_weights: configs/weights.txt
 model:
   name: CrossPseudoSupervision
   args:
@@ -21,6 +18,7 @@ model:
         img_size: 512 
         in_channels: 3
         pretrained: False
+        use_positional_encoding: True
     model2:
       name: BaseSegModel
       args:

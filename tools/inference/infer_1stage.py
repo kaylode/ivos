@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple
-
 import matplotlib as mpl
 mpl.use("Agg")
 from theseus.opt import Opts
@@ -17,9 +15,9 @@ from theseus.opt import Config
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.cuda import move_to
 from theseus.utilities.getter import get_instance_recursively
-from theseus.cps.models import MODEL_REGISTRY
-from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from source.semantic2D.models import MODEL_REGISTRY
+from source.semantic3D.augmentations import TRANSFORM_REGISTRY
+from source.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from theseus.utilities.loggers import LoggerObserver
 from theseus.utilities.visualization.visualizer import Visualizer
@@ -37,6 +35,7 @@ class TestPipeline(BaseTestPipeline):
     def init_globals(self):
         super().init_globals()
         self.save_visualization = self.opt['global']['save_visualization']
+        self.stage = self.opt['global']['stage']
 
         if self.save_visualization:
             self.visualizer = Visualizer()
@@ -49,22 +48,6 @@ class TestPipeline(BaseTestPipeline):
         self.logger.text(
             "Overidding registry in pipeline...", LoggerObserver.INFO
         )
-
-    def init_model(self):
-        CLASSNAMES = self.dataset.classnames
-        self.model = get_instance_recursively(
-            self.opt["model"], 
-            registry=self.model_registry, 
-            num_classes=len(CLASSNAMES),
-            classnames=CLASSNAMES)
-        self.model = move_to(self.model, self.device)
-        self.model.eval()
-
-    def init_loading(self):
-        self.weights = self.opt['global']['weights']
-        if self.weights:
-            state_dict = torch.load(self.weights)   
-            self.model = load_state_dict(self.model, state_dict, 'model')
 
     def save_gif(self, images, masks, save_dir, outname):
         # images: (T, C, H, W)
@@ -118,8 +101,6 @@ class TestPipeline(BaseTestPipeline):
                 sids = data['sids'][0]
                 name = data["infos"][0]["img_name"]
                 this_out_path = osp.join(savedir, str(name) + ".npy")
-                if osp.isfile(this_out_path):
-                    continue
 
                 for i, (inp, sid) in enumerate(zip(inputs, sids)):
                     if len(custom_batch) == 31 or i == inputs.shape[0] - 1:

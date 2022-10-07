@@ -2,14 +2,14 @@ from theseus.utilities.getter import get_instance, get_instance_recursively
 from theseus.utilities.loading import load_state_dict
 from theseus.base.pipeline import BaseTestPipeline
 from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.semantic2D.models.stcn.networks.eval_network import STCNEval
-from theseus.semantic2D.models.stcn.inference.inference_core_efficient import (
+from source.semantic2D.models.stcn.networks.eval_network import STCNEval
+from source.semantic2D.models.stcn.inference.inference_core_efficient import (
     InferenceCore,
 )
 from theseus.utilities.loggers import LoggerObserver
-from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
-from theseus.cps.models import MODEL_REGISTRY
+from source.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from source.semantic3D.augmentations import TRANSFORM_REGISTRY
+from source.cps.models import MODEL_REGISTRY
 from theseus.opt import Config
 import imageio
 import torch
@@ -20,13 +20,12 @@ import os.path as osp
 import os
 import cv2
 from theseus.opt import Opts
-from typing import List, Optional, Tuple
 
 import matplotlib as mpl
 
 mpl.use("Agg")
 
-from theseus.semantic2D.utilities.referencer import Referencer
+from source.semantic2D.utilities.referencer import Referencer
 
 REFERENCER = Referencer()
 

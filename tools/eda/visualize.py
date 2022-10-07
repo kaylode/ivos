@@ -1,3 +1,4 @@
+from genericpath import isfile
 import os
 import cv2
 import os.path as osp
@@ -70,6 +71,10 @@ def run(args):
         image_path = osp.join(args.image_dir, filename)
         maskname = filename.replace('_0000.nii.gz', '.nii.gz') 
         mask_path = osp.join(args.mask_dir, maskname)
+
+        if not osp.isfile(mask_path):
+            continue
+        
         frames, height, width, depth = make_frames(image_path, mask_path)
         
         writer = VideoWriter({
