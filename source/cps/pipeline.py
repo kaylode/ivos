@@ -11,12 +11,12 @@ from theseus.base.pipeline import BasePipeline
 from .models import wrapper as refer_model
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic.losses import LOSS_REGISTRY
-from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.semantic.trainer import TRAINER_REGISTRY
-from theseus.semantic.metrics import METRIC_REGISTRY
-from theseus.semantic.models import MODEL_REGISTRY
-from theseus.semantic.callbacks import CALLBACKS_REGISTRY
+from source.cps.losses import LOSS_REGISTRY
+from source.cps.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from source.cps.trainer import TRAINER_REGISTRY
+from source.cps.models import MODEL_REGISTRY
+from source.cps.callbacks import CALLBACKS_REGISTRY
+from source.semantic2D.metrics import METRIC_REGISTRY
 from theseus.utilities.loggers import LoggerObserver
 
 

@@ -2,7 +2,7 @@ from typing import Dict, List, Any
 import torch
 from torch import nn
 from theseus.utilities.cuda import move_to
-from theseus.cps.utils.ramps import sigmoid_rampup
+from source.cps.utils.ramps import sigmoid_rampup
 
 class UELoss(nn.Module):
     r"""

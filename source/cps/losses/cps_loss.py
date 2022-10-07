@@ -1,7 +1,7 @@
 from typing import Iterable, Dict, Any
 import torch
 import torch.nn as nn
-from theseus.cps.utils.ramps import sigmoid_rampup
+from source.cps.utils.ramps import sigmoid_rampup
 
 class CPSLoss(nn.Module):
     """Wrapper class for combining multiple loss function 

@@ -1,4 +1,4 @@
-from theseus.semantic.trainer import TRAINER_REGISTRY
+from source.semantic2D.trainer import TRAINER_REGISTRY
 from .ss_trainer import SemiSupervisedTrainer
 
 

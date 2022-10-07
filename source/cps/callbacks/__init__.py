@@ -1,7 +1,7 @@
 from .cps_callbacks import CPSCallbacks
 from .visualization_callbacks import TwoStreamVisualizerCallbacks
 from .checkpoint_callbacks import TwoStreamCheckpointCallbacks
-from theseus.semantic.callbacks import CALLBACKS_REGISTRY
+from source.semantic2D.callbacks import CALLBACKS_REGISTRY
 
 CALLBACKS_REGISTRY.register(CPSCallbacks)
 CALLBACKS_REGISTRY.register(TwoStreamVisualizerCallbacks)
