@@ -26,7 +26,7 @@ sh tools/scripts/download_data.sh
 sh tools/scripts/preprocess_data.sh
 ```
 
-After processing, the data structure should be as followed:
+- After processing, the data structure should be as followed:
 ```
 this repo
 │   
@@ -36,7 +36,7 @@ this repo
 |       └───slices    # For training
 |       └───npy       # For inference/evaluation
 ```
-In each of these folder should be subfolders for training/val/validation images and masks. 
+- In each of these folder should be subfolders for training/val/validation images and masks. 
 
 ## **Training**
 
