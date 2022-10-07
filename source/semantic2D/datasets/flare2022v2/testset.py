@@ -12,7 +12,8 @@ LOGGER = LoggerObserver.getLogger("main")
 
 class FLARE22V2BaseTestDataset(FLARE22V2BaseDataset):
     def __init__(self, root_dir: str, transform=None, **kwargs):
-        super().__init__(root_dir, transform, **kwargs)
+        super().__init__(transform, **kwargs)
+        self.root_dir = root_dir
         self._load_data()
 
     def _load_data(self):
