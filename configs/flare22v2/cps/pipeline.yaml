@@ -35,9 +35,10 @@ model:
       name: TransUnetPE
       args:
         model_name: R50-ViT-B_16
-        img_size: 512 
+        img_size: 512
         in_channels: 3
         pretrained: false
+        use_positional_encoding: true
     model2:
       name: BaseSegModel
       args:
@@ -53,7 +54,7 @@ loss:
       args:
         weights: null
         losses:
-        - name: CELoss
+        - name: SemanticCELoss
           args: {}
         - name: LovaszSoftmax
           args: {}
@@ -85,31 +86,17 @@ scheduler:
 data:
   dataset:
     train:
-      name: ConcatDataset
+      name: FLARE22V2LabelledCSVPosDataset
       args:
-        datasets:
-          - name: FLARE22V2LabelledCSVPosDataset
-            args:
-              root_dir: ../data/slices/processed/train/
-              csv_path: ../data/slices/processed/train/train.csv
-          - name: FLARE22V2LabelledCSVPosDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled.csv
-          - name: FLARE22V2LabelledCSVPosDataset
-            args:
-              root_dir: ../data/slices/processed/unlabeled/
-              csv_path: ../data/slices/processed/unlabeled/pseudo_unlabelled2.csv
+        csv_path: data/flare22/slices/train_slices.csv
     unsup_train:
       name: FLARE22V2UnlabelledCSVPosDataset
       args:
-        root_dir: ../data/slices/processed/validation
-        csv_path: ../data/slices/processed/validation/validation.csv
+        csv_path: data/flare22/slices/unlabelled_slices.csv
     val:
       name: FLARE22V2LabelledCSVPosDataset
       args:
-        root_dir: ../data/slices/processed/train/
-        csv_path: ../data/slices/processed/train/val.csv
+        csv_path: data/flare22/slices/val_slices.csv
   dataloader:
     train:
       name: TwoStreamDataLoader
@@ -122,6 +109,6 @@ data:
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 8
+        batch_size: 2
         drop_last: false
         shuffle: false

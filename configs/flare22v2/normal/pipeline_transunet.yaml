@@ -2,7 +2,7 @@ global:
   exp_name: flare22-normal
   exist_ok: False
   debug: true
-  cfg_transform: configs/semantic2D/flare22v2/normal/transform.yaml
+  cfg_transform: configs/flare22v2/normal/transform.yaml
   save_dir: runs
   device: cuda:0
   pretrained: null
@@ -12,10 +12,10 @@ trainer:
   name: SupervisedTrainer
   args:
     use_fp16: true
-    num_iterations: 40000
-    clip_grad:  10.0
+    num_iterations: 80000
+    clip_grad:  1.0
     evaluate_interval: 1
-    print_interval: 20
+    print_interval: 10
     save_interval: 1000
 callbacks:
   - name: LoggerCallbacks
@@ -25,26 +25,22 @@ callbacks:
       best_key: dice-avg
   - name: NormalVisualizerCallbacks
     args: null
-  # - name: WandbCallbacks
-  #   args: 
-  #    username: kaylode
-  #    project_name: flare22
 model:
   name: TransUnetPE
   args:
     model_name: R50-ViT-B_16
-    img_size: 512 
+    img_size: 512
     in_channels: 3
-    pretrained: False
+    pretrained: True
+    use_positional_encoding: true
 loss:
   name: MultiLoss
   args:
     weights: null
     losses:
-    - name: OhemCELoss
+    - name: SemanticCELoss
       args: 
-        thresh: 0.5
-    - name: LovaszSoftmax
+    - name: DiceLoss
       args: {}
 metrics:
 - name: mIOU
@@ -65,7 +61,7 @@ scheduler:
   args:
     scheduler_name: multistep
     milestones: [40000, 70000]
-    gamma: 0.05
+    gamma: 0.5
 data:
   dataset:
     train:
@@ -80,7 +76,7 @@ data:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 8
+        batch_size: 2
         drop_last: false
         shuffle: true
     val:
