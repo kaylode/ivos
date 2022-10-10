@@ -8,8 +8,8 @@ We also deploy an annotation tool with user-friendly GUI that is based on this p
 
 
 <p align="center">
-<img height="300" alt="screen" src="assets/overall.png">
-<img height="300" alt="screen" src="assets/qualitative.png">
+<img height="250" alt="screen" src="assets/overall.png">
+<img height="250" alt="screen" src="assets/qualitative.png">
 </p>
 
 
