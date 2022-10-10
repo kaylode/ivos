@@ -1,0 +1,9 @@
+from .normal_visualize_callbacks import NormalVisualizerCallbacks
+from .stcn_callback import STCNCallbacks
+from .volume_visualize_callbacks import VolumeVisualizerCallbacks
+from theseus.semantic.callbacks import CALLBACKS_REGISTRY
+
+
+CALLBACKS_REGISTRY.register(STCNCallbacks)
+CALLBACKS_REGISTRY.register(NormalVisualizerCallbacks)
+CALLBACKS_REGISTRY.register(VolumeVisualizerCallbacks)

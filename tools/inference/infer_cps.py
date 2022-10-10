@@ -13,15 +13,13 @@ import numpy as np
 from tqdm import tqdm
 import torch
 import imageio
-import nibabel as nib
-import pandas as pd
 from theseus.opt import Config
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.cuda import move_to
 from theseus.utilities.getter import get_instance_recursively
-from theseus.cps.models import MODEL_REGISTRY
-from theseus.semantic3D.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic2D.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from source.cps.models import MODEL_REGISTRY
+from source.cps.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from source.semantic3D.augmentations import TRANSFORM_REGISTRY
 
 from theseus.utilities.loggers import LoggerObserver
 from theseus.utilities.visualization.visualizer import Visualizer
@@ -36,8 +34,6 @@ class TestPipeline(BaseTestPipeline):
 
     def init_globals(self):
         super().init_globals()
-        self.save_csv = self.opt["global"]["save_csv"]
-        self.use_uncertainty = self.opt["global"]["use_uncertainty"]
         self.save_visualization = self.opt["global"]["save_visualization"]
 
         if self.save_visualization:
@@ -65,12 +61,24 @@ class TestPipeline(BaseTestPipeline):
         self.weights = self.opt["global"]["weights"]
         if self.weights:
             state_dict = torch.load(self.weights)
-            self.model.model1 = load_state_dict(
-                self.model.model1, state_dict, "model1"
-            )
-            self.model.model2.model = load_state_dict(
-                self.model.model2.model, state_dict, "model2"
-            )
+
+            if hasattr(self.model.model1, 'model'):
+                self.model.model1.model = load_state_dict(
+                    self.model.model1.model, state_dict, "model1"
+                )
+            else:
+                self.model.model1 = load_state_dict(
+                    self.model.model1, state_dict, "model1"
+                )
+            
+            if hasattr(self.model.model2, 'model'):
+                self.model.model2.model = load_state_dict(
+                    self.model.model2.model, state_dict, "model2"
+                )
+            else:
+                self.model.model2 = load_state_dict(
+                    self.model.model2, state_dict, "model2"
+                )
 
     def save_gif(self, images, masks, save_dir, outname):
         # images: (T, C, H, W)
@@ -168,11 +176,6 @@ class TestPipeline(BaseTestPipeline):
                 os.makedirs(visdir, exist_ok=True)
                 self.save_gif(data["ref_images"].numpy(), out_masks.transpose(1, 2, 0).astype(np.uint8), visdir, gif_name)
                 self.logger.text(f"Saved to {gif_name}", level=LoggerObserver.INFO)
-
-        if self.save_csv:
-            pd.DataFrame(df_dict).to_csv(
-                osp.join(self.savedir, "pseudo.csv"), index=False
-            )
 
         self.logger.text(
             f"Number of processed slices: {total_frames}", level=LoggerObserver.INFO

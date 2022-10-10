@@ -1,8 +1,0 @@
-from theseus.semantic2D.callbacks.normal_visualize_callbacks import NormalVisualizerCallbacks
-from theseus.semantic2D.callbacks.volume_visualize_callbacks import VolumeVisualizerCallbacks
-from theseus.semantic2D.callbacks.stcn_callback import STCNCallbacks
-from theseus.base.callbacks import CALLBACKS_REGISTRY
-
-CALLBACKS_REGISTRY.register(STCNCallbacks)
-CALLBACKS_REGISTRY.register(VolumeVisualizerCallbacks)
-CALLBACKS_REGISTRY.register(NormalVisualizerCallbacks)

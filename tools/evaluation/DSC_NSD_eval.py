@@ -19,7 +19,7 @@ parser.add_argument("-p", "--pred_dir", type=str, help="Prediction directory")
 
 NUM_CLASSES = 13
 
-LOG = "runs/val_infer/vallog.csv"
+LOG = "runs/vallog.csv"
 df = pd.read_csv(LOG)
 
 
@@ -40,12 +40,15 @@ def eval(args):
         seg_metrics["NSD-1mm_{}".format(i)] = list()
 
     for name in filenames:
+        gt_name = name.replace("_0000.nii.gz", ".nii.gz")
+        if not osp.isfile(osp.join(gt_path, gt_name)):
+            continue
+        
         seg_metrics["Name"].append(name)
         seg_metrics["DSC_mean"].append(0)
         seg_metrics["NSD-1mm_mean"].append(0)
         # load grond truth and segmentation
 
-        gt_name = name.replace("_0000.nii.gz", ".nii.gz")
         gt_nii = nb.load(osp.join(gt_path, gt_name))
         case_spacing = gt_nii.header.get_zooms()
         gt_data = np.uint8(gt_nii.get_fdata())

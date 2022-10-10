@@ -1,0 +1,1 @@
+from theseus.semantic.trainer import TRAINER_REGISTRY 
