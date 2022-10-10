@@ -16,6 +16,8 @@ We also deploy an annotation tool with user-friendly GUI that is based on this p
 ## **Installation**
 - Go to root folder, run `pip install -r requirements.txt`
 
+## **Reproducibility**
+- To reproduce the results that were reported in FLARE22 Challenge, please see [Docker](Docker.md)
 
 ## **Data Preparation**
 
