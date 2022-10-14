@@ -169,7 +169,7 @@ class TestPipeline(BaseTestPipeline):
                 candidates = []
                 with torch.no_grad():
                     for i, (inp, sid) in enumerate(zip(inputs, sids)):
-                        if len(custom_batch) == 31 or i == inputs.shape[0] - 1:
+                        if len(custom_batch) == 0 or i == inputs.shape[0] - 1:
                             custom_batch.append((inp, sid))
                             with torch.no_grad():
                                 batch_preds = self.ref_model.get_prediction(

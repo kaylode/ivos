@@ -18,8 +18,8 @@ def check_dir(file_path):
 
 add_file_handler_to_logger(name="main", dir_path="logs/", level="DEBUG")
 
-docker_path = './team_docker'
-test_img_path = './ValidationImg/'
+docker_path = './docker/tar'
+test_img_path = 'data/flare22/raw/validation/images'
 save_path = './results/'
 
 os.makedirs(save_path, exist_ok=True)
@@ -44,13 +44,13 @@ for docker in dockers:
                 raise
             shutil.copy(join(test_img_path, case), './inputs')
             start_time = time.time()
-            os.system('python Efficiency.py -docker_name {}'.format(name))
+            os.system('python3 tools/evaluation/Efficiency.py -docker_name {}'.format(name))
             logger.info(f"{case} finished!")
             os.remove(join('./inputs', case))
             # shutil.rmtree('./inputs')
             logger.info(f"{case} cost time: {time.time() - start_time}")
 
-        os.system("python load_json.py -docker_name {} -save_path {}".format(name, save_path))
+        os.system("python3 tools/evaluation/load_json.py -docker_name {} -save_path {}".format(name, save_path))
         shutil.move("./outputs", team_outpath)
         os.mkdir("./outputs")
         torch.cuda.empty_cache()

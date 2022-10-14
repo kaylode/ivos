@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-docker_name", default="fully_suplearn_subtask1", help="team docker name")
     parser.add_argument("-save_path", default="./results", help="save_path")
     args = parser.parse_args()
-    logger.info("we are counting: {args.docker_name}")
+    logger.info(f"we are counting: {args.docker_name}")
     json_dir = join(args.save_path, args.docker_name)
     csv_path = join(json_dir, args.docker_name + '_Efficiency.csv')
     jsonl = sorted(glob.glob(json_dir + "/*.json"))
