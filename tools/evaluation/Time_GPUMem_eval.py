@@ -19,7 +19,7 @@ def check_dir(file_path):
 add_file_handler_to_logger(name="main", dir_path="logs/", level="DEBUG")
 
 docker_path = './docker/tar'
-test_img_path = 'data/flare22/raw/validation/images'
+test_img_path = '../data/flare22/raw/validation/images'
 save_path = './results/'
 
 os.makedirs(save_path, exist_ok=True)
