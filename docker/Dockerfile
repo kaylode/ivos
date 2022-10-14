@@ -66,4 +66,4 @@ RUN conda init bash && source ~/.bashrc && \
 
 USER $USERNAME
 RUN conda init bash 
-ENTRYPOINT ["sh", "run.sh"]
+# ENTRYPOINT ["sh", "run.sh"]

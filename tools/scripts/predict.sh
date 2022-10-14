@@ -1,5 +1,7 @@
-INPUT_PATH=/home/root/workspace/inputs/
-OUTPUT_PATH=/home/root/workspace/outputs/
+#!/bin/bash
+
+INPUT_PATH=/home/hcmus/workspace/inputs/
+OUTPUT_PATH=/home/hcmus/workspace/outputs/
 # INPUT_PATH=$1
 # OUTPUT_PATH=$2
 
@@ -31,6 +33,6 @@ mkdir -p ./tmp_output/$EXP_NAME
 sh ./tools/scripts/infer.sh $NPY_IMAGE_TEST_PATH $INPUT_PATH tmp_output/ $EXP_NAME
 
 echo "Copying to output folder ..."
-cp -r ./tmp_output/$EXP_NAME/test/submission/* $OUTPUT_PATH
+sudo cp -r ./tmp_output/$EXP_NAME/test/submission/* $OUTPUT_PATH
 
 echo "Done!"
