@@ -12,9 +12,19 @@ We also deploy an annotation tool with user-friendly GUI that is based on this p
 <img height="250" alt="screen" src="assets/qualitative.png">
 </p>
 
+## **Environment and Requirements**
 
-## **Installation**
-- Go to root folder, run `pip install -r requirements.txt`
+Windows/Ubuntu version | Ubuntu 18.04.5 LTS
+--- | --- 
+CPU | Intel(R) Xeon(R) Silver 4210R CPU @ 2.40GHz
+RAM | 1×32GB;
+GPU (number and type) | One Quadro RTX 5000 16G
+CUDA version | 11.6
+Programming language | Python 3.10
+Deep learning framework | Pytorch (Torch 1.11.0, torchvision 0.12.0)
+
+
+- To install requirements, go to root folder, run `pip install -r requirements.txt`
 
 ## **Reproducibility**
 - To reproduce the results that were reported in FLARE22 Challenge, please see [Docker](Docker.md)
@@ -71,7 +81,7 @@ sh tools/scripts/train_cps.sh <run_name> <save_dir>
 ```
 sh tools/scripts/download_weights.sh
 ```
-which saves the trained weights to `weights` folder. These can be used to reproduced the results that we reported in the paper
+which saves the trained weights to `weights` folder. These can be used to reproduce the results that we reported in the paper
 
 - To perform 2-stage inference, please modify `configs/flare22v2/stcn/test.yaml`, then run
 ```
@@ -96,6 +106,26 @@ python tools/evaluation/DSC_NSD_eval.py \
   -g <ground truth mask> \
   -p <prediction mask>
 ```
+
+## Results
+- The results are officially reported by the organizers of FLARE22 Challenge
+
+Classes/Metrics | DSC | NSD
+--- | --- | ---
+Liver | 0.974 ± 0.036 | 0.963 ± 0.063
+Right Kidney (RK) | 0.883 ± 0.233 | 0.868 ± 0.241
+Spleen | 0.9494 ± 0.115 | 0.935 ± 0.134
+Pancreas | 0.772 ± 0.147 | 0.877 ± 0.145
+Aorta | 0.96 ± 0.045 | 0.976 ± 0.06
+Inferior Vena Cava (IVC) | 0.86 ± 0.123 | 0.86 ± 0.143
+Right Adrenal Gland (RAG) | 0.735 ± 0.138 | 0.855 ± 0.144
+Left Adrenal Gland (LAG) | 0.69 ± 0.171 | 0.816 ± 0.2
+Gallbladder | 0.75 ± 0.313 | 0.733 ± 0.328
+Esophagus | 0.783 ± 0.147 | 0.88 ± 0.143
+Stomach | 0.86 ± 0.113 | 0.84 ± 0.142
+Duodenum | 0.6 ± 0.2 | 0.79 ± 0.215
+Left Kidney (LK) | 0.877 ± 0.22 | 0.863 ± 0.23
+Mean | 0.8233 | 0.8668
 
 ## **References**
 
