@@ -23,9 +23,6 @@ CUDA version | 11.6
 Programming language | Python 3.10
 Deep learning framework | Pytorch (Torch 1.11.0, torchvision 0.12.0)
 
-
-- To install requirements, go to root folder, run `pip install -r requirements.txt`
-
 ## **Reproducibility**
 - To reproduce the results that were reported in FLARE22 Challenge, please see [Docker](Docker.md)
 
