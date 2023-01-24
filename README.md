@@ -5,7 +5,7 @@ the previous challenges, it is unlikely for 2D CNNs to be comparable with other 
 
 We also deploy an annotation tool with user-friendly GUI that is based on this proposed algorithm [here](https://github.com/nhtlongcs/ivos-gui) 
 
-
+Our work has been published as [part of the Lecture Notes in Computer Science book series (LNCS, volume 13816)](https://link.springer.com/chapter/10.1007/978-3-031-23911-3_15)
 
 <p align="center">
 <img height="250" alt="screen" src="assets/overall.png">
